@@ -1,0 +1,7 @@
+djangorestframework
+django-cors-headers
+djangorestframework-simplejwt
+python-decouple
+Pillow
+django-email-verification
+psycopg2-binary
