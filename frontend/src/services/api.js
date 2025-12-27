@@ -127,9 +127,12 @@ api.interceptors.response.use(
  */
 export const registerUser = async (userData) => {
   try {
-    const response = await api.post('/accounts/register/', userData);
+    console.log('🌐 API: Sending registration request...', userData);
+    const response = await api.post('/accounts/register', userData);
+    console.log('🌐 API: Registration response received:', response.data);
     return response.data;
   } catch (error) {
+    console.error('🌐 API: Registration error:', error.response?.data || error);
     throw error.response?.data || { message: 'Registration failed' };
   }
 };
@@ -141,7 +144,7 @@ export const registerUser = async (userData) => {
  */
 export const loginUser = async (credentials) => {
   try {
-    const response = await api.post('/accounts/login/', credentials);
+    const response = await api.post('/accounts/login', credentials);
     
     if (response.data.success) {
       // Store tokens
@@ -155,27 +158,13 @@ export const loginUser = async (credentials) => {
 };
 
 /**
- * Verify user email
- * @param {string} token - Verification token from email
- * @returns {Promise} API response
- */
-export const verifyEmail = async (token) => {
-  try {
-    const response = await api.get(`/accounts/verify-email/${token}/`);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { message: 'Email verification failed' };
-  }
-};
-
-/**
  * Request password reset
  * @param {string} email - User's email address
  * @returns {Promise} API response
  */
 export const forgotPassword = async (email) => {
   try {
-    const response = await api.post('/accounts/forgot-password/', { email });
+    const response = await api.post('/accounts/forgot-password', { email });
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Password reset request failed' };
@@ -189,7 +178,7 @@ export const forgotPassword = async (email) => {
  */
 export const resetPassword = async (data) => {
   try {
-    const response = await api.post('/accounts/reset-password/', data);
+    const response = await api.post('/accounts/reset-password', data);
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Password reset failed' };
@@ -203,7 +192,7 @@ export const resetPassword = async (data) => {
 export const refreshToken = async () => {
   try {
     const refresh = getRefreshToken();
-    const response = await api.post('/accounts/token/refresh/', { refresh });
+    const response = await api.post('/accounts/token/refresh', { refresh });
     
     if (response.data.access) {
       setTokens(response.data.access, refresh);
@@ -222,7 +211,7 @@ export const refreshToken = async () => {
  */
 export const getUserProfile = async () => {
   try {
-    const response = await api.get('/accounts/profile/');
+    const response = await api.get('/accounts/profile');
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to fetch user profile' };
@@ -236,27 +225,13 @@ export const getUserProfile = async () => {
 export const logoutUser = async () => {
   try {
     const refresh = getRefreshToken();
-    const response = await api.post('/accounts/logout/', { refresh });
+    const response = await api.post('/accounts/logout', { refresh });
     removeTokens();
     return response.data;
   } catch (error) {
     // Even if logout fails on backend, remove tokens locally
     removeTokens();
     throw error.response?.data || { message: 'Logout failed' };
-  }
-};
-
-/**
- * Resend verification email
- * @param {string} email - User's email address
- * @returns {Promise} API response
- */
-export const resendVerificationEmail = async (email) => {
-  try {
-    const response = await api.post('/accounts/resend-verification/', { email });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || { message: 'Failed to resend verification email' };
   }
 };
 

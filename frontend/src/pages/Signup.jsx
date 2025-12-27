@@ -68,24 +68,51 @@ const Signup = () => {
 
   const handleSubmit = async (values, { setSubmitting, setErrors }) => {
     console.log('🚀 Form submitted!', values);
+    console.log('🔍 Validation state:', { isSubmitting: false, values });
     
     try {
-      const { terms, ...userData } = values;
+      const { terms, first_name, last_name, phone_number, confirm_password, user_type, ...rest } = values;
+      
+      // Transform field names to camelCase for backend
+      const userData = {
+        ...rest,
+        firstName: first_name,
+        lastName: last_name,
+        phoneNumber: phone_number,
+        confirmPassword: confirm_password,
+        userType: user_type
+      };
+      
       console.log('📤 Sending registration data:', userData);
       
       const response = await registerUser(userData);
       console.log('✅ Registration response:', response);
 
       if (response.success) {
-        toast.success(response.message || 'Registration successful!');
-        toast.info('Please check your email to verify your account');
-        navigate('/login', { state: { email: userData.email, registered: true } });
+        console.log('🎉 Registration successful! Redirecting to login...');
+        toast.success(response.message || 'Registration successful! You can now login.');
+        
+        // Delay redirect slightly to show toast
+        setTimeout(() => {
+          console.log('🔄 Navigating to login page...');
+          navigate('/login', { state: { email: userData.email, registered: true } });
+        }, 500);
+      } else {
+        console.warn('⚠️ Registration response success=false:', response);
+        toast.error(response.message || 'Registration failed. Please try again.');
       }
     } catch (error) {
       console.error('❌ Registration error:', error);
       
       if (error.errors) {
-        setErrors(error.errors);
+        // Transform backend errors back to snake_case for form fields
+        const formErrors = {};
+        Object.keys(error.errors).forEach(key => {
+          const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+          formErrors[snakeKey] = error.errors[key];
+        });
+        console.log('📝 Setting form errors:', formErrors);
+        setErrors(formErrors);
       }
       
       toast.error(error.message || 'Registration failed. Please try again.');
@@ -122,25 +149,43 @@ const Signup = () => {
         {/* Right Side - Form */}
         <div className="signup-right">
           <div className="signup-form-container">
-            <div className="step-indicator">Step 1 of 2</div>
             
             <Formik
               initialValues={initialValues}
-            validationSchema={SignupSchema}
-            onSubmit={handleSubmit}
-          >
-            {({ values, isSubmitting, setFieldValue }) => (
-              <Form className="auth-form">
+              validationSchema={SignupSchema}
+              onSubmit={handleSubmit}
+            >
+              {({ values, isSubmitting, setFieldValue, errors, touched }) => {
+                console.log('🎨 Formik render - isSubmitting:', isSubmitting, 'errors:', errors);
+                return (
+              <Form className="auth-form" onSubmit={(e) => {
+                console.log('📝 Form onSubmit event triggered');
+              }}>
                 <div className="form-group">
                   <label htmlFor="first_name">Full Name</label>
                   <div className="name-fields">
-                    <Field
-                      type="text"
-                      name="first_name"
-                      id="first_name"
-                      placeholder="John Doe"
-                      className="auth-input"
-                    />
+                    <Field name="first_name">
+                      {({ field }) => (
+                        <input
+                          {...field}
+                          type="text"
+                          id="first_name"
+                          placeholder="John Doe"
+                          className="auth-input"
+                          onChange={(e) => {
+                            const fullName = e.target.value;
+                            setFieldValue('first_name', fullName);
+                            // Auto-populate last_name from full name
+                            const nameParts = fullName.trim().split(' ');
+                            if (nameParts.length > 1) {
+                              setFieldValue('last_name', nameParts.slice(1).join(' '));
+                            } else {
+                              setFieldValue('last_name', 'User');
+                            }
+                          }}
+                        />
+                      )}
+                    </Field>
                   </div>
                   <ErrorMessage name="first_name" component="div" className="error-message" />
                 </div>
@@ -150,8 +195,6 @@ const Signup = () => {
                     type="text"
                     name="last_name"
                     id="last_name"
-                    value={values.first_name.split(' ')[1] || 'User'}
-                    onChange={(e) => setFieldValue('last_name', e.target.value)}
                   />
                 </div>
 
@@ -191,17 +234,21 @@ const Signup = () => {
                 <div className="form-group">
                   <label htmlFor="password">Password</label>
                   <div className="input-with-icon">
-                    <Field
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      id="password"
-                      placeholder="••••••••"
-                      className="auth-input"
-                      onChange={(e) => {
-                        setFieldValue('password', e.target.value);
-                        handlePasswordChange(e.target.value);
-                      }}
-                    />
+                    <Field name="password">
+                      {({ field }) => (
+                        <input
+                          {...field}
+                          type={showPassword ? 'text' : 'password'}
+                          id="password"
+                          placeholder="••••••••"
+                          className="auth-input"
+                          onChange={(e) => {
+                            setFieldValue('password', e.target.value);
+                            handlePasswordChange(e.target.value);
+                          }}
+                        />
+                      )}
+                    </Field>
                     <button
                       type="button"
                       className="toggle-password-icon"
@@ -252,13 +299,15 @@ const Signup = () => {
 
                 <div className="form-group checkbox-group">
                   <label className="checkbox-label">
-                    <Field type="checkbox" name="terms">
+                    <Field name="terms">
                       {({ field }) => (
                         <input
                           type="checkbox"
                           {...field}
                           checked={field.value}
-                          onChange={(e) => setFieldValue('terms', e.target.checked)}
+                          onChange={(e) => {
+                            setFieldValue('terms', e.target.checked);
+                          }}
                         />
                       )}
                     </Field>
@@ -276,6 +325,7 @@ const Signup = () => {
                   type="submit"
                   className="btn-auth-primary"
                   disabled={isSubmitting}
+                  onClick={() => console.log('🖱️ Register button clicked!')}
                 >
                   {isSubmitting ? 'Creating Account...' : 'Register Account'}
                 </button>
@@ -289,8 +339,9 @@ const Signup = () => {
                   Sign up with Google
                 </button>
               </Form>
-            )}
-          </Formik>
+            );
+              }}
+            </Formik>
           </div>
         </div>
       </div>

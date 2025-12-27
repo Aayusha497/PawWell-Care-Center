@@ -1,261 +1,254 @@
-# PawWell Care Center - Authentication System
+# 🐾 PawWell Care Center
 
-A complete full-stack authentication system for PawWell Care Center, a pet care management platform.
+A complete pet care management system with user authentication, built with Node.js, Express, PostgreSQL, and React.
 
-## 🎯 Features Implemented
+## ✨ Features
 
-### Backend (Django + DRF)
-- ✅ Custom User Model with email authentication
-- ✅ Email verification system (24-hour token expiry)
-- ✅ Password reset system (1-hour token expiry)
-- ✅ JWT authentication with access and refresh tokens
-- ✅ Token blacklisting for secure logout
-- ✅ User registration, login, and profile endpoints
-- ✅ Comprehensive email templates
-- ✅ Password strength validation
-- ✅ CORS configuration for frontend integration
+- **User Authentication** - Register, login, logout with JWT tokens
+- **PostgreSQL Database** - Secure data storage with Sequelize ORM
+- **Password Recovery** - Forgot/reset password via email
+- **Protected Routes** - Secure dashboard and user areas
+- **Modern UI** - Clean, responsive React interface
+- **RESTful API** - Well-documented API endpoints
+- **No Email Verification** - Quick registration process
 
-### Frontend (React)
-- ✅ Complete landing page with hero, services, and testimonials
-- ✅ User registration form with validation
-- ✅ Login page with email verification check
-- ✅ Forgot password flow
-- ✅ Reset password with token validation
-- ✅ Email verification handler
-- ✅ Protected routes with authentication
-- ✅ Responsive navigation and footer
-- ✅ Toast notifications
-- ✅ Password strength indicator
-- ✅ Token refresh interceptor
+## 🚀 Quick Start
 
-## 📋 Prerequisites
+### Prerequisites
+- Node.js (v14+)
+- PostgreSQL (v12+)
+- npm or yarn
 
-- Python 3.8+
-- Node.js 14+
-- PostgreSQL
-- Git
+### 1. Clone Repository
+```bash
+git clone <repository-url>
+cd PawWell-Care-Center
+```
 
-## 🚀 Backend Setup
+### 2. Setup Database
+```bash
+# Connect to PostgreSQL
+psql -U postgres
 
-### 1. Navigate to backend directory
+# Create database and user
+CREATE DATABASE pawwell_db;
+CREATE USER pawwell_user WITH PASSWORD 'pawwell_user';
+GRANT ALL PRIVILEGES ON DATABASE pawwell_db TO pawwell_user;
+\q
+```
+
+### 3. Install Dependencies
+
+**Backend:**
 ```bash
 cd backend
-```
-
-### 2. Install Python dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Configure environment variables
-The `.env` file is already created. Update these values:
-```env
-# Database (PostgreSQL)
-DB_NAME=pawwell_db
-DB_USER=postgres
-DB_PASSWORD=your_password
-DB_HOST=localhost
-DB_PORT=5432
-
-# Email (Gmail SMTP)
-EMAIL_HOST_USER=your_email@gmail.com
-EMAIL_HOST_PASSWORD=your_app_password
-DEFAULT_FROM_EMAIL=PawWell Care Center <your_email@gmail.com>
-```
-
-### 4. Create PostgreSQL database
-```bash
-createdb pawwell_db
-```
-
-### 5. Run migrations
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-### 6. Create superuser (optional)
-```bash
-python manage.py createsuperuser
-```
-
-### 7. Run development server
-```bash
-python manage.py runserver
-```
-
-Backend will be available at: `http://localhost:8000`
-
-## 🎨 Frontend Setup
-
-### 1. Navigate to frontend directory
-```bash
-cd frontend
-```
-
-### 2. Install dependencies
-```bash
 npm install
 ```
 
-### 3. Start development server
+**Frontend:**
 ```bash
+cd ../frontend
+npm install
+```
+
+### 4. Start Servers
+
+**Option A - Use the batch script (Windows):**
+```bash
+# From root directory
+start-servers.bat
+```
+
+**Option B - Manual start:**
+
+Terminal 1 (Backend):
+```bash
+cd backend
+npm run dev
+```
+
+Terminal 2 (Frontend):
+```bash
+cd frontend
 npm start
 ```
 
-Frontend will be available at: `http://localhost:3000`
+### 5. Access Application
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000/api
+- **Health Check**: http://localhost:8000/api/health
 
 ## 📁 Project Structure
 
-### Backend
 ```
-backend/
-├── accounts/
-│   ├── models.py          # User, EmailVerification, PasswordReset models
-│   ├── serializers.py     # Request/Response serializers
-│   ├── views.py           # API endpoints
-│   ├── urls.py            # URL routing
-│   └── utils.py           # Email utilities
-├── pawwell_backend/
-│   ├── settings.py        # Django configuration
-│   └── urls.py            # Main URL configuration
-└── requirements.txt       # Python dependencies
-```
-
-### Frontend
-```
-frontend/
-├── src/
-│   ├── components/
-│   │   ├── Navbar.jsx     # Navigation component
-│   │   ├── Footer.jsx     # Footer component
-│   │   └── ProtectedRoute.jsx
-│   ├── pages/
-│   │   ├── LandingPage.jsx
-│   │   ├── Signup.jsx
-│   │   ├── Login.jsx
-│   │   ├── ForgotPassword.jsx
-│   │   ├── ResetPassword.jsx
-│   │   ├── EmailVerification.jsx
-│   │   └── Dashboard.jsx
-│   ├── context/
-│   │   └── AuthContext.js  # Authentication state management
-│   ├── services/
-│   │   └── api.js          # API calls and axios configuration
-│   ├── utils/
-│   │   └── auth.js         # Authentication utilities
-│   ├── App.jsx             # Main app with routing
-│   └── index.css           # Global styles
-└── package.json
+PawWell-Care-Center/
+├── backend/                 # Node.js/Express backend
+│   ├── config/             # Configuration files
+│   ├── controllers/        # API controllers
+│   ├── middleware/         # Auth, validation, rate limiting
+│   ├── models/             # Sequelize models (User, PasswordReset)
+│   ├── routes/             # API routes
+│   ├── utils/              # Email service, JWT helpers
+│   ├── validators/         # Input validation
+│   ├── .env                # Environment variables
+│   ├── server.js           # Server entry point
+│   └── package.json
+│
+├── frontend/               # React frontend
+│   ├── public/            # Static files
+│   ├── src/
+│   │   ├── components/    # Reusable components
+│   │   ├── context/       # Auth context
+│   │   ├── pages/         # Page components
+│   │   ├── services/      # API service
+│   │   ├── utils/         # Helper functions
+│   │   ├── App.jsx        # Main app component
+│   │   └── index.js       # Entry point
+│   ├── .env               # Environment variables
+│   └── package.json
+│
+├── INTEGRATION_COMPLETE.md # Complete integration guide
+└── start-servers.bat       # Quick start script (Windows)
 ```
 
-## 🔑 API Endpoints
+## 🔌 API Endpoints
 
 ### Authentication
-- `POST /api/accounts/register/` - User registration
-- `POST /api/accounts/login/` - User login
-- `GET /api/accounts/verify-email/<token>/` - Email verification
-- `POST /api/accounts/resend-verification/` - Resend verification email
-- `POST /api/accounts/forgot-password/` - Request password reset
-- `POST /api/accounts/reset-password/` - Reset password with token
-- `POST /api/accounts/token/refresh/` - Refresh access token
-- `GET /api/accounts/profile/` - Get user profile (protected)
-- `POST /api/accounts/logout/` - Logout and blacklist token
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/accounts/register` | Register new user | No |
+| POST | `/api/accounts/login` | Login user | No |
+| POST | `/api/accounts/forgot-password` | Request password reset | No |
+| POST | `/api/accounts/reset-password` | Reset password | No |
+| POST | `/api/accounts/token/refresh` | Refresh access token | No |
+| GET | `/api/accounts/profile` | Get user profile | Yes |
+| POST | `/api/accounts/logout` | Logout user | Yes |
 
-## 🧪 Testing the System
+### Health
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Check API status |
 
-### 1. Register a new user
-- Go to `http://localhost:3000/signup`
-- Fill in the registration form
-- Check your email for verification link
+## 🔒 Security
 
-### 2. Verify email
-- Click the verification link in your email
-- You'll be redirected to login
+- **JWT Authentication** - Secure token-based auth
+- **bcrypt Password Hashing** - Strong password encryption
+- **Rate Limiting** - Prevent brute force attacks
+- **Helmet.js** - Security headers
+- **CORS** - Configured for frontend
+- **Input Validation** - All inputs validated
+- **SQL Injection Protection** - Sequelize ORM
 
-### 3. Login
-- Use your email and password
-- Access token and refresh token will be stored
+## 📝 Environment Variables
 
-### 4. Test protected routes
-- Navigate to `/dashboard`
-- You should see your profile information
+### Backend (.env)
+```env
+NODE_ENV=development
+PORT=8000
+DB_NAME=pawwell_db
+DB_USER=pawwell_user
+DB_PASSWORD=pawwell_user
+DB_HOST=localhost
+DB_PORT=5432
+JWT_SECRET=your-secret-key
+JWT_ACCESS_TOKEN_EXPIRE=60m
+JWT_REFRESH_TOKEN_EXPIRE=1d
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
+FRONTEND_URL=http://localhost:3000
+```
 
-### 5. Test password reset
-- Go to `/forgot-password`
-- Enter your email
-- Check email for reset link
-- Click link and set new password
+### Frontend (.env)
+```env
+REACT_APP_API_URL=http://localhost:8000/api
+REACT_APP_NAME=PawWell Care Center
+```
 
-## 🔒 Security Features
+## 🧪 Testing
 
-- Passwords are hashed using Django's default PBKDF2 algorithm
-- Email verification required before login
-- JWT tokens with expiry (Access: 60 min, Refresh: 1 day)
-- Token blacklisting on logout
-- CORS configured for specific origins
-- SQL injection prevention through Django ORM
-- XSS prevention through proper serialization
-- CSRF protection enabled
+### Test Registration
+```bash
+curl -X POST http://localhost:8000/api/accounts/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "Test1234",
+    "confirmPassword": "Test1234",
+    "firstName": "John",
+    "lastName": "Doe",
+    "userType": "pet_owner"
+  }'
+```
 
-## 🎨 UI Features
+### Test Login
+```bash
+curl -X POST http://localhost:8000/api/accounts/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "Test1234"
+  }'
+```
 
-- Responsive design (mobile-first)
-- Password strength indicator
-- Form validation with Formik + Yup
-- Toast notifications for user feedback
-- Loading states and error handling
-- Smooth animations and transitions
-- Professional color scheme
+## 🎯 User Flow
 
-## 📧 Email Configuration
+1. Visit http://localhost:3000
+2. Click "Sign Up"
+3. Fill registration form
+4. Account created immediately (no email verification)
+5. Redirect to login page
+6. Login with credentials
+7. Access protected dashboard
 
-### Gmail Setup
-1. Enable 2-factor authentication
-2. Generate app password
-3. Use app password in `.env` file
+## 📚 Documentation
 
-### Email Templates
-All emails include:
-- Professional HTML templates
-- PawWell branding
-- Clickable links
-- Expiry information
+- **Backend README**: [backend/README.md](backend/README.md)
+- **Integration Guide**: [INTEGRATION_COMPLETE.md](INTEGRATION_COMPLETE.md)
+- **Quick Notes**: [backend/NOTES.md](backend/NOTES.md)
 
-## 🛠️ Troubleshooting
+## 🛠️ Tech Stack
 
-### Backend Issues
-- **Database connection error**: Check PostgreSQL is running and credentials are correct
-- **Migration errors**: Delete migration files and run `makemigrations` again
-- **Email not sending**: Verify SMTP settings and app password
+### Backend
+- Node.js & Express.js
+- PostgreSQL & Sequelize ORM
+- JWT (jsonwebtoken)
+- bcryptjs
+- Nodemailer
+- express-validator
+- Helmet.js & CORS
 
-### Frontend Issues
-- **API connection error**: Ensure backend is running on port 8000
-- **Token refresh fails**: Clear localStorage and login again
-- **CORS errors**: Check `CORS_ALLOWED_ORIGINS` in Django settings
+### Frontend
+- React 18
+- React Router v6
+- Axios
+- Formik & Yup
+- React Toastify
+- Context API
 
-## 📝 Next Steps
+## 🤝 Contributing
 
-### Recommended Enhancements
-1. Add social authentication (Google, Facebook)
-2. Implement 2-factor authentication
-3. Add profile picture upload
-4. Create pet management features
-5. Add booking system for services
-6. Implement admin dashboard
-7. Add payment integration
-8. Create appointment scheduling
-9. Add real-time notifications
-10. Implement chat support
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
 
 ## 📄 License
 
-This project is part of PawWell Care Center platform.
+This project is licensed under the MIT License.
 
-## 👥 Support
+## 👥 Authors
 
-For issues or questions, please contact the development team.
+PawWell Care Center Development Team
+
+## 🙏 Acknowledgments
+
+- Create React App for frontend setup
+- Express.js community
+- PostgreSQL team
 
 ---
 
-Built with ❤️ for pet lovers everywhere 🐾
+**PawWell Care Center** - Taking care of your pets, one paw at a time 🐾

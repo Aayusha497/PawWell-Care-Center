@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { loginUser, resendVerificationEmail } from '../services/api';
+import { loginUser } from '../services/api';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,8 +27,6 @@ const Login = () => {
   const { login } = useAuth();
   
   const [showPassword, setShowPassword] = useState(false);
-  const [showResendButton, setShowResendButton] = useState(false);
-  const [resendEmail, setResendEmail] = useState('');
 
   const initialValues = {
     email: location.state?.email || '',
@@ -55,14 +53,7 @@ const Login = () => {
     } catch (error) {
       console.error('Login error:', error);
       
-      // Check if email not verified
-      if (error.message && error.message.includes('verify')) {
-        setShowResendButton(true);
-        setResendEmail(values.email);
-        toast.error('Please verify your email before logging in');
-      } else {
-        toast.error(error.message || 'Invalid email or password');
-      }
+      toast.error(error.message || 'Invalid email or password');
       
       if (error.errors) {
         setErrors(error.errors);
@@ -72,15 +63,7 @@ const Login = () => {
     }
   };
 
-  const handleResendVerification = async () => {
-    try {
-      await resendVerificationEmail(resendEmail);
-      toast.success('Verification email sent! Please check your inbox');
-      setShowResendButton(false);
-    } catch (error) {
-      toast.error('Failed to resend verification email');
-    }
-  };
+
 
   return (
     <div className="auth-page">
@@ -103,7 +86,7 @@ const Login = () => {
 
             {location.state?.registered && (
               <div className="info-message">
-                <p>✓ Registration successful! Please check your email to verify your account before logging in.</p>
+                <p>✓ Registration successful! You can now log in.</p>
               </div>
             )}
 
@@ -156,17 +139,6 @@ const Login = () => {
                       Forgot Password?
                     </Link>
                   </div>
-
-                  {showResendButton && (
-                    <button
-                      type="button"
-                      onClick={handleResendVerification}
-                      className="btn btn-secondary btn-block"
-                      style={{ marginBottom: '10px' }}
-                    >
-                      Resend Verification Email
-                    </button>
-                  )}
 
                   <button
                     type="submit"
