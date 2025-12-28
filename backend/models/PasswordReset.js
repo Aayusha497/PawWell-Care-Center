@@ -22,7 +22,28 @@ const PasswordReset = sequelize.define('PasswordReset', {
     type: DataTypes.UUID,
     defaultValue: uuidv4,
     unique: true,
-    allowNull: false
+    allowNull: true  // Make optional since we're using OTP
+  },
+  // OTP-specific fields
+  otpHash: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'otp_hash'
+  },
+  otpAttempts: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    field: 'otp_attempts'
+  },
+  maxOtpAttempts: {
+    type: DataTypes.INTEGER,
+    defaultValue: 5,
+    field: 'max_otp_attempts'
+  },
+  isVerified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'is_verified'
   },
   isUsed: {
     type: DataTypes.BOOLEAN,
@@ -45,8 +66,8 @@ const PasswordReset = sequelize.define('PasswordReset', {
   hooks: {
     beforeCreate: (reset) => {
       if (!reset.expiresAt) {
-        // Set expiration to 1 hour from now
-        reset.expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+        // Set expiration to 10 minutes from now for OTP
+        reset.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
       }
     }
   }
@@ -59,6 +80,16 @@ PasswordReset.prototype.isExpired = function() {
 
 PasswordReset.prototype.canReset = function() {
   return !this.isUsed && !this.isExpired();
+};
+
+PasswordReset.prototype.canVerifyOtp = function() {
+  return !this.isUsed && !this.isExpired() && !this.isVerified && 
+         this.otpAttempts < this.maxOtpAttempts;
+};
+
+PasswordReset.prototype.incrementAttempts = function() {
+  this.otpAttempts += 1;
+  return this.save();
 };
 
 module.exports = PasswordReset;

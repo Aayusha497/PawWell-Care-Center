@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const authRoutes = require('./auth');
+const adminRoutes = require('./admin');
 
 // Mount auth routes
 router.use('/accounts', authRoutes);
+
+// Mount admin routes
+router.use('/admin', adminRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

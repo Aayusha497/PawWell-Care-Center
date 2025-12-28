@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { ROLES, isAdmin } from '../utils/rbac';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
 import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
+import PermissionDenied from '../components/PermissionDenied';
 import type { LoginData, RegisterData } from '../services/api';
 
-type Page = 'landing' | 'login' | 'signup' | 'user-dashboard' | 'admin-dashboard';
+type Page = 'landing' | 'login' | 'signup' | 'user-dashboard' | 'admin-dashboard' | 'permission-denied';
 
 export default function App() {
   const { user, login, register, logout, loading, isLoggedIn } = useAuth();
@@ -156,26 +158,51 @@ export default function App() {
         />
       )}
       {currentPage === 'user-dashboard' && user && (
-        <UserDashboard
-          user={{
-            id: user.id,
-            email: user.email,
-            role: user.userType === 'admin' ? 'admin' : 'user',
-            fullName: user.fullName
-          }}
-          onLogout={handleLogout}
-        />
+        <>
+          {/* RBAC Check: Only pet owners can access user dashboard */}
+          {!isAdmin(user) ? (
+            <UserDashboard
+              user={{
+                id: user.id,
+                email: user.email,
+                role: user.userType === 'admin' ? 'admin' : 'user',
+                fullName: user.fullName
+              }}
+              onLogout={handleLogout}
+            />
+          ) : (
+            <PermissionDenied 
+              message="Admin users should use the Admin Dashboard."
+              redirectTo="/"
+              redirectLabel="Go to Admin Dashboard"
+            />
+          )}
+        </>
       )}
-      {currentPage === 'admin-dashboard' && user && user.userType === 'admin' && (
-        <AdminDashboard
-          user={{
-            id: user.id,
-            email: user.email,
-            role: 'admin',
-            fullName: user.fullName
-          }}
-          onLogout={handleLogout}
-        />
+      {currentPage === 'admin-dashboard' && user && (
+        <>
+          {/* RBAC Check: Only admins can access admin dashboard */}
+          {isAdmin(user) ? (
+            <AdminDashboard
+              user={{
+                id: user.id,
+                email: user.email,
+                role: 'admin',
+                fullName: user.fullName
+              }}
+              onLogout={handleLogout}
+            />
+          ) : (
+            <PermissionDenied 
+              message="You need administrator privileges to access this page."
+              redirectTo="/"
+              redirectLabel="Go to Dashboard"
+            />
+          )}
+        </>
+      )}
+      {currentPage === 'permission-denied' && (
+        <PermissionDenied />
       )}
     </div>
   );

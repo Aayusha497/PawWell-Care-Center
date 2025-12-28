@@ -52,7 +52,7 @@ router.post(
 
 /**
  * @route   POST /api/accounts/reset-password
- * @desc    Reset user password
+ * @desc    Reset user password (legacy token-based)
  * @access  Public
  */
 router.post(

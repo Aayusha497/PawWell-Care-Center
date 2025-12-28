@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
 const { User } = require('../models');
+const { ROLES, hasRole, isAdmin } = require('../utils/rbac');
 
 /**
  * Middleware to verify JWT token and authenticate user
@@ -117,6 +118,172 @@ const requireUserType = (...allowedTypes) => {
 };
 
 /**
+ * RBAC Middleware - Require specific role(s)
+ * 
+ * Usage:
+ *   router.get('/admin/users', authenticate, requireRole([ROLES.ADMIN]), controller)
+ *   router.post('/pets', authenticate, requireRole(ROLES.PET_OWNER), controller)
+ * 
+ * @param {string|string[]} allowedRoles - Single role or array of allowed roles
+ * @returns {Function} Express middleware function
+ */
+const requireRole = (allowedRoles) => {
+  return (req, res, next) => {
+    // Ensure user is authenticated first
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required.',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    // Check if user has required role
+    if (!hasRole(req.user.userType, allowedRoles)) {
+      const roles = Array.isArray(allowedRoles) ? allowedRoles.join(', ') : allowedRoles;
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Required role(s): ${roles}`,
+        code: 'INSUFFICIENT_PERMISSIONS',
+        requiredRoles: Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles],
+        userRole: req.user.userType
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Require Admin Role - Shorthand middleware
+ */
+const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required.',
+      code: 'AUTH_REQUIRED'
+    });
+  }
+
+  if (!isAdmin(req.user)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Administrator privileges required.',
+      code: 'ADMIN_REQUIRED',
+      userRole: req.user.userType
+    });
+  }
+
+  next();
+};
+
+/**
+ * Resource Ownership Validation Middleware
+ * Ensures user can only access their own resources
+ * Admins bypass ownership checks
+ * 
+ * @param {string} resourceIdParam - Request parameter name for resource ID
+ * @param {string} ownerIdField - Field name in resource that contains owner ID
+ * @param {Function} getResource - Async function to fetch resource
+ * @returns {Function} Express middleware function
+ */
+const checkOwnership = (resourceIdParam, ownerIdField, getResource) => {
+  return async (req, res, next) => {
+    try {
+      // Ensure user is authenticated
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required.',
+          code: 'AUTH_REQUIRED'
+        });
+      }
+
+      // Admins bypass ownership checks
+      if (isAdmin(req.user)) {
+        return next();
+      }
+
+      // Get resource ID from request
+      const resourceId = req.params[resourceIdParam];
+      
+      if (!resourceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Resource ID is required.',
+          code: 'INVALID_REQUEST'
+        });
+      }
+
+      // Fetch the resource
+      const resource = await getResource(resourceId);
+
+      if (!resource) {
+        return res.status(404).json({
+          success: false,
+          message: 'Resource not found.',
+          code: 'RESOURCE_NOT_FOUND'
+        });
+      }
+
+      // Check ownership
+      const ownerId = resource[ownerIdField];
+      if (ownerId !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. You can only access your own resources.',
+          code: 'OWNERSHIP_REQUIRED'
+        });
+      }
+
+      // Attach resource to request for reuse in controller
+      req.resource = resource;
+      next();
+    } catch (error) {
+      console.error('Ownership check error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error validating resource ownership.',
+        error: error.message
+      });
+    }
+  };
+};
+
+/**
+ * Simple Ownership Check - Validates userId parameter matches authenticated user
+ * Admins bypass this check
+ */
+const checkUserIdOwnership = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required.',
+      code: 'AUTH_REQUIRED'
+    });
+  }
+
+  // Admins can access any user's data
+  if (isAdmin(req.user)) {
+    return next();
+  }
+
+  // Check if userId in params/body matches authenticated user
+  const targetUserId = req.params.userId || req.body.userId;
+  
+  if (targetUserId && parseInt(targetUserId) !== req.user.id) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. You can only access your own data.',
+      code: 'OWNERSHIP_REQUIRED'
+    });
+  }
+
+  next();
+};
+
+/**
  * Check if user is staff
  */
 const requireStaff = (req, res, next) => {
@@ -162,6 +329,10 @@ module.exports = {
   authenticate,
   optionalAuthenticate,
   requireUserType,
+  requireRole,
+  requireAdmin,
+  checkOwnership,
+  checkUserIdOwnership,
   requireStaff,
   requireSuperuser
 };

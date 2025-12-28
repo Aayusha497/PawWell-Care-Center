@@ -55,7 +55,7 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - Handle 401 errors and token refresh
+// Response interceptor - Handle 401, 403 errors and token refresh
 api.interceptors.response.use(
   (response) => {
     console.log(`✅ Response received from:`, response.config.url, '- Status:', response.status);
@@ -70,6 +70,33 @@ api.interceptors.response.use(
     });
     
     const originalRequest = error.config;
+
+    // Handle 403 Forbidden - Permission Denied
+    if (error.response?.status === 403) {
+      const errorData = error.response.data;
+      
+      // Check if it's an RBAC permission error
+      if (errorData.code === 'INSUFFICIENT_PERMISSIONS' || 
+          errorData.code === 'ADMIN_REQUIRED' || 
+          errorData.code === 'OWNERSHIP_REQUIRED') {
+        console.error('🚫 Permission Denied:', errorData.message);
+        
+        // You could dispatch an event or show a toast notification here
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('permission-denied', {
+            detail: {
+              message: errorData.message,
+              code: errorData.code,
+              requiredRoles: errorData.requiredRoles,
+              userRole: errorData.userRole
+            }
+          }));
+        }
+      }
+      
+      // Don't retry 403 errors, just reject
+      return Promise.reject(error);
+    }
 
     // If error is 401 and we haven't tried to refresh token yet
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -102,7 +129,7 @@ api.interceptors.response.use(
       try {
         // Attempt to refresh token
         const response = await axios.post(
-          `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/accounts/token/refresh/`,
+          `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/accounts/token/refresh/`,
           { refresh: refreshToken }
         );
 
@@ -172,7 +199,7 @@ export const loginUser = async (credentials) => {
 };
 
 /**
- * Request password reset
+ * Request password reset (legacy)
  * @param {string} email - User's email address
  * @returns {Promise} API response
  */
@@ -246,6 +273,94 @@ export const logoutUser = async () => {
     // Even if logout fails on backend, remove tokens locally
     removeTokens();
     throw error.response?.data || { message: 'Logout failed' };
+  }
+};
+
+// ==================== ADMIN API FUNCTIONS ====================
+
+/**
+ * Get all users (Admin only)
+ * @param {Object} params - Query parameters (page, limit, search, userType)
+ * @returns {Promise} API response with users
+ */
+export const getAllUsers = async (params = {}) => {
+  try {
+    const response = await api.get('/admin/users', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch users' };
+  }
+};
+
+/**
+ * Get user by ID (Admin only)
+ * @param {number} userId - User ID
+ * @returns {Promise} API response with user data
+ */
+export const getUserById = async (userId) => {
+  try {
+    const response = await api.get(`/admin/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch user' };
+  }
+};
+
+/**
+ * Update user (Admin only)
+ * @param {number} userId - User ID
+ * @param {Object} userData - Updated user data
+ * @returns {Promise} API response
+ */
+export const updateUserById = async (userId, userData) => {
+  try {
+    const response = await api.put(`/admin/users/${userId}`, userData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to update user' };
+  }
+};
+
+/**
+ * Delete user (Admin only)
+ * @param {number} userId - User ID
+ * @param {boolean} permanent - Whether to permanently delete
+ * @returns {Promise} API response
+ */
+export const deleteUserById = async (userId, permanent = false) => {
+  try {
+    const response = await api.delete(`/admin/users/${userId}`, {
+      params: { permanent }
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to delete user' };
+  }
+};
+
+/**
+ * Get all bookings (Admin only)
+ * @returns {Promise} API response with all bookings
+ */
+export const getAllBookings = async () => {
+  try {
+    const response = await api.get('/admin/bookings');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch bookings' };
+  }
+};
+
+/**
+ * Get system statistics (Admin only)
+ * @returns {Promise} API response with system stats
+ */
+export const getSystemStats = async () => {
+  try {
+    const response = await api.get('/admin/stats');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch system stats' };
   }
 };
 

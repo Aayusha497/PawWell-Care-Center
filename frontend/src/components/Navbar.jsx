@@ -1,7 +1,7 @@
 /**
  * Navbar Component
  * 
- * Responsive navigation bar with authentication buttons
+ * Responsive navigation bar with authentication and role-based menu items
  */
 
 import React, { useState } from 'react';
@@ -9,6 +9,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { logoutUser } from '../services/api';
 import { toast } from 'react-toastify';
+import { isAdmin } from '../utils/rbac';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -96,18 +97,69 @@ const Navbar = () => {
 
           {isAuthenticated ? (
             <>
+              {/* Dashboard Link - Role-based */}
               <li className="nav-item">
                 <Link
-                  to="/dashboard"
-                  className={`nav-link ${isActive('/dashboard')}`}
+                  to={isAdmin(user) ? "/admin/dashboard" : "/dashboard"}
+                  className={`nav-link ${isActive(isAdmin(user) ? '/admin/dashboard' : '/dashboard')}`}
                   onClick={closeMobileMenu}
                 >
                   Dashboard
                 </Link>
               </li>
+
+              {/* Admin-Only Links */}
+              {isAdmin(user) && (
+                <>
+                  <li className="nav-item">
+                    <Link
+                      to="/admin/users"
+                      className={`nav-link ${isActive('/admin/users')}`}
+                      onClick={closeMobileMenu}
+                    >
+                      Manage Users
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link
+                      to="/admin/bookings"
+                      className={`nav-link ${isActive('/admin/bookings')}`}
+                      onClick={closeMobileMenu}
+                    >
+                      All Bookings
+                    </Link>
+                  </li>
+                </>
+              )}
+
+              {/* User/Pet Owner Links */}
+              {!isAdmin(user) && (
+                <>
+                  <li className="nav-item">
+                    <Link
+                      to="/pets"
+                      className={`nav-link ${isActive('/pets')}`}
+                      onClick={closeMobileMenu}
+                    >
+                      My Pets
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link
+                      to="/bookings"
+                      className={`nav-link ${isActive('/bookings')}`}
+                      onClick={closeMobileMenu}
+                    >
+                      My Bookings
+                    </Link>
+                  </li>
+                </>
+              )}
+
               <li className="nav-item">
                 <span className="nav-link user-greeting">
-                  Hello, {user?.first_name || 'User'}
+                  Hello, {user?.firstName || user?.first_name || 'User'}
+                  {isAdmin(user) && <span className="admin-badge"> (Admin)</span>}
                 </span>
               </li>
               <li className="nav-item">
