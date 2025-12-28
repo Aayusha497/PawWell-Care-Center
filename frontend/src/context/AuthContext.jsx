@@ -6,7 +6,7 @@
  */
 
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { getUserProfile } from '../services/api';
+import { getUserProfile, loginUser, registerUser } from '../services/api';
 import { 
   isAuthenticated, 
   setUser as saveUser, 
@@ -72,15 +72,50 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * Login function
-   * @param {string} accessToken - JWT access token
-   * @param {string} refreshToken - JWT refresh token
-   * @param {Object} userData - User data object
+   * @param {Object} credentials - Email and password
+   * @returns {Promise} API response
    */
-  const login = useCallback((accessToken, refreshToken, userData) => {
-    setTokens(accessToken, refreshToken);
-    setUser(userData);
-    saveUser(userData);
-    setIsAuth(true);
+  const login = useCallback(async (credentials) => {
+    try {
+      setLoading(true);
+      const response = await loginUser(credentials);
+      
+      if (response.success && response.user) {
+        setUser(response.user);
+        saveUser(response.user);
+        setIsAuth(true);
+        return response;
+      } else {
+        throw new Error(response.message || 'Login failed');
+      }
+    } catch (error) {
+      setIsAuth(false);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Register function
+   * @param {Object} userData - User registration data
+   * @returns {Promise} API response
+   */
+  const register = useCallback(async (userData) => {
+    try {
+      setLoading(true);
+      const response = await registerUser(userData);
+      
+      if (response.success) {
+        return response;
+      } else {
+        throw new Error(response.message || 'Registration failed');
+      }
+    } catch (error) {
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   /**
@@ -113,7 +148,9 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     isAuthenticated: isAuth,
+    isLoggedIn: isAuth,
     login,
+    register,
     logout,
     updateUser,
     checkAuth,

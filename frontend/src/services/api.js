@@ -10,12 +10,14 @@ import { getAccessToken, getRefreshToken, setTokens, removeTokens } from '../uti
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 seconds
 });
+
+console.log('🔧 API Service initialized with baseURL:', api.defaults.baseURL);
 
 // Flag to prevent multiple refresh token requests
 let isRefreshing = false;
@@ -36,15 +38,19 @@ const processQueue = (error, token = null) => {
 // Request interceptor - Attach JWT token to headers
 api.interceptors.request.use(
   (config) => {
+    console.log(`🌐 Making ${config.method.toUpperCase()} request to:`, config.baseURL + config.url);
+    
     const token = getAccessToken();
     
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔑 Added Authorization token to request');
     }
     
     return config;
   },
   (error) => {
+    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -52,9 +58,17 @@ api.interceptors.request.use(
 // Response interceptor - Handle 401 errors and token refresh
 api.interceptors.response.use(
   (response) => {
+    console.log(`✅ Response received from:`, response.config.url, '- Status:', response.status);
     return response;
   },
   async (error) => {
+    console.error('❌ Response error:', {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.message,
+      data: error.response?.data
+    });
+    
     const originalRequest = error.config;
 
     // If error is 401 and we haven't tried to refresh token yet
