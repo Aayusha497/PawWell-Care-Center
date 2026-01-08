@@ -3,11 +3,12 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { handleValidationErrors } = require('../middleware/validator');
-const { authLimiter, passwordResetLimiter } = require('../middleware/rateLimiter');
+const { authLimiter, passwordResetLimiter, otpVerificationLimiter } = require('../middleware/rateLimiter');
 const {
   registerValidation,
   loginValidation,
   forgotPasswordValidation,
+  verifyOTPValidation,
   resetPasswordValidation
 } = require('../validators/authValidators');
 
@@ -39,7 +40,7 @@ router.post(
 
 /**
  * @route   POST /api/accounts/forgot-password
- * @desc    Request password reset
+ * @desc    Request password reset with OTP
  * @access  Public
  */
 router.post(
@@ -51,8 +52,21 @@ router.post(
 );
 
 /**
+ * @route   POST /api/accounts/verify-otp
+ * @desc    Verify OTP and get reset token
+ * @access  Public
+ */
+router.post(
+  '/verify-otp',
+  otpVerificationLimiter,
+  verifyOTPValidation,
+  handleValidationErrors,
+  authController.verifyOTP
+);
+
+/**
  * @route   POST /api/accounts/reset-password
- * @desc    Reset user password (legacy token-based)
+ * @desc    Reset user password with verified token
  * @access  Public
  */
 router.post(

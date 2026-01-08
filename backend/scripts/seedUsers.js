@@ -12,7 +12,7 @@ const seedUsers = async () => {
 
     const users = [
       {
-        email: 'admin@pawwell.com',
+        email: 'admin@gmail.com',
         password: 'Admin@123456',
         firstName: 'Admin',
         lastName: 'User',
@@ -68,7 +68,7 @@ const seedUsers = async () => {
     console.log('\n📋 Login Credentials Summary:');
     console.log('═══════════════════════════════════════════════════════════');
     console.log('\n🔑 ADMIN ACCOUNT:');
-    console.log('   Email:    admin@pawwell.com');
+    console.log('   Email:    admin@gmail.com');
     console.log('   Password: Admin@123456');
     console.log('   Role:     admin');
     console.log('\n👤 TEST USER 1:');

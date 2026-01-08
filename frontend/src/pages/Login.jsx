@@ -11,6 +11,7 @@ import * as Yup from 'yup';
 import { loginUser } from '../services/api';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+import SuccessModal from '../app/components/ui/SuccessModal';
 
 // Validation schema
 const LoginSchema = Yup.object().shape({
@@ -27,6 +28,7 @@ const Login = () => {
   const { login } = useAuth();
   
   const [showPassword, setShowPassword] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const initialValues = {
     email: location.state?.email || '',
@@ -44,11 +46,8 @@ const Login = () => {
         // Store tokens and user data
         login(response.access, response.refresh, response.user);
         
-        toast.success('Login successful!');
-        
-        // Redirect to where they were trying to go, or dashboard
-        const from = location.state?.from?.pathname || '/dashboard';
-        navigate(from, { replace: true });
+        // Show success modal
+        setShowSuccessModal(true);
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -101,13 +100,18 @@ const Login = () => {
                     <label htmlFor="email">Email / Username</label>
                     <div className="input-with-icon">
                       <span className="input-icon">✉️</span>
-                      <Field
-                        type="email"
-                        name="email"
-                        id="email"
-                        placeholder="Enter your email or username"
-                        className="auth-input"
-                      />
+                      <Field name="email">
+                        {({ field, meta }) => (
+                          <input
+                            {...field}
+                            type="email"
+                            id="email"
+                            placeholder="Enter your email or username"
+                            className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
+                            autoComplete="email"
+                          />
+                        )}
+                      </Field>
                     </div>
                     <ErrorMessage name="email" component="div" className="error-message" />
                   </div>
@@ -116,17 +120,23 @@ const Login = () => {
                     <label htmlFor="password">Password</label>
                     <div className="input-with-icon">
                       <span className="input-icon">🔒</span>
-                      <Field
-                        type={showPassword ? 'text' : 'password'}
-                        name="password"
-                        id="password"
-                        placeholder="Enter your password"
-                        className="auth-input"
-                      />
+                      <Field name="password">
+                        {({ field, meta }) => (
+                          <input
+                            {...field}
+                            type={showPassword ? 'text' : 'password'}
+                            id="password"
+                            placeholder="Enter your password"
+                            className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
+                            autoComplete="current-password"
+                          />
+                        )}
+                      </Field>
                       <button
                         type="button"
                         className="toggle-password-icon"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
                         {showPassword ? '👁️' : '👁️'}
                       </button>

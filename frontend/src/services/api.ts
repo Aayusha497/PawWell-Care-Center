@@ -292,15 +292,77 @@ export const forgotPassword = async (email: string): Promise<any> => {
 };
 
 /**
- * Reset password with token
+ * Request password reset OTP (new OTP-based flow)
+ * @param {string} email - User's email address
+ * @returns {Promise<any>} API response
+ */
+export const requestPasswordResetOTP = async (email: string): Promise<any> => {
+  try {
+    console.log('🌐 API: Requesting password reset OTP...');
+    const response = await api.post('/accounts/forgot-password', { email });
+    console.log('🌐 API: Password reset OTP response received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('🌐 API: Password reset OTP error:', (error as AxiosError).response?.data || error);
+    throw (error as AxiosError).response?.data || { message: 'Failed to send OTP' };
+  }
+};
+
+/**
+ * Verify OTP and get reset token
+ * @param {string} email - User's email address
+ * @param {string} otp - 6-digit OTP code
+ * @returns {Promise<any>} API response with reset token
+ */
+export const verifyOTP = async (email: string, otp: string): Promise<any> => {
+  try {
+    console.log('🌐 API: Verifying OTP...');
+    const response = await api.post('/accounts/verify-otp', { email, otp });
+    console.log('🌐 API: OTP verification response received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('🌐 API: OTP verification error:', (error as AxiosError).response?.data || error);
+    throw (error as AxiosError).response?.data || { message: 'OTP verification failed' };
+  }
+};
+
+/**
+ * Reset password with token (legacy - two parameters)
  * @param {string} token - Password reset token
  * @param {string} newPassword - New password
  * @returns {Promise<any>} API response
  */
-export const resetPassword = async (token: string, newPassword: string): Promise<any> => {
+export const resetPasswordLegacy = async (token: string, newPassword: string): Promise<any> => {
+  try {
+    console.log('🌐 API: Sending reset password request (legacy)...');
+    const response = await api.post('/accounts/reset-password', { token, newPassword });
+    console.log('🌐 API: Reset password response received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('🌐 API: Reset password error:', (error as AxiosError).response?.data || error);
+    throw (error as AxiosError).response?.data || { message: 'Failed to reset password' };
+  }
+};
+
+/**
+ * Reset password with data object (new OTP-based flow)
+ * @param {Object} data - Contains resetToken, newPassword, and confirmPassword
+ * @returns {Promise<any>} API response
+ */
+export const resetPassword = async (data: { resetToken: string; newPassword: string; confirmPassword: string }): Promise<any> => {
   try {
     console.log('🌐 API: Sending reset password request...');
-    const response = await api.post('/accounts/reset-password', { token, newPassword });
+    console.log('🔍 Reset token received:', data.resetToken);
+    console.log('🔍 Reset token type:', typeof data.resetToken);
+    console.log('🔍 Reset token length:', data.resetToken?.length);
+    // Backend expects 'token' not 'resetToken'
+    const payload = {
+      token: data.resetToken,
+      newPassword: data.newPassword,
+      confirmPassword: data.confirmPassword
+    };
+    console.log('🔍 Payload being sent:', { ...payload, newPassword: '***', confirmPassword: '***' });
+    const response = await api.post('/accounts/reset-password', payload);
     console.log('🌐 API: Reset password response received:', response.data);
     return response.data;
   } catch (error) {

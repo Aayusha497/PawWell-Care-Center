@@ -1,11 +1,11 @@
 /**
  * Reset Password Page
  * 
- * Allows users to reset their password using a token from email
+ * Allows users to reset their password using a verified token from OTP flow
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { resetPassword } from '../services/api';
@@ -27,6 +27,8 @@ const ResetPasswordSchema = Yup.object().shape({
 const ResetPassword = () => {
   const { token } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromOTP = location.state?.fromOTP || false;
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -74,8 +76,8 @@ const ResetPassword = () => {
     try {
       const response = await resetPassword({
         token: token,
-        new_password: values.new_password,
-        confirm_password: values.confirm_password,
+        newPassword: values.new_password,
+        confirmPassword: values.confirm_password,
       });
 
       if (response.success) {
@@ -84,6 +86,12 @@ const ResetPassword = () => {
       }
     } catch (error) {
       console.error('Reset password error:', error);
+      
+      if (error.code === 'OTP_NOT_VERIFIED') {
+        toast.error('OTP verification required. Redirecting...');
+        setTimeout(() => navigate('/forgot-password'), 2000);
+        return;
+      }
       
       if (error.message && (error.message.includes('expired') || error.message.includes('used'))) {
         setTokenValid(false);
@@ -105,13 +113,13 @@ const ResetPassword = () => {
         <div className="reset-password-container">
           <div className="reset-password-card error">
             <div className="icon-error">✕</div>
-            <h2>Invalid or Expired Link</h2>
+            <h2>Invalid or Expired Token</h2>
             <p>
-              This password reset link is invalid or has expired. Password reset links are only valid for 1 hour.
+              This password reset token is invalid or has expired. {fromOTP ? 'OTP verification tokens' : 'Password reset links'} are only valid for {fromOTP ? '10 minutes' : '1 hour'}.
             </p>
             <div className="action-buttons">
               <Link to="/forgot-password" className="btn btn-primary">
-                Request New Link
+                Request New {fromOTP ? 'OTP' : 'Link'}
               </Link>
               <Link to="/login" className="btn btn-secondary">
                 Back to Login
@@ -165,6 +173,7 @@ const ResetPassword = () => {
                       name="new_password"
                       id="new_password"
                       placeholder="Enter your new password"
+                      autoComplete="new-password"
                       onChange={(e) => {
                         setFieldValue('new_password', e.target.value);
                         handlePasswordChange(e.target.value);
@@ -205,6 +214,7 @@ const ResetPassword = () => {
                       name="confirm_password"
                       id="confirm_password"
                       placeholder="Confirm your new password"
+                      autoComplete="new-password"
                     />
                     <button
                       type="button"

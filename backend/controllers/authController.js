@@ -1,10 +1,12 @@
 const { User, PasswordReset } = require('../models');
 const {
   sendPasswordResetEmail,
-  sendPasswordChangedEmail
+  sendPasswordChangedEmail,
+  sendOTPEmail
 } = require('../utils/emailService');
 const { generateTokens, verifyToken, getTokenExpiry } = require('../utils/jwtHelper');
 const config = require('../config/config');
+const bcrypt = require('bcrypt');
 
 /**
  * @route   POST /api/accounts/register
@@ -153,7 +155,7 @@ const login = async (req, res) => {
 
 /**
  * @route   POST /api/accounts/forgot-password
- * @desc    Request password reset
+ * @desc    Request password reset with OTP
  * @access  Public
  */
 const forgotPassword = async (req, res) => {
@@ -166,20 +168,39 @@ const forgotPassword = async (req, res) => {
     });
 
     if (user) {
-      // Create password reset token
-      const reset = await PasswordReset.create({
-        userId: user.id
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Hash the OTP before storing
+      const otpHash = await bcrypt.hash(otp, 10);
+
+      // Delete any existing password reset requests for this user
+      await PasswordReset.destroy({
+        where: { userId: user.id }
       });
 
-      // Send password reset email
-      await sendPasswordResetEmail(user, reset.token);
+      // Create password reset record with OTP
+      const reset = await PasswordReset.create({
+        userId: user.id,
+        otpHash: otpHash,
+        otpAttempts: 0,
+        maxOtpAttempts: 5,
+        isVerified: false,
+        isUsed: false,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+      });
+
+      // Send OTP email
+      await sendOTPEmail(user, otp);
+
+      console.log(`✉️ OTP sent to ${user.email} (Reset ID: ${reset.id})`);
     }
 
     // Always return success message (security best practice)
     return res.status(200).json({
       success: true,
-      message: 'If an account exists with this email, you will receive a password reset link shortly.',
-      instructions: 'Please check your email inbox and spam folder.'
+      message: 'If an account exists with this email, you will receive an OTP shortly.',
+      instructions: 'Please check your email inbox and spam folder for the 6-digit verification code.'
     });
   } catch (error) {
     console.error('Forgot password error:', error);
@@ -192,8 +213,109 @@ const forgotPassword = async (req, res) => {
 };
 
 /**
+ * @route   POST /api/accounts/verify-otp
+ * @desc    Verify OTP and get reset token
+ * @access  Public
+ */
+const verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Find user
+    const user = await User.findOne({
+      where: { email: email.toLowerCase().trim() }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid verification request.'
+      });
+    }
+
+    // Find password reset record
+    const reset = await PasswordReset.findOne({
+      where: { 
+        userId: user.id,
+        isUsed: false
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    if (!reset) {
+      return res.status(404).json({
+        success: false,
+        message: 'No password reset request found. Please request a new OTP.'
+      });
+    }
+
+    // Check if expired
+    if (reset.isExpired()) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP has expired. Please request a new one.',
+        code: 'OTP_EXPIRED'
+      });
+    }
+
+    // Check if already verified
+    if (reset.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP has already been verified. Please proceed to reset your password.',
+        resetToken: reset.token
+      });
+    }
+
+    // Check if max attempts reached
+    if (reset.otpAttempts >= reset.maxOtpAttempts) {
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum OTP verification attempts exceeded. Please request a new OTP.',
+        code: 'MAX_ATTEMPTS_EXCEEDED'
+      });
+    }
+
+    // Verify OTP
+    const isOTPValid = await bcrypt.compare(otp, reset.otpHash);
+
+    if (!isOTPValid) {
+      // Increment attempts
+      await reset.incrementAttempts();
+      const remainingAttempts = reset.maxOtpAttempts - reset.otpAttempts - 1;
+
+      return res.status(400).json({
+        success: false,
+        message: `Invalid OTP. You have ${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.`,
+        remainingAttempts: remainingAttempts,
+        code: 'INVALID_OTP'
+      });
+    }
+
+    // OTP is valid - mark as verified and generate token for password reset
+    reset.isVerified = true;
+    await reset.save();
+
+    console.log(`✅ OTP verified for user ${user.email} (Reset ID: ${reset.id})`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP verified successfully! You can now reset your password.',
+      resetToken: reset.token
+    });
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'An error occurred while verifying OTP.',
+      error: error.message
+    });
+  }
+};
+
+/**
  * @route   POST /api/accounts/reset-password
- * @desc    Reset user password
+ * @desc    Reset user password with verified token
  * @access  Public
  */
 const resetPassword = async (req, res) => {
@@ -232,6 +354,15 @@ const resetPassword = async (req, res) => {
       });
     }
 
+    // Check if OTP was verified (for OTP flow)
+    if (reset.otpHash && !reset.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please verify your OTP before resetting password.',
+        code: 'OTP_NOT_VERIFIED'
+      });
+    }
+
     // Update password
     reset.user.password = newPassword;
     await reset.user.save();
@@ -242,6 +373,8 @@ const resetPassword = async (req, res) => {
 
     // Send confirmation email
     await sendPasswordChangedEmail(reset.user);
+
+    console.log(`🔒 Password reset successful for user ${reset.user.email}`);
 
     return res.status(200).json({
       success: true,
@@ -367,6 +500,7 @@ module.exports = {
   register,
   login,
   forgotPassword,
+  verifyOTP,
   resetPassword,
   getProfile,
   refreshToken,

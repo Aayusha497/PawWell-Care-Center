@@ -4,18 +4,25 @@ import { ROLES, isAdmin } from '../utils/rbac';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
+import ForgotPasswordPage from './components/ForgotPasswordPage';
+import VerifyOTPPage from './components/VerifyOTPPage';
+import ResetPasswordPage from './components/ResetPasswordPage';
 import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import PermissionDenied from '../components/PermissionDenied';
+import SuccessModal from './components/ui/SuccessModal';
 import type { LoginData, RegisterData } from '../services/api';
 
-type Page = 'landing' | 'login' | 'signup' | 'user-dashboard' | 'admin-dashboard' | 'permission-denied';
+type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'verify-otp' | 'reset-password' | 'user-dashboard' | 'admin-dashboard' | 'permission-denied';
 
 export default function App() {
   const { user, login, register, logout, loading, isLoggedIn } = useAuth();
   const [currentPage, setCurrentPage] = useState<Page>('landing');
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
 
   // Redirect authenticated users to appropriate dashboard
   useEffect(() => {
@@ -27,6 +34,18 @@ export default function App() {
       }
     }
   }, [isLoggedIn, user]);
+
+  // Show loading spinner while checking authentication (after all hooks)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FFF8E8] flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#EAB308]"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -85,9 +104,8 @@ export default function App() {
       console.log('Attempting registration with:', { ...userData, password: '***' });
       const response = await register(userData);
       
-      // Show success message and redirect to login
-      alert('Registration successful! Please login with your credentials.');
-      setCurrentPage('login');
+      // Show success modal
+      setShowSuccessModal(true);
       setError(null);
       setFieldErrors({});
     } catch (err: any) {
@@ -133,8 +151,25 @@ export default function App() {
     );
   }
 
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    // Defer navigation to avoid React warning about setState during render
+    setTimeout(() => {
+      setCurrentPage('login');
+    }, 0);
+  };
+
   return (
     <div className="min-h-screen">
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Success"
+        message="Registration successful! Redirecting to login page..."
+        actionText="OK"
+        autoRedirectSeconds={3}
+      />
+      
       {currentPage === 'landing' && (
         <LandingPage
           onNavigateToLogin={() => setCurrentPage('login')}
@@ -146,6 +181,7 @@ export default function App() {
           onLogin={handleLogin}
           onNavigateToSignup={() => setCurrentPage('signup')}
           onNavigateToHome={() => setCurrentPage('landing')}
+          onNavigateToForgotPassword={() => setCurrentPage('forgot-password')}
           error={error}
         />
       )}
@@ -155,6 +191,34 @@ export default function App() {
           onNavigateToLogin={() => setCurrentPage('login')}
           error={error}
           fieldErrors={fieldErrors}
+        />
+      )}
+      {currentPage === 'forgot-password' && (
+        <ForgotPasswordPage
+          onNavigateToLogin={() => setCurrentPage('login')}
+          onNavigateToVerifyOTP={(email) => {
+            setForgotPasswordEmail(email);
+            setCurrentPage('verify-otp');
+          }}
+        />
+      )}
+      {currentPage === 'verify-otp' && (
+        <VerifyOTPPage
+          email={forgotPasswordEmail}
+          onNavigateToLogin={() => setCurrentPage('login')}
+          onNavigateToResetPassword={(token) => {
+            setResetToken(token);
+            setCurrentPage('reset-password');
+          }}
+        />
+      )}
+      {currentPage === 'reset-password' && (
+        <ResetPasswordPage
+          resetToken={resetToken}
+          onNavigateToLogin={() => setCurrentPage('login')}
+          onPasswordResetSuccess={() => {
+            setShowSuccessModal(true);
+          }}
         />
       )}
       {currentPage === 'user-dashboard' && user && (

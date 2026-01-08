@@ -429,6 +429,16 @@ body {
   box-shadow: 0 0 0 3px rgba(250, 152, 132, 0.1);
 }
 
+.auth-input.input-error {
+  border-color: #d32f2f;
+  background-color: #ffebee;
+}
+
+.auth-input.input-error:focus {
+  border-color: #d32f2f;
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
+}
+
 .toggle-password-icon {
   position: absolute;
   right: 15px;

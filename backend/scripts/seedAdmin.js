@@ -13,7 +13,7 @@ const seedAdmin = async () => {
 
     // Default admin credentials
     const adminData = {
-      email: 'admin@pawwell.com',
+      email: 'admin@gmail.com',
       password: 'Admin@123456',  // Change this in production!
       firstName: 'Admin',
       lastName: 'User',

@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model activity_logs {
+  activity_id   Int      @id @default(autoincrement())
+  user_id       Int
+  activity_type String   @db.VarChar(100)
+  timestamp     DateTime @db.Timestamptz(6)
+  detail        String?
+  ip_address    String?  @db.VarChar(45)
+  user_agent    String?
+  users         users    @relation(fields: [user_id], references: [id], onDelete: NoAction)
+}
+
+model bookings {
+  booking_id        Int                  @id @default(autoincrement())
+  user_id           Int
+  pet_id            Int
+  service_id        Int?
+  service_type      String               @db.VarChar(100)
+  price             Decimal              @db.Decimal(10, 2)
+  date              DateTime             @db.Timestamptz(6)
+  status            enum_bookings_status @default(pending)
+  payment_method    String?              @db.VarChar(50)
+  confirmation_code String?              @unique @db.VarChar(50)
+  created_at        DateTime             @db.Timestamptz(6)
+  updated_at        DateTime             @db.Timestamptz(6)
+  pets              pets                 @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+  services          services?            @relation(fields: [service_id], references: [service_id])
+  users             users                @relation(fields: [user_id], references: [id], onDelete: NoAction)
+  payments          payments?
+}
+
+model emergency_requests {
+  emergency_id   Int                            @id @default(autoincrement())
+  user_id        Int
+  pet_id         Int
+  emergency_type String                         @db.VarChar(100)
+  contact_info   String                         @db.VarChar(255)
+  date           DateTime                       @db.Timestamptz(6)
+  status         enum_emergency_requests_status @default(pending)
+  created_at     DateTime                       @db.Timestamptz(6)
+  updated_at     DateTime                       @db.Timestamptz(6)
+  pets           pets                           @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+  users          users                          @relation(fields: [user_id], references: [id], onDelete: NoAction)
+}
+
+model password_resets {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  token      String    @unique @db.Uuid
+  is_used    Boolean?  @default(false)
+  expires_at DateTime  @db.Timestamptz(6)
+  created_at DateTime? @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model payments {
+  payment_id          Int       @id @default(autoincrement())
+  booking_id          Int       @unique
+  amount              Decimal   @db.Decimal(10, 2)
+  payment_method      String    @db.VarChar(50)
+  transaction_details String?
+  payment_date        DateTime  @db.Timestamptz(6)
+  created_at          DateTime  @db.Timestamptz(6)
+  updated_at          DateTime  @db.Timestamptz(6)
+  bookings            bookings  @relation(fields: [booking_id], references: [booking_id], onDelete: Cascade)
+  receipts            receipts?
+}
+
+model pets {
+  pet_id             Int                  @id @default(autoincrement())
+  user_id            Int
+  name               String               @db.VarChar(100)
+  species            String               @db.VarChar(50)
+  breed              String?              @db.VarChar(100)
+  age                Int?
+  weight             Decimal?             @db.Decimal(5, 2)
+  medical_history    String?
+  photo              String?              @db.VarChar(255)
+  created_at         DateTime             @db.Timestamptz(6)
+  updated_at         DateTime             @db.Timestamptz(6)
+  bookings           bookings[]
+  emergency_requests emergency_requests[]
+  users              users                @relation(fields: [user_id], references: [id], onDelete: NoAction)
+  wellness_timeline  wellness_timeline[]
+}
+
+model public_forum {
+  forum_id   Int      @id @default(autoincrement())
+  user_id    Int
+  title      String   @db.VarChar(255)
+  content    String
+  post_date  DateTime @db.Timestamptz(6)
+  likes      Int      @default(0)
+  created_at DateTime @db.Timestamptz(6)
+  updated_at DateTime @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: NoAction)
+}
+
+model receipts {
+  receipt_id   Int      @id @default(autoincrement())
+  payment_id   Int      @unique
+  receipt_date DateTime @db.Timestamptz(6)
+  details      String?
+  created_at   DateTime @db.Timestamptz(6)
+  updated_at   DateTime @db.Timestamptz(6)
+  payments     payments @relation(fields: [payment_id], references: [payment_id], onDelete: Cascade)
+}
+
+model services {
+  service_id  Int        @id @default(autoincrement())
+  name        String     @db.VarChar(100)
+  description String?
+  base_price  Decimal    @db.Decimal(10, 2)
+  created_at  DateTime   @db.Timestamptz(6)
+  updated_at  DateTime   @db.Timestamptz(6)
+  bookings    bookings[]
+}
+
+/// This model has constraints using non-default deferring rules and requires additional setup for migrations. Visit https://pris.ly/d/constraint-deferring for more info.
+model token_blacklist_blacklistedtoken {
+  id                               BigInt                           @id @default(autoincrement())
+  blacklisted_at                   DateTime                         @db.Timestamptz(6)
+  token_id                         BigInt                           @unique
+  token_blacklist_outstandingtoken token_blacklist_outstandingtoken @relation(fields: [token_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "token_blacklist_blacklistedtoken_token_id_3cc7fe56_fk")
+}
+
+model token_blacklist_outstandingtoken {
+  id                               BigInt                            @id @default(autoincrement())
+  token                            String
+  created_at                       DateTime?                         @db.Timestamptz(6)
+  expires_at                       DateTime                          @db.Timestamptz(6)
+  user_id                          BigInt?
+  jti                              String                            @unique(map: "token_blacklist_outstandingtoken_jti_hex_d9bdf6f7_uniq") @db.VarChar(255)
+  token_blacklist_blacklistedtoken token_blacklist_blacklistedtoken?
+
+  @@index([jti], map: "token_blacklist_outstandingtoken_jti_hex_d9bdf6f7_like")
+  @@index([user_id], map: "token_blacklist_outstandingtoken_user_id_83bc629a")
+}
+
+model users {
+  id                 Int                  @id @default(autoincrement())
+  email              String               @unique @db.VarChar(255)
+  password           String               @db.VarChar(255)
+  first_name         String               @db.VarChar(150)
+  last_name          String               @db.VarChar(150)
+  phone_number       String?              @db.VarChar(20)
+  user_type          enum_users_user_type @default(pet_owner)
+  profile_picture    String?              @db.VarChar(255)
+  email_verified     Boolean?             @default(false)
+  is_active          Boolean?             @default(true)
+  is_staff           Boolean?             @default(false)
+  is_superuser       Boolean?             @default(false)
+  date_joined        DateTime?            @db.Timestamptz(6)
+  last_login         DateTime?            @db.Timestamptz(6)
+  activity_logs      activity_logs[]
+  bookings           bookings[]
+  emergency_requests emergency_requests[]
+  password_resets    password_resets[]
+  pets               pets[]
+  public_forum       public_forum[]
+}
+
+model wellness_timeline {
+  timeline_id Int      @id @default(autoincrement())
+  pet_id      Int
+  date        DateTime @db.Timestamptz(6)
+  type        String   @db.VarChar(50)
+  title       String   @db.VarChar(200)
+  description String?
+  created_at  DateTime @db.Timestamptz(6)
+  updated_at  DateTime @db.Timestamptz(6)
+  pets        pets     @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+}
+
+enum enum_bookings_status {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+enum enum_emergency_requests_status {
+  pending
+  in_progress
+  resolved
+  cancelled
+}
+
+enum enum_users_user_type {
+  pet_owner
+  admin
+  staff
+}

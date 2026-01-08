@@ -11,6 +11,7 @@ import * as Yup from 'yup';
 import { registerUser } from '../services/api';
 import { toast } from 'react-toastify';
 import { getPasswordStrength } from '../utils/auth';
+import SuccessModal from '../app/components/ui/SuccessModal';
 
 // Validation schema
 const SignupSchema = Yup.object().shape({
@@ -49,6 +50,8 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: 'None', color: '#ccc' });
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const initialValues = {
     first_name: '',
@@ -89,14 +92,9 @@ const Signup = () => {
       console.log('✅ Registration response:', response);
 
       if (response.success) {
-        console.log('🎉 Registration successful! Redirecting to login...');
-        toast.success(response.message || 'Registration successful! You can now login.');
-        
-        // Delay redirect slightly to show toast
-        setTimeout(() => {
-          console.log('🔄 Navigating to login page...');
-          navigate('/login', { state: { email: userData.email, registered: true } });
-        }, 500);
+        console.log('🎉 Registration successful! Showing success modal...');
+        setRegisteredEmail(userData.email);
+        setShowSuccessModal(true);
       } else {
         console.warn('⚠️ Registration response success=false:', response);
         toast.error(response.message || 'Registration failed. Please try again.');
@@ -122,8 +120,22 @@ const Signup = () => {
     }
   };
 
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    navigate('/login', { state: { email: registeredEmail, registered: true } });
+  };
+
   return (
     <div className="auth-page">
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Success"
+        message="Registration successful!"
+        actionText="OK"
+        autoRedirectSeconds={3}
+      />
+      
       <div className="signup-container">
         {/* Left Side - Image and Text */}
         <div className="signup-left">
@@ -165,13 +177,13 @@ const Signup = () => {
                   <label htmlFor="first_name">Full Name</label>
                   <div className="name-fields">
                     <Field name="first_name">
-                      {({ field }) => (
+                      {({ field, meta }) => (
                         <input
                           {...field}
                           type="text"
                           id="first_name"
                           placeholder="John Doe"
-                          className="auth-input"
+                          className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
                           onChange={(e) => {
                             const fullName = e.target.value;
                             setFieldValue('first_name', fullName);
@@ -200,25 +212,33 @@ const Signup = () => {
 
                 <div className="form-group">
                   <label htmlFor="email">Email Address</label>
-                  <Field
-                    type="email"
-                    name="email"
-                    id="email"
-                    placeholder="john.doe@example.com"
-                    className="auth-input"
-                  />
+                  <Field name="email">
+                    {({ field, meta }) => (
+                      <input
+                        {...field}
+                        type="email"
+                        id="email"
+                        placeholder="john.doe@example.com"
+                        className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
+                      />
+                    )}
+                  </Field>
                   <ErrorMessage name="email" component="div" className="error-message" />
                 </div>
 
                 <div className="form-group">
                   <label htmlFor="phone_number">Phone Number</label>
-                  <Field
-                    type="tel"
-                    name="phone_number"
-                    id="phone_number"
-                    placeholder="(123) 456-7890"
-                    className="auth-input"
-                  />
+                  <Field name="phone_number">
+                    {({ field, meta }) => (
+                      <input
+                        {...field}
+                        type="tel"
+                        id="phone_number"
+                        placeholder="(123) 456-7890"
+                        className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
+                      />
+                    )}
+                  </Field>
                   <ErrorMessage name="phone_number" component="div" className="error-message" />
                 </div>
 
@@ -279,13 +299,17 @@ const Signup = () => {
                 <div className="form-group">
                   <label htmlFor="confirm_password">Confirm Password</label>
                   <div className="input-with-icon">
-                    <Field
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      name="confirm_password"
-                      id="confirm_password"
-                      placeholder="••••••••"
-                      className="auth-input"
-                    />
+                    <Field name="confirm_password">
+                      {({ field, meta }) => (
+                        <input
+                          {...field}
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          id="confirm_password"
+                          placeholder="••••••••"
+                          className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
+                        />
+                      )}
+                    </Field>
                     <button
                       type="button"
                       className="toggle-password-icon"

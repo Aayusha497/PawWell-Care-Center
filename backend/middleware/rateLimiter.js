@@ -40,8 +40,22 @@ const passwordResetLimiter = rateLimit({
   }
 });
 
+/**
+ * Rate limiter for OTP verification
+ * More lenient than password reset to allow for typos
+ */
+const otpVerificationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per 15 minutes
+  message: {
+    success: false,
+    message: 'Too many OTP verification attempts, please try again later.'
+  }
+});
+
 module.exports = {
   generalLimiter,
   authLimiter,
-  passwordResetLimiter
+  passwordResetLimiter,
+  otpVerificationLimiter
 };

@@ -32,7 +32,7 @@ export default function UserDashboard({ user, onLogout }: UserDashboardProps) {
           <span className="text-xl">PawWell</span>
         </div>
         <div className="flex items-center gap-4">
-          <span>Welcome, {user.fullName}!</span>
+          <span className="font-medium">Welcome, {user.fullName}!</span>
           <Button onClick={onLogout} variant="ghost" className="flex items-center gap-2">
             <LogOut size={18} />
             Logout

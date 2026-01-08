@@ -116,6 +116,8 @@ User.prototype.getShortName = function() {
 User.prototype.toJSON = function() {
   const values = { ...this.get() };
   delete values.password;
+  // Add fullName as a virtual field for easier frontend access
+  values.fullName = this.getFullName();
   return values;
 };
 

@@ -44,17 +44,30 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar">
-      <div className="nav-container">
-        <Link to="/" className="nav-logo" onClick={closeMobileMenu}>
-          🐾 PawWell Care Center
-        </Link>
+    <>
+      {/* Mobile menu backdrop */}
+      {isMobileMenuOpen && (
+        <div className="nav-backdrop" onClick={closeMobileMenu} />
+      )}
+      
+      <nav className="navbar">
+        <div className="nav-container">
+          <Link to="/" className="nav-logo" onClick={closeMobileMenu}>
+            🐾 PawWell Care Center
+          </Link>
 
-        <div className="menu-icon" onClick={toggleMobileMenu}>
-          {isMobileMenuOpen ? '✕' : '☰'}
-        </div>
+          <button 
+            className="menu-icon" 
+            onClick={toggleMobileMenu}
+            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMobileMenuOpen}
+          >
+            <span className="menu-icon-line"></span>
+            <span className="menu-icon-line"></span>
+            <span className="menu-icon-line"></span>
+          </button>
 
-        <ul className={isMobileMenuOpen ? 'nav-menu active' : 'nav-menu'}>
+          <ul className={isMobileMenuOpen ? 'nav-menu active' : 'nav-menu'}>
           <li className="nav-item">
             <Link
               to="/"
@@ -193,6 +206,7 @@ const Navbar = () => {
         </ul>
       </div>
     </nav>
+    </>
   );
 };
 

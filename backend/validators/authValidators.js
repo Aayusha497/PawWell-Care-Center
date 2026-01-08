@@ -89,6 +89,25 @@ const forgotPasswordValidation = [
 ];
 
 /**
+ * Validation rules for OTP verification
+ */
+const verifyOTPValidation = [
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Enter a valid email address.')
+    .normalizeEmail(),
+  
+  body('otp')
+    .notEmpty()
+    .withMessage('OTP is required.')
+    .isLength({ min: 6, max: 6 })
+    .withMessage('OTP must be 6 digits.')
+    .isNumeric()
+    .withMessage('OTP must contain only numbers.')
+];
+
+/**
  * Validation rules for reset password
  */
 const resetPasswordValidation = [
@@ -119,5 +138,6 @@ module.exports = {
   registerValidation,
   loginValidation,
   forgotPasswordValidation,
+  verifyOTPValidation,
   resetPasswordValidation
 };

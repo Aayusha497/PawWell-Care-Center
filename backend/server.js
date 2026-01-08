@@ -108,7 +108,7 @@ const startServer = async () => {
     // Sync database models (create tables if they don't exist)
     console.log('');
     console.log('🔄 Syncing database models...');
-    await sequelize.sync({ alter: false });
+    await sequelize.sync({ alter: false });  // Using alter:false for production safety
     console.log('✅ Database models synced successfully');
     console.log('📋 Tables: users, password_resets');
 

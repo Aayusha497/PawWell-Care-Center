@@ -164,7 +164,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
           <span className="text-xl">PawWell Admin</span>
         </div>
         <div className="flex items-center gap-4">
-          <span>Admin: {user.fullName}</span>
+          <span className="font-medium">Welcome, {user.fullName}!</span>
           <Button onClick={onLogout} variant="ghost" className="flex items-center gap-2">
             <LogOut size={18} />
             Logout
