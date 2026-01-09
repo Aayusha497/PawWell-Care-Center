@@ -8,18 +8,22 @@ const { ROLES, hasRole, isAdmin } = require('../utils/rbac');
  */
 const authenticate = async (req, res, next) => {
   try {
-    // Get token from header
-    const authHeader = req.headers.authorization;
+    // Get token from cookie (preferred) or Authorization header (fallback)
+    let token = req.cookies.accessToken;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
+    }
+    
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: 'No token provided. Authentication required.'
       });
     }
-
-    // Extract token
-    const token = authHeader.split(' ')[1];
 
     // Verify token
     const decoded = jwt.verify(token, config.jwt.secret);
@@ -73,13 +77,20 @@ const authenticate = async (req, res, next) => {
  */
 const optionalAuthenticate = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    // Get token from cookie (preferred) or Authorization header (fallback)
+    let token = req.cookies.accessToken;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
+    }
+    
+    if (!token) {
       return next();
     }
 
-    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, config.jwt.secret);
     const user = await User.findByPk(decoded.userId);
 

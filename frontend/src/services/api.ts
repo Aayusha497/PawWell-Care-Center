@@ -396,4 +396,86 @@ export const refreshAccessToken = async (refreshToken: string): Promise<any> => 
   }
 };
 
+/**
+ * Pet Profile API Functions
+ */
+
+/**
+ * Create a new pet profile
+ * @param {FormData} formData - Pet data with photo
+ * @returns {Promise<any>} API response with created pet
+ */
+export const createPet = async (formData: FormData): Promise<any> => {
+  try {
+    const response = await api.post('/pets', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to create pet profile' };
+  }
+};
+
+/**
+ * Get all pets for the logged-in user
+ * @returns {Promise<any>} API response with pets array
+ */
+export const getUserPets = async (): Promise<any> => {
+  try {
+    const response = await api.get('/pets');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch pets' };
+  }
+};
+
+/**
+ * Get a specific pet by ID
+ * @param {number} petId - Pet ID
+ * @returns {Promise<any>} API response with pet data
+ */
+export const getPetById = async (petId: number): Promise<any> => {
+  try {
+    const response = await api.get(`/pets/${petId}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch pet' };
+  }
+};
+
+/**
+ * Update a pet profile
+ * @param {number} petId - Pet ID
+ * @param {FormData} formData - Updated pet data with optional photo
+ * @returns {Promise<any>} API response with updated pet
+ */
+export const updatePet = async (petId: number, formData: FormData): Promise<any> => {
+  try {
+    const response = await api.put(`/pets/${petId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to update pet profile' };
+  }
+};
+
+/**
+ * Delete a pet profile
+ * @param {number} petId - Pet ID
+ * @returns {Promise<any>} API response
+ */
+export const deletePet = async (petId: number): Promise<any> => {
+  try {
+    const response = await api.delete(`/pets/${petId}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to delete pet profile' };
+  }
+};
+
 export default api;

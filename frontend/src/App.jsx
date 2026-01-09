@@ -23,6 +23,10 @@ import ForgotPassword from './pages/ForgotPassword';
 import VerifyOTP from './pages/VerifyOTP';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import PetList from './pages/PetList';
+import AddPet from './pages/AddPet';
+import EditPet from './pages/EditPet';
+import ViewPet from './pages/ViewPet';
 
 function App() {
   return (
@@ -47,6 +51,40 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Pet Profile Routes */}
+              <Route 
+                path="/pets" 
+                element={
+                  <ProtectedRoute requiredRole="pet_owner">
+                    <PetList />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/pets/add" 
+                element={
+                  <ProtectedRoute requiredRole="pet_owner">
+                    <AddPet />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/pets/:petId" 
+                element={
+                  <ProtectedRoute requiredRole="pet_owner">
+                    <ViewPet />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/pets/:petId/edit" 
+                element={
+                  <ProtectedRoute requiredRole="pet_owner">
+                    <EditPet />
                   </ProtectedRoute>
                 } 
               />

@@ -27,21 +27,35 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING(100),
       allowNull: false
     },
-    species: {
-      type: DataTypes.STRING(50),
-      allowNull: false
-    },
     breed: {
       type: DataTypes.STRING(100),
-      allowNull: true
+      allowNull: false
     },
     age: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     weight: {
       type: DataTypes.DECIMAL(5, 2),
+      allowNull: false
+    },
+    height: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: false,
+      field: 'height'
+    },
+    sex: {
+      type: DataTypes.STRING(10),
+      allowNull: false
+    },
+    allergies: {
+      type: DataTypes.TEXT,
       allowNull: true
+    },
+    triggering_point: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'triggering_point'
     },
     medical_history: {
       type: DataTypes.TEXT,
@@ -49,15 +63,22 @@ module.exports = (sequelize) => {
       field: 'medical_history'
     },
     photo: {
-      type: DataTypes.STRING(255),
-      allowNull: true
+      type: DataTypes.STRING(500),
+      allowNull: false
+    },
+    deleted_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'deleted_at'
     }
   }, {
     tableName: 'pets',
     timestamps: true,
     underscored: true,
     createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    updatedAt: 'updated_at',
+    paranoid: true,
+    deletedAt: 'deleted_at'
   });
 
   Pet.associate = (models) => {

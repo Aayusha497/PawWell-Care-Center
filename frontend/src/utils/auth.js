@@ -1,46 +1,47 @@
 /**
  * Authentication Utilities
  * 
- * Helper functions for managing JWT tokens and authentication state
+ * Helper functions for managing user data and authentication state.
+ * JWT tokens are now stored in httpOnly cookies (managed by the browser).
  */
 
-// Token storage keys
-const ACCESS_TOKEN_KEY = 'pawwell_access_token';
-const REFRESH_TOKEN_KEY = 'pawwell_refresh_token';
+// Storage keys (only for user data, not tokens)
 const USER_KEY = 'pawwell_user';
 
 /**
- * Get access token from localStorage
- * @returns {string|null} Access token or null
+ * NOTE: Token functions kept for backward compatibility but deprecated.
+ * Tokens are now in httpOnly cookies and managed by the browser.
+ */
+
+/**
+ * @deprecated Tokens are now in httpOnly cookies
  */
 export const getAccessToken = () => {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  console.warn('getAccessToken() is deprecated. Tokens are in httpOnly cookies.');
+  return null;
 };
 
 /**
- * Get refresh token from localStorage
- * @returns {string|null} Refresh token or null
+ * @deprecated Tokens are now in httpOnly cookies
  */
 export const getRefreshToken = () => {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  console.warn('getRefreshToken() is deprecated. Tokens are in httpOnly cookies.');
+  return null;
 };
 
 /**
- * Set both access and refresh tokens in localStorage
- * @param {string} accessToken - JWT access token
- * @param {string} refreshToken - JWT refresh token
+ * @deprecated Tokens are now in httpOnly cookies
  */
 export const setTokens = (accessToken, refreshToken) => {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  console.warn('setTokens() is deprecated. Tokens are in httpOnly cookies.');
+  // Do nothing - tokens are managed by the server
 };
 
 /**
- * Remove all tokens from localStorage
+ * Remove user data from localStorage
+ * Note: Tokens are in httpOnly cookies and cleared by the server
  */
 export const removeTokens = () => {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
 };
 
@@ -71,16 +72,18 @@ export const setUser = (user) => {
 
 /**
  * Check if user is authenticated
- * @returns {boolean} True if tokens exist, false otherwise
+ * Since tokens are in httpOnly cookies, we check if user data exists
+ * The server will validate the actual authentication via cookies
+ * @returns {boolean} True if user data exists, false otherwise
  */
 export const isAuthenticated = () => {
-  const accessToken = getAccessToken();
-  const refreshToken = getRefreshToken();
-  return !!(accessToken && refreshToken);
+  const user = getUser();
+  return !!user;
 };
 
 /**
  * Decode JWT token (without verification)
+ * @deprecated Tokens are in httpOnly cookies and not accessible to JavaScript
  * @param {string} token - JWT token
  * @returns {Object|null} Decoded token payload or null
  */
@@ -103,6 +106,7 @@ export const decodeToken = (token) => {
 
 /**
  * Check if token is expired
+ * @deprecated Tokens are in httpOnly cookies and validated by the server
  * @param {string} token - JWT token
  * @returns {boolean} True if expired, false otherwise
  */
@@ -118,6 +122,7 @@ export const isTokenExpired = (token) => {
 
 /**
  * Get token expiration time
+ * @deprecated Tokens are in httpOnly cookies and not accessible to JavaScript
  * @param {string} token - JWT token
  * @returns {Date|null} Expiration date or null
  */

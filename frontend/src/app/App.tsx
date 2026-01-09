@@ -11,6 +11,7 @@ import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import PermissionDenied from '../components/PermissionDenied';
 import SuccessModal from './components/ui/SuccessModal';
+import { Toaster } from './components/ui/sonner';
 import type { LoginData, RegisterData } from '../services/api';
 
 type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'verify-otp' | 'reset-password' | 'user-dashboard' | 'admin-dashboard' | 'permission-denied';
@@ -161,6 +162,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      <Toaster position="top-right" richColors />
       <SuccessModal
         isOpen={showSuccessModal}
         onClose={handleSuccessModalClose}

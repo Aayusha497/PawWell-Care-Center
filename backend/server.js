@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const config = require('./config/config');
 const { sequelize, testConnection } = require('./config/database');
@@ -15,6 +16,9 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors(config.cors));
+
+// Cookie parser middleware
+app.use(cookieParser());
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));

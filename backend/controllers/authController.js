@@ -127,9 +127,24 @@ const login = async (req, res) => {
     // Generate JWT tokens
     const { accessToken, refreshToken } = generateTokens(user.id);
 
-    // Calculate token expiry times
+    // Calculate token expiry times in milliseconds
     const accessExpiry = getTokenExpiry(config.jwt.accessTokenExpire);
     const refreshExpiry = getTokenExpiry(config.jwt.refreshTokenExpire);
+
+    // Set httpOnly cookies
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: config.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'strict',
+      maxAge: accessExpiry
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: config.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: refreshExpiry
+    });
 
     // Prepare user data
     const userData = user.toJSON();
@@ -137,11 +152,7 @@ const login = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Login successful!',
-      access: accessToken,
-      refresh: refreshToken,
-      user: userData,
-      accessTokenExpiry: accessExpiry,
-      refreshTokenExpiry: refreshExpiry
+      user: userData
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -420,7 +431,8 @@ const getProfile = async (req, res) => {
  */
 const refreshToken = async (req, res) => {
   try {
-    const { refresh } = req.body;
+    // Get refresh token from cookie
+    const refresh = req.cookies.refreshToken;
 
     if (!refresh) {
       return res.status(400).json({
@@ -453,10 +465,17 @@ const refreshToken = async (req, res) => {
     const { accessToken } = generateTokens(user.id);
     const accessExpiry = getTokenExpiry(config.jwt.accessTokenExpire);
 
+    // Set new access token cookie
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: config.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: accessExpiry
+    });
+
     return res.status(200).json({
       success: true,
-      access: accessToken,
-      accessTokenExpiry: accessExpiry
+      message: 'Token refreshed successfully'
     });
   } catch (error) {
     console.error('Refresh token error:', error);
@@ -470,13 +489,23 @@ const refreshToken = async (req, res) => {
 
 /**
  * @route   POST /api/accounts/logout
- * @desc    Logout user (blacklist token - future implementation)
+ * @desc    Logout user and clear cookies
  * @access  Private
  */
 const logout = async (req, res) => {
   try {
-    // In a production app, you'd blacklist the refresh token here
-    // For now, just return success as token expiration handles security
+    // Clear httpOnly cookies
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: config.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: config.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
 
     return res.status(200).json({
       success: true,

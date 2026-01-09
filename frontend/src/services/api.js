@@ -15,6 +15,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 seconds
+  withCredentials: true, // Send cookies with requests
 });
 
 console.log('🔧 API Service initialized with baseURL:', api.defaults.baseURL);
@@ -35,18 +36,11 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Request interceptor - Attach JWT token to headers
+// Request interceptor - No need to attach token, cookies are sent automatically
 api.interceptors.request.use(
   (config) => {
     console.log(`🌐 Making ${config.method.toUpperCase()} request to:`, config.baseURL + config.url);
-    
-    const token = getAccessToken();
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 Added Authorization token to request');
-    }
-    
+    console.log('🍪 Cookies will be sent automatically');
     return config;
   },
   (error) => {
@@ -105,8 +99,7 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then(token => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+          .then(() => {
             return api(originalRequest);
           })
           .catch(err => {
@@ -117,34 +110,18 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = getRefreshToken();
-
-      if (!refreshToken) {
-        // No refresh token, redirect to login
-        removeTokens();
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
-
       try {
-        // Attempt to refresh token
+        // Attempt to refresh token - cookies sent automatically
         const response = await axios.post(
           `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/accounts/token/refresh/`,
-          { refresh: refreshToken }
+          {},
+          { withCredentials: true }
         );
 
-        const { access } = response.data;
-        
-        // Update tokens
-        setTokens(access, refreshToken);
-        
-        // Update authorization header
-        api.defaults.headers.common['Authorization'] = `Bearer ${access}`;
-        originalRequest.headers.Authorization = `Bearer ${access}`;
-
-        processQueue(null, access);
-        
-        return api(originalRequest);
+        if (response.data.success) {
+          processQueue(null, null);
+          return api(originalRequest);
+        }
       } catch (refreshError) {
         processQueue(refreshError, null);
         removeTokens();
@@ -181,17 +158,14 @@ export const registerUser = async (userData) => {
 /**
  * Login user
  * @param {Object} credentials - Email and password
- * @returns {Promise} API response with tokens and user data
+ * @returns {Promise} API response with user data (tokens in httpOnly cookies)
  */
 export const loginUser = async (credentials) => {
   try {
     const response = await api.post('/accounts/login', credentials);
     
-    if (response.data.success) {
-      // Store tokens
-      setTokens(response.data.access, response.data.refresh);
-    }
-    
+    // Tokens are now in httpOnly cookies, no need to store them
+    // Just return the response
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Login failed' };
@@ -313,7 +287,7 @@ export const logoutUser = async () => {
   }
 };
 
-// ==================== ADMIN API FUNCTIONS ====================
+//  ADMIN API FUNCTIONS
 
 /**
  * Get all users (Admin only)
@@ -398,6 +372,88 @@ export const getSystemStats = async () => {
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Failed to fetch system stats' };
+  }
+};
+
+// ============================================
+// PET PROFILE API ENDPOINTS
+// ============================================
+
+/**
+ * Create a new pet profile
+ * @param {FormData} formData - Pet data with photo
+ * @returns {Promise} API response with created pet
+ */
+export const createPet = async (formData) => {
+  try {
+    const response = await api.post('/pets', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to create pet profile' };
+  }
+};
+
+/**
+ * Get all pets for the logged-in user
+ * @returns {Promise} API response with pets array
+ */
+export const getUserPets = async () => {
+  try {
+    const response = await api.get('/pets');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch pets' };
+  }
+};
+
+/**
+ * Get a specific pet by ID
+ * @param {number} petId - Pet ID
+ * @returns {Promise} API response with pet data
+ */
+export const getPetById = async (petId) => {
+  try {
+    const response = await api.get(`/pets/${petId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch pet' };
+  }
+};
+
+/**
+ * Update a pet profile
+ * @param {number} petId - Pet ID
+ * @param {FormData} formData - Updated pet data with optional photo
+ * @returns {Promise} API response with updated pet
+ */
+export const updatePet = async (petId, formData) => {
+  try {
+    const response = await api.put(`/pets/${petId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to update pet profile' };
+  }
+};
+
+/**
+ * Delete a pet profile
+ * @param {number} petId - Pet ID
+ * @returns {Promise} API response
+ */
+export const deletePet = async (petId) => {
+  try {
+    const response = await api.delete(`/pets/${petId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to delete pet profile' };
   }
 };
 
