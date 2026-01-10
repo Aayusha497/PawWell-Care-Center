@@ -50,9 +50,47 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
-    date: {
+    start_date: {
       type: DataTypes.DATE,
-      allowNull: false
+      allowNull: false,
+      field: 'start_date'
+    },
+    end_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'end_date'
+    },
+    number_of_days: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      field: 'number_of_days'
+    },
+    requires_pickup: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'requires_pickup'
+    },
+    pickup_address: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      field: 'pickup_address'
+    },
+    pickup_time: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'pickup_time'
+    },
+    dropoff_address: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      field: 'dropoff_address'
+    },
+    dropoff_time: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'dropoff_time'
     },
     status: {
       type: DataTypes.ENUM('pending', 'confirmed', 'completed', 'cancelled'),

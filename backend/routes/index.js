@@ -3,6 +3,7 @@ const router = express.Router();
 const authRoutes = require('./auth');
 const adminRoutes = require('./admin');
 const petRoutes = require('./pets');
+const bookingRoutes = require('./bookings');
 
 // Mount auth routes
 router.use('/accounts', authRoutes);
@@ -12,6 +13,9 @@ router.use('/admin', adminRoutes);
 
 // Mount pet routes
 router.use('/pets', petRoutes);
+
+// Mount booking routes
+router.use('/bookings', bookingRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

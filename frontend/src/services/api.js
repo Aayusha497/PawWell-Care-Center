@@ -457,4 +457,157 @@ export const deletePet = async (petId) => {
   }
 };
 
+// ==================== BOOKING ENDPOINTS ====================
+
+/**
+ * Check availability for a booking
+ * @param {object} data - Availability check data
+ * @returns {Promise} Availability response
+ */
+export const checkAvailability = async (data) => {
+  try {
+    const response = await api.post('/bookings/check-availability', data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to check availability' };
+  }
+};
+
+/**
+ * Create a new booking
+ * @param {object} bookingData - Booking data
+ * @returns {Promise} Created booking
+ */
+export const createBooking = async (bookingData) => {
+  try {
+    const response = await api.post('/bookings', bookingData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to create booking' };
+  }
+};
+
+/**
+ * Get all bookings for the logged-in user
+ * @param {object} filters - Optional filters
+ * @returns {Promise} List of bookings
+ */
+export const getUserBookings = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.upcoming) params.append('upcoming', 'true');
+    if (filters.past) params.append('past', 'true');
+    
+    const response = await api.get(`/bookings${params.toString() ? '?' + params.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch bookings' };
+  }
+};
+
+/**
+ * Get a single booking by ID
+ * @param {number} bookingId - Booking ID
+ * @returns {Promise} Booking details
+ */
+export const getBookingById = async (bookingId) => {
+  try {
+    const response = await api.get(`/bookings/${bookingId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch booking' };
+  }
+};
+
+/**
+ * Update/Reschedule a booking
+ * @param {number} bookingId - Booking ID
+ * @param {object} updateData - Updated booking data
+ * @returns {Promise} Updated booking
+ */
+export const updateBooking = async (bookingId, updateData) => {
+  try {
+    const response = await api.put(`/bookings/${bookingId}`, updateData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to update booking' };
+  }
+};
+
+/**
+ * Cancel a booking
+ * @param {number} bookingId - Booking ID
+ * @returns {Promise} Cancelled booking
+ */
+export const cancelBooking = async (bookingId) => {
+  try {
+    const response = await api.delete(`/bookings/${bookingId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to cancel booking' };
+  }
+};
+
+/**
+ * Admin: Get all pending bookings
+ * @returns {Promise} List of pending bookings
+ */
+export const getPendingBookings = async () => {
+  try {
+    const response = await api.get('/bookings/admin/pending');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch pending bookings' };
+  }
+};
+
+/**
+ * Admin: Approve a booking
+ * @param {number} bookingId - Booking ID
+ * @returns {Promise} Approved booking
+ */
+export const approveBooking = async (bookingId) => {
+  try {
+    const response = await api.put(`/bookings/admin/${bookingId}/approve`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to approve booking' };
+  }
+};
+
+/**
+ * Admin: Reject a booking
+ * @param {number} bookingId - Booking ID
+ * @returns {Promise} Rejected booking
+ */
+export const rejectBooking = async (bookingId) => {
+  try {
+    const response = await api.put(`/bookings/admin/${bookingId}/reject`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to reject booking' };
+  }
+};
+
+/**
+ * Admin: Get all bookings with filters
+ * @param {object} filters - Optional filters
+ * @returns {Promise} List of all bookings
+ */
+export const getAllBookingsAdmin = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.service_type) params.append('service_type', filters.service_type);
+    if (filters.date_from) params.append('date_from', filters.date_from);
+    if (filters.date_to) params.append('date_to', filters.date_to);
+    
+    const response = await api.get(`/bookings/admin/all${params.toString() ? '?' + params.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch bookings' };
+  }
+};
+
 export default api;

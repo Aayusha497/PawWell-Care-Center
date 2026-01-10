@@ -1,0 +1,502 @@
+/* ==================== DASHBOARD PAGE STYLES ==================== */
+
+.user-dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  min-height: calc(100vh - 140px);
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  margin-bottom: 32px;
+}
+
+.dashboard-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Dashboard Grid Layout */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* Dashboard Card Styles */
+.dashboard-card {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.dashboard-card:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.dashboard-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dashboard-card-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.dashboard-card-action {
+  display: flex;
+  gap: 12px;
+}
+
+.dashboard-card-content {
+  padding: 24px;
+}
+
+.dashboard-card-content.no-padding {
+  padding: 0;
+}
+
+/* Welcome Card */
+.welcome-card {
+  background: linear-gradient(135deg, #FFE4A3 0%, #FFF9F5 100%);
+  box-shadow: var(--shadow);
+}
+
+.welcome-content {
+  padding: 16px 0;
+}
+
+.welcome-heading {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--pawwell-coral);
+  margin: 0 0 12px 0;
+}
+
+.welcome-description {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 28px 0;
+  line-height: 1.5;
+}
+
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Pet Cards Grid */
+.pets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.pet-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 2px solid transparent;
+}
+
+.pet-card:hover {
+  border-color: var(--pawwell-coral);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.pet-card-image-wrapper {
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+  background: var(--background-light);
+}
+
+.pet-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: var(--transition);
+}
+
+.pet-card:hover .pet-card-image {
+  transform: scale(1.05);
+}
+
+.pet-card-info {
+  padding: 12px;
+  text-align: center;
+}
+
+.pet-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.pet-card-breed {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Booking Cards */
+.bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.booking-card {
+  background: var(--background-light);
+  border-radius: 12px;
+  padding: 16px;
+  transition: var(--transition);
+}
+
+.booking-card:hover {
+  background: #FFF3E8;
+}
+
+.booking-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.booking-card-info {
+  flex: 1;
+}
+
+.booking-service-type {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.booking-pet-name {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 2px 0;
+}
+
+.booking-date {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.booking-status {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.booking-status.status-pending {
+  background: var(--pawwell-yellow);
+  color: #8B6914;
+}
+
+.booking-status.status-confirmed {
+  background: var(--pawwell-teal);
+  color: #1B5E4E;
+}
+
+.booking-status.status-completed {
+  background: var(--pawwell-green);
+  color: #3D5C1E;
+}
+
+.booking-status.status-cancelled {
+  background: #FFE0E0;
+  color: #C33;
+}
+
+/* Activity Cards */
+.activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activity-card {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.activity-card:last-child {
+  border-bottom: none;
+}
+
+.activity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activity-detail {
+  font-size: 15px;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.activity-time {
+  font-size: 13px;
+  color: var(--text-light);
+  margin: 0;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--pawwell-coral);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+  text-align: center;
+}
+
+.empty-message {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Error State */
+.error-state {
+  padding: 20px;
+  text-align: center;
+}
+
+.error-message {
+  font-size: 14px;
+  color: #C33;
+  margin: 0;
+}
+
+/* Button Styles */
+.btn-primary-dashboard {
+  background: var(--pawwell-coral);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.btn-primary-dashboard:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.btn-secondary-dashboard {
+  background: white;
+  color: var(--pawwell-coral);
+  border: 2px solid var(--pawwell-coral);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.btn-secondary-dashboard:hover {
+  background: #FFF9F5;
+  transform: translateY(-1px);
+}
+
+.btn-primary-small {
+  background: var(--pawwell-coral);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-primary-small:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--pawwell-coral);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.btn-link:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .user-dashboard {
+    padding: 32px 16px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pets-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .user-dashboard {
+    padding: 24px 16px;
+  }
+
+  .dashboard-title {
+    font-size: 28px;
+  }
+
+  .welcome-heading {
+    font-size: 24px;
+  }
+
+  .pets-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dashboard-card-header {
+    padding: 20px 20px 12px 20px;
+  }
+
+  .dashboard-card-content {
+    padding: 20px;
+  }
+
+  .booking-card-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .booking-status {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-dashboard {
+    padding: 20px 12px;
+  }
+
+  .dashboard-title {
+    font-size: 24px;
+  }
+
+  .welcome-heading {
+    font-size: 20px;
+  }
+
+  .dashboard-card-title {
+    font-size: 18px;
+  }
+
+  .pets-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .dashboard-card-header {
+    padding: 16px;
+  }
+
+  .dashboard-card-content {
+    padding: 16px;
+  }
+}
+
+/* Dashboard Layout */
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.dashboard-main {
+  flex: 1;
+  background: var(--background-light);
+}
