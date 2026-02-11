@@ -27,6 +27,7 @@ import PetList from './pages/PetList';
 import AddPet from './pages/AddPet';
 import EditPet from './pages/EditPet';
 import ViewPet from './pages/ViewPet';
+import ActivityLog from './pages/ActivityLog';
 
 function App() {
   return (
@@ -89,6 +90,16 @@ function App() {
                 } 
               />
               
+              {/* Activity Log Route */}
+              <Route 
+                path="/activity-log" 
+                element={
+                  <ProtectedRoute>
+                    <ActivityLog />
+                  </ProtectedRoute>
+                } 
+              />
+              
               {/* Catch all - redirect to home */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
@@ -99,15 +110,27 @@ function App() {
           {/* Toast notifications */}
           <ToastContainer
             position="top-right"
-            autoClose={5000}
+            autoClose={3000}
             hideProgressBar={false}
-            newestOnTop={false}
+            newestOnTop={true}
             closeOnClick
             rtl={false}
             pauseOnFocusLoss
             draggable
             pauseOnHover
             theme="light"
+            toastStyle={{
+              backgroundColor: '#ffffff',
+              color: '#1f2937',
+              borderRadius: '0.75rem',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              padding: '1rem',
+              fontSize: '0.95rem',
+              border: '1px solid #e5e7eb'
+            }}
+            progressStyle={{
+              background: '#EAB308'
+            }}
           />
         </div>
       </Router>

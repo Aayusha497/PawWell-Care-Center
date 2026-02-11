@@ -12,6 +12,7 @@ const EmergencyRequest = require('./EmergencyRequest')(sequelize);
 const WellnessTimeline = require('./WellnessTimeline')(sequelize);
 const PublicForum = require('./PublicForum')(sequelize);
 const ActivityLog = require('./ActivityLog')(sequelize);
+const Notification = require('./Notification')(sequelize);
 
 // Store all models
 const models = {
@@ -25,7 +26,8 @@ const models = {
   EmergencyRequest,
   WellnessTimeline,
   PublicForum,
-  ActivityLog
+  ActivityLog,
+  Notification
 };
 
 // Set up associations

@@ -10,12 +10,18 @@ datasource db {
 model activity_logs {
   activity_id   Int      @id @default(autoincrement())
   user_id       Int
+  pet_id        Int?
   activity_type String   @db.VarChar(100)
   timestamp     DateTime @db.Timestamptz(6)
   detail        String?
+  photo         String?  @db.VarChar(500)
+  notify_owner  Boolean  @default(false)
   ip_address    String?  @db.VarChar(45)
   user_agent    String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
   users         users    @relation(fields: [user_id], references: [id], onDelete: NoAction)
+  pets          pets?    @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
 }
 
 model bookings {
@@ -102,6 +108,7 @@ model pets {
   allergies          String?
   triggering_point   String?
   deleted_at         DateTime?            @db.Timestamp(6)
+  activity_logs      activity_logs[]
   bookings           bookings[]
   emergency_requests emergency_requests[]
   users              users                @relation(fields: [user_id], references: [id], onDelete: NoAction)
@@ -182,6 +189,7 @@ model users {
   password_resets    password_resets[]
   pets               pets[]
   public_forum       public_forum[]
+  notifications      notifications[]
 }
 
 model wellness_timeline {
@@ -194,6 +202,16 @@ model wellness_timeline {
   created_at  DateTime @db.Timestamptz(6)
   updated_at  DateTime @db.Timestamptz(6)
   pets        pets     @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+}
+
+model notifications {
+  notification_id Int      @id @default(autoincrement())
+  user_id         Int
+  activity_id     Int?
+  message         String
+  is_read         Boolean  @default(false)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  users           users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 enum enum_bookings_status {

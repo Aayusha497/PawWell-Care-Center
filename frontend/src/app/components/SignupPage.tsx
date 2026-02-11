@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { Alert, AlertDescription } from './ui/alert';
+import { toast } from 'sonner';
 
 interface SignupPageProps {
   onSignup: (fullName: string, email: string, password: string, confirmPassword: string) => void;
@@ -25,11 +26,17 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match', {
+        description: 'Please make sure both password fields match.',
+        duration: 3000,
+      });
       return;
     }
     if (!agreeToTerms) {
-      alert('Please agree to terms and conditions');
+      toast.error('Terms and Conditions Required', {
+        description: 'Please agree to the terms and conditions to continue.',
+        duration: 3000,
+      });
       return;
     }
     onSignup(fullName, email, password, confirmPassword);

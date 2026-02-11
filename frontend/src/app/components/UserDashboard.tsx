@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { getUserPets, getUserBookings } from '../../services/api';
+import { getUserPets, getUserBookings, getActivityLogs } from '../../services/api';
 import { LogOut, MessageCircle, X } from 'lucide-react';
 import ChatbotWidget from './ChatbotWidget';
 import PetProfileForm from './PetProfileForm';
@@ -8,6 +8,7 @@ import PetListingPage from './PetListingPage';
 import BookingPage from './BookingPage';
 import ManageBookings from './ManageBookings';
 import BookingHistory from './BookingHistory';
+import ActivityLogViewer from './ActivityLogViewer';
 
 interface User {
   id: string;
@@ -42,33 +43,34 @@ interface Booking {
 
 interface Activity {
   activity_id: number;
-  detail: string;
+  pet_id?: number;
+  activity_type?: string;
+  detail?: string;
+  description?: string;
   timestamp: string;
+  pet?: { name: string };
 }
 
 export default function UserDashboard({ user, onLogout, onNavigate }: UserDashboardProps) {
   const [chatbotOpen, setChatbotOpen] = useState(false);
   const [pets, setPets] = useState<Pet[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [activities] = useState<Activity[]>([
-    {
-      activity_id: 1,
-      detail: 'Kikyo had a 35-minutes of walk.',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-    }
-  ]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [showPetForm, setShowPetForm] = useState(false);
   const [showPetListing, setShowPetListing] = useState(false);
   const [showBookingPage, setShowBookingPage] = useState(false);
   const [showManageBookings, setShowManageBookings] = useState(false);
   const [showBookingHistory, setShowBookingHistory] = useState(false);
+  const [showActivityLog, setShowActivityLog] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     fetchPets();
     fetchBookings();
+    fetchActivities();
   }, []);
 
   const fetchPets = async () => {
@@ -105,6 +107,27 @@ export default function UserDashboard({ user, onLogout, onNavigate }: UserDashbo
       console.error('Error fetching bookings:', error);
     } finally {
       setBookingsLoading(false);
+    }
+  };
+
+  const fetchActivities = async () => {
+    try {
+      setActivitiesLoading(true);
+      const response = await getActivityLogs();
+      const activitiesData = response.data || response.activities || response || [];
+      
+      if (Array.isArray(activitiesData)) {
+        // Sort activities by timestamp (newest first) and take top 5
+        const sortedActivities = activitiesData
+          .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 5);
+        setActivities(sortedActivities);
+      }
+    } catch (error: any) {
+      console.error('Error fetching activities:', error);
+      setActivities([]);
+    } finally {
+      setActivitiesLoading(false);
     }
   };
 
@@ -157,12 +180,15 @@ const handleAddPet = () => {
     setShowBookingPage(false);
     setShowManageBookings(false);
     setShowBookingHistory(false);
+    setShowActivityLog(false);
     setSelectedPetId(undefined);
     fetchPets(); // Refresh pets list
     fetchBookings(); // Refresh bookings list
+    fetchActivities(); // Refresh activity logs
   };
 
   const handleBookService = () => {
+    setShowActivityLog(false);
     setShowBookingPage(true);
   };
 
@@ -174,8 +200,22 @@ const handleAddPet = () => {
     setShowBookingHistory(true);
   };
 
+  const handleViewActivityLog = () => {
+    setShowBookingPage(false);
+    setShowManageBookings(false);
+    setShowBookingHistory(false);
+    setShowActivityLog(true);
+  };
+
   if (showBookingPage) {
-    return <BookingPage onBack={handleBackToDashboard} />;
+    return (
+      <BookingPage
+        onBack={handleBackToDashboard}
+        onLogout={onLogout}
+        userFullName={user.fullName}
+        onActivityLog={handleViewActivityLog}
+      />
+    );
   }
 
   if (showManageBookings) {
@@ -184,6 +224,17 @@ const handleAddPet = () => {
 
   if (showBookingHistory) {
     return <BookingHistory onBack={handleBackToDashboard} />;
+  }
+
+  if (showActivityLog) {
+    return (
+      <ActivityLogViewer
+        onBack={handleBackToDashboard}
+        onLogout={onLogout}
+        userFullName={user.fullName}
+        onBook={handleBookService}
+      />
+    );
   }
 
   if (showPetListing) {
@@ -217,7 +268,12 @@ const handleAddPet = () => {
               >
                 Booking
               </button>
-              <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Activity Log</button>
+              <button
+                onClick={handleViewActivityLog}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                Activity Log
+              </button>
               <button className="px-4 py-2 hover:bg-gray-100 rounded-full">About</button>
               <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Contact</button>
             </div>
@@ -232,6 +288,15 @@ const handleAddPet = () => {
               <span>📞</span> Emergency
             </button>
           </div>
+
+          <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={onLogout}
+            className="w-full px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
         </div>
       </nav>
 
@@ -390,22 +455,40 @@ const handleAddPet = () => {
           <div className="bg-white rounded-2xl p-6 shadow-md">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Recent Activity</h3>
-              <button className="text-[#FA9884] text-sm font-semibold hover:underline">
+              <button 
+                onClick={handleViewActivityLog}
+                className="text-[#FA9884] text-sm font-semibold hover:underline"
+              >
                 View Daily log
               </button>
             </div>
-            {activities.length === 0 ? (
+            {activitiesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FA9884]"></div>
+              </div>
+            ) : activities.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">No recent activity.</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {activities.map((activity) => (
-                  <div key={activity.activity_id} className="border-b pb-3 last:border-b-0">
-                    <p className="text-gray-800">{activity.detail}</p>
-                    <p className="text-sm text-gray-500 mt-1">{getTimeAgo(activity.timestamp)}</p>
-                  </div>
-                ))}
+                {activities.map((activity) => {
+                  const petName = activity.pet?.name || 'Pet';
+                  const activityType = activity.activity_type 
+                    ? activity.activity_type.charAt(0).toUpperCase() + activity.activity_type.slice(1)
+                    : 'Activity';
+                  const description = activity.description || activity.detail || '';
+                  
+                  return (
+                    <div key={activity.activity_id} className="border-b pb-3 last:border-b-0">
+                      <p className="text-gray-800 font-medium">
+                        {petName} · <span className="text-[#FA9884]">{activityType}</span>
+                      </p>
+                      {description && <p className="text-sm text-gray-700 mt-1">{description}</p>}
+                      <p className="text-sm text-gray-500 mt-1">{getTimeAgo(activity.timestamp)}</p>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

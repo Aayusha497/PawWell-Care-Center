@@ -98,6 +98,10 @@ module.exports = (sequelize) => {
       foreignKey: 'pet_id',
       as: 'bookings'
     });
+    Pet.hasMany(models.ActivityLog, {
+      foreignKey: 'pet_id',
+      as: 'activityLogs'
+    });
   };
 
   return Pet;

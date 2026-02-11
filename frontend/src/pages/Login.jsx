@@ -11,7 +11,6 @@ import * as Yup from 'yup';
 import { loginUser } from '../services/api';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
-import SuccessModal from '../app/components/ui/SuccessModal';
 
 // Validation schema
 const LoginSchema = Yup.object().shape({
@@ -28,7 +27,6 @@ const Login = () => {
   const { login } = useAuth();
   
   const [showPassword, setShowPassword] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const initialValues = {
     email: location.state?.email || '',
@@ -46,8 +44,11 @@ const Login = () => {
         // Store tokens and user data
         login(response.access, response.refresh, response.user);
         
-        // Show success modal
-        setShowSuccessModal(true);
+        // Show success toast and navigate to dashboard
+        toast.success('Login successful! Welcome back.');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
       }
     } catch (error) {
       console.error('Login error:', error);

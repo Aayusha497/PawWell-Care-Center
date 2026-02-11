@@ -22,9 +22,8 @@ const {
   deletePet,
 } = require('../controllers/petController');
 
-// All routes require authentication and pet_owner role
+// All routes require authentication
 router.use(authenticate);
-router.use(requireRole('pet_owner'));
 
 /**
  * @route   POST /api/pets
@@ -33,6 +32,7 @@ router.use(requireRole('pet_owner'));
  */
 router.post(
   '/',
+  requireRole('pet_owner'),
   upload.single('photo'),
   createPetValidation,
   handleValidationErrors,
@@ -41,15 +41,15 @@ router.post(
 
 /**
  * @route   GET /api/pets
- * @desc    Get all pets for the logged-in user
- * @access  Private (pet_owner)
+ * @desc    Get all pets for the logged-in user (or all pets for admin/staff)
+ * @access  Private (authenticated)
  */
 router.get('/', getUserPets);
 
 /**
  * @route   GET /api/pets/:petId
  * @desc    Get a specific pet by ID
- * @access  Private (pet_owner)
+ * @access  Private (authenticated)
  */
 router.get(
   '/:petId',
@@ -65,6 +65,7 @@ router.get(
  */
 router.put(
   '/:petId',
+  requireRole('pet_owner'),
   upload.single('photo'),
   updatePetValidation,
   handleValidationErrors,
@@ -78,6 +79,7 @@ router.put(
  */
 router.delete(
   '/:petId',
+  requireRole('pet_owner'),
   petIdValidation,
   handleValidationErrors,
   deletePet

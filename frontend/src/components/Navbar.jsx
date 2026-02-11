@@ -78,6 +78,30 @@ const Navbar = () => {
             </Link>
           </li>
 
+          {isAuthenticated && (
+            <li className="nav-item">
+              <Link
+                to="/bookings"
+                className={`nav-link ${isActive('/bookings')}`}
+                onClick={closeMobileMenu}
+              >
+                Booking
+              </Link>
+            </li>
+          )}
+
+          {isAuthenticated && (
+            <li className="nav-item">
+              <Link
+                to="/activity-log"
+                className={`nav-link ${isActive('/activity-log')}`}
+                onClick={closeMobileMenu}
+              >
+                Activity Log
+              </Link>
+            </li>
+          )}
+
           <li className="nav-item">
             <a
               href="/#about"

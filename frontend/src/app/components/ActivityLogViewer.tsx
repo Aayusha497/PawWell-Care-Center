@@ -1,88 +1,76 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ScrollArea } from './ui/scroll-area';
 import { UtensilsCrossed, Footprints, Gamepad2, Pill, Bell } from 'lucide-react';
 import { format } from 'date-fns';
+import { getActivityLogs, getUserPets } from '../../services/api';
 
-interface ActivityLog {
-  id: string;
-  petName: string;
-  type: 'feeding' | 'walk' | 'playtime' | 'medication';
-  description: string;
-  caretakerName: string;
-  timestamp: Date;
-  notes?: string;
+interface Pet {
+  pet_id: number;
+  name: string;
 }
 
-export default function ActivityLogViewer() {
+interface ActivityLog {
+  activity_id: number;
+  activity_type: 'feeding' | 'walk' | 'playtime' | 'medication' | 'grooming' | 'training' | 'veterinary' | 'other';
+  detail?: string | null;
+  timestamp: string;
+  pet?: {
+    pet_id: number;
+    name: string;
+  };
+  user?: {
+    first_name?: string;
+    last_name?: string;
+  };
+}
+
+interface ActivityLogViewerProps {
+  onBack?: () => void;
+  onLogout?: () => void;
+  userFullName?: string;
+  onBook?: () => void;
+}
+
+export default function ActivityLogViewer({ onBack, onLogout, userFullName, onBook }: ActivityLogViewerProps) {
+  const userInitials = userFullName
+    ? userFullName.split(' ').map((name) => name[0]).join('').toUpperCase()
+    : 'U';
   const [selectedPet, setSelectedPet] = useState<string>('all');
-  
-  const [activities] = useState<ActivityLog[]>([
-    {
-      id: '1',
-      petName: 'Max',
-      type: 'feeding',
-      description: 'Fed regular meal with chicken and rice',
-      caretakerName: 'Sarah Johnson',
-      timestamp: new Date(2024, 11, 28, 8, 30),
-      notes: 'Ate well, finished entire bowl'
-    },
-    {
-      id: '2',
-      petName: 'Max',
-      type: 'walk',
-      description: '30-minute morning walk in the park',
-      caretakerName: 'Mike Chen',
-      timestamp: new Date(2024, 11, 28, 10, 0),
-      notes: 'Very energetic, played with other dogs'
-    },
-    {
-      id: '3',
-      petName: 'Max',
-      type: 'playtime',
-      description: 'Indoor play session with toys',
-      caretakerName: 'Sarah Johnson',
-      timestamp: new Date(2024, 11, 28, 14, 30),
-      notes: 'Enjoyed fetch and tug-of-war'
-    },
-    {
-      id: '4',
-      petName: 'Max',
-      type: 'medication',
-      description: 'Administered daily vitamin supplement',
-      caretakerName: 'Dr. Emily Parker',
-      timestamp: new Date(2024, 11, 28, 16, 0)
-    },
-    {
-      id: '5',
-      petName: 'Max',
-      type: 'feeding',
-      description: 'Evening meal with beef and vegetables',
-      caretakerName: 'Sarah Johnson',
-      timestamp: new Date(2024, 11, 28, 18, 30),
-      notes: 'Good appetite'
-    },
-    {
-      id: '6',
-      petName: 'Bella',
-      type: 'feeding',
-      description: 'Morning meal - salmon and rice formula',
-      caretakerName: 'Sarah Johnson',
-      timestamp: new Date(2024, 11, 28, 9, 0),
-      notes: 'Ate slowly but finished'
-    },
-    {
-      id: '7',
-      petName: 'Bella',
-      type: 'walk',
-      description: '20-minute gentle walk',
-      caretakerName: 'Mike Chen',
-      timestamp: new Date(2024, 11, 28, 11, 0),
-      notes: 'Preferred staying in shade'
-    }
-  ]);
+  const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [petsResponse, logsResponse] = await Promise.all([
+          getUserPets(),
+          getActivityLogs(),
+        ]);
+
+        const petList = petsResponse.pets || petsResponse.data || [];
+        setPets(Array.isArray(petList) ? petList : []);
+
+        const logList = logsResponse.data || [];
+        setActivities(Array.isArray(logList) ? logList : []);
+      } catch (err: any) {
+        console.error('Error fetching activity logs:', err);
+        setError(err.message || 'Failed to load activity logs');
+        setActivities([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -114,12 +102,12 @@ export default function ActivityLogViewer() {
     }
   };
 
-  const filteredActivities = selectedPet === 'all' 
-    ? activities 
-    : activities.filter(a => a.petName === selectedPet);
+  const filteredActivities = selectedPet === 'all'
+    ? activities
+    : activities.filter((activity) => activity.pet?.pet_id === Number(selectedPet));
 
   const groupedActivities = filteredActivities.reduce((groups, activity) => {
-    const date = format(activity.timestamp, 'yyyy-MM-dd');
+    const date = format(new Date(activity.timestamp), 'yyyy-MM-dd');
     if (!groups[date]) {
       groups[date] = [];
     }
@@ -128,25 +116,82 @@ export default function ActivityLogViewer() {
   }, {} as Record<string, ActivityLog[]>);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl">Activity Logs</h2>
-        <div className="flex items-center gap-4">
-          <Select value={selectedPet} onValueChange={setSelectedPet}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Pets</SelectItem>
-              <SelectItem value="Max">Max</SelectItem>
-              <SelectItem value="Bella">Bella</SelectItem>
-              <SelectItem value="Charlie">Charlie</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="min-h-screen bg-[#FFF9F5]">
+      <nav className="bg-white border-b px-8 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🐾</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <button
+                type="button"
+                onClick={onBack}
+                className="px-4 py-2 rounded-full bg-[#FFE4A3] font-medium"
+              >
+                Home
+              </button>
+              <button
+                type="button"
+                onClick={onBook}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                Booking
+              </button>
+              <button type="button" className="px-4 py-2 hover:bg-gray-100 rounded-full">
+                Activity Log
+              </button>
+              <button type="button" className="px-4 py-2 hover:bg-gray-100 rounded-full">
+                About
+              </button>
+              <button type="button" className="px-4 py-2 hover:bg-gray-100 rounded-full">
+                Contact
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+              <span className="text-sm font-medium">{userInitials}</span>
+            </div>
+            <button className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2">
+              <span>📞</span> Emergency
+            </button>
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
+              >
+                Logout
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      </nav>
 
-      <Card>
+      <main className="max-w-7xl mx-auto px-8 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl">Activity Logs</h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <Select value={selectedPet} onValueChange={setSelectedPet}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Pets</SelectItem>
+                {pets.map((pet) => (
+                  <SelectItem key={pet.pet_id} value={String(pet.pet_id)}>
+                    {pet.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <Card>
         <CardHeader>
           <CardTitle>Recent Activities</CardTitle>
           <p className="text-sm text-gray-600">
@@ -155,96 +200,62 @@ export default function ActivityLogViewer() {
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[600px] pr-4">
-            {Object.entries(groupedActivities).map(([date, dayActivities]) => (
-              <div key={date} className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-lg">{format(new Date(date), 'EEEE, MMMM dd, yyyy')}</h3>
-                  <Badge variant="secondary">{dayActivities.length} activities</Badge>
-                </div>
-                
-                <div className="space-y-3 ml-4 border-l-2 border-gray-200 pl-4">
-                  {dayActivities
-                    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-                    .map((activity) => (
-                      <div key={activity.id} className="relative">
-                        <div className="absolute -left-[1.65rem] top-2 w-3 h-3 bg-[#EAB308] rounded-full"></div>
-                        <Card className="hover:shadow-md transition-shadow">
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-3">
-                                {getActivityIcon(activity.type)}
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h4>{activity.petName}</h4>
-                                    <Badge className={getActivityColor(activity.type)}>
-                                      {activity.type}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-sm text-gray-600">
-                                    by {activity.caretakerName}
-                                  </p>
-                                </div>
-                              </div>
-                              <span className="text-sm text-gray-500">
-                                {format(activity.timestamp, 'h:mm a')}
-                              </span>
-                            </div>
-                            <p className="text-sm mb-1">{activity.description}</p>
-                            {activity.notes && (
-                              <p className="text-sm text-gray-600 italic">
-                                Note: {activity.notes}
-                              </p>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </div>
-                    ))}
-                </div>
+            {loading ? (
+              <div className="py-10 text-center text-gray-500">Loading activity logs...</div>
+            ) : error ? (
+              <div className="py-10 text-center text-red-600">{error}</div>
+            ) : Object.keys(groupedActivities).length === 0 ? (
+              <div className="py-10 text-center text-gray-500">
+                No activity updates yet. Your pet's daily activities will appear here once our caretakers log them.
               </div>
-            ))}
+            ) : (
+              Object.entries(groupedActivities).map(([date, dayActivities]) => (
+                <div key={date} className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className="text-lg">{format(new Date(date), 'EEEE, MMMM dd, yyyy')}</h3>
+                    <Badge variant="secondary">{dayActivities.length} activities</Badge>
+                  </div>
+
+                  <div className="space-y-3 ml-4 border-l-2 border-gray-200 pl-4">
+                    {dayActivities
+                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                      .map((activity) => (
+                        <div key={activity.activity_id} className="relative">
+                          <div className="absolute -left-[1.65rem] top-2 w-3 h-3 bg-[#EAB308] rounded-full"></div>
+                          <Card className="hover:shadow-md transition-shadow">
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                  {getActivityIcon(activity.activity_type)}
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <h4>{activity.pet?.name || 'Unknown Pet'}</h4>
+                                      <Badge className={getActivityColor(activity.activity_type)}>
+                                        {activity.activity_type}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm text-gray-600">
+                                      by {activity.user?.first_name || 'Caretaker'} {activity.user?.last_name || ''}
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className="text-sm text-gray-500">
+                                  {format(new Date(activity.timestamp), 'h:mm a')}
+                                </span>
+                              </div>
+                              {activity.detail && <p className="text-sm mb-1">{activity.detail}</p>}
+                            </CardContent>
+                          </Card>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ))
+            )}
           </ScrollArea>
         </CardContent>
-      </Card>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-4 gap-4 mt-6">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <UtensilsCrossed className="mx-auto mb-2 text-orange-500" size={32} />
-            <p className="text-2xl">
-              {filteredActivities.filter(a => a.type === 'feeding').length}
-            </p>
-            <p className="text-sm text-gray-600">Feedings</p>
-          </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Footprints className="mx-auto mb-2 text-blue-500" size={32} />
-            <p className="text-2xl">
-              {filteredActivities.filter(a => a.type === 'walk').length}
-            </p>
-            <p className="text-sm text-gray-600">Walks</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Gamepad2 className="mx-auto mb-2 text-green-500" size={32} />
-            <p className="text-2xl">
-              {filteredActivities.filter(a => a.type === 'playtime').length}
-            </p>
-            <p className="text-sm text-gray-600">Playtime</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Pill className="mx-auto mb-2 text-red-500" size={32} />
-            <p className="text-2xl">
-              {filteredActivities.filter(a => a.type === 'medication').length}
-            </p>
-            <p className="text-sm text-gray-600">Medications</p>
-          </CardContent>
-        </Card>
-      </div>
+      </main>
     </div>
   );
 }

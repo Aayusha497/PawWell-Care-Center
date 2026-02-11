@@ -10,8 +10,8 @@ import ResetPasswordPage from './components/ResetPasswordPage';
 import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import PermissionDenied from '../components/PermissionDenied';
-import SuccessModal from './components/ui/SuccessModal';
 import { Toaster } from './components/ui/sonner';
+import { toast } from 'sonner';
 import type { LoginData, RegisterData } from '../services/api';
 
 type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'verify-otp' | 'reset-password' | 'user-dashboard' | 'admin-dashboard' | 'permission-denied';
@@ -21,7 +21,6 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
 
@@ -105,10 +104,14 @@ export default function App() {
       console.log('Attempting registration with:', { ...userData, password: '***' });
       const response = await register(userData);
       
-      // Show success modal
-      setShowSuccessModal(true);
+      // Show success toast and redirect
+      toast.success('Registration successful! Redirecting to login...');
       setError(null);
       setFieldErrors({});
+      
+      setTimeout(() => {
+        setCurrentPage('login');
+      }, 2000);
     } catch (err: any) {
       console.error('Registration failed - Full error:', err);
       
@@ -152,25 +155,9 @@ export default function App() {
     );
   }
 
-  const handleSuccessModalClose = () => {
-    setShowSuccessModal(false);
-    // Defer navigation to avoid React warning about setState during render
-    setTimeout(() => {
-      setCurrentPage('login');
-    }, 0);
-  };
-
   return (
     <div className="min-h-screen">
       <Toaster position="top-right" richColors />
-      <SuccessModal
-        isOpen={showSuccessModal}
-        onClose={handleSuccessModalClose}
-        title="Success"
-        message="Registration successful! Redirecting to login page..."
-        actionText="OK"
-        autoRedirectSeconds={3}
-      />
       
       {currentPage === 'landing' && (
         <LandingPage
@@ -219,7 +206,8 @@ export default function App() {
           resetToken={resetToken}
           onNavigateToLogin={() => setCurrentPage('login')}
           onPasswordResetSuccess={() => {
-            setShowSuccessModal(true);
+            toast.success('Password reset successful! Redirecting to login...');
+            setTimeout(() => setCurrentPage('login'), 2000);
           }}
         />
       )}

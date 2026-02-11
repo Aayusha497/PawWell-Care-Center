@@ -23,6 +23,15 @@ module.exports = (sequelize) => {
         key: 'id'
       }
     },
+    pet_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'pet_id',
+      references: {
+        model: 'pets',
+        key: 'pet_id'
+      }
+    },
     activity_type: {
       type: DataTypes.STRING(100),
       allowNull: false,
@@ -37,6 +46,16 @@ module.exports = (sequelize) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    photo: {
+      type: DataTypes.STRING(500),
+      allowNull: true
+    },
+    notify_owner: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'notify_owner'
+    },
     ip_address: {
       type: DataTypes.STRING(45),
       allowNull: true,
@@ -49,14 +68,20 @@ module.exports = (sequelize) => {
     }
   }, {
     tableName: 'activity_logs',
-    timestamps: false,
-    underscored: true
+    timestamps: true,
+    underscored: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
   });
 
   ActivityLog.associate = (models) => {
     ActivityLog.belongsTo(models.User, {
       foreignKey: 'user_id',
       as: 'user'
+    });
+    ActivityLog.belongsTo(models.Pet, {
+      foreignKey: 'pet_id',
+      as: 'pet'
     });
   };
 

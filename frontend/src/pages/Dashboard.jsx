@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getUserPets } from '../services/api';
+import { getUserPets, getActivityLogs } from '../services/api';
 import DashboardLayout from '../components/DashboardLayout';
 import DashboardCard from '../components/DashboardCard';
 import PetCard from '../components/PetCard';
@@ -78,17 +78,22 @@ const Dashboard = () => {
     fetchBookings();
   }, []);
 
-  // Fetch activity logs - placeholder for future implementation
+  // Fetch activity logs
   useEffect(() => {
     const fetchActivities = async () => {
       try {
         setLoading(prev => ({ ...prev, activities: true }));
-        // TODO: Implement when activity log API endpoint is available
-        // For now, showing empty state
-        setActivities([]);
+        const response = await getActivityLogs();
+        
+        if (response.success && response.data) {
+          setActivities(response.data);
+        } else {
+          setActivities([]);
+        }
       } catch (error) {
         console.error('Error fetching activities:', error);
-        setErrors(prev => ({ ...prev, activities: error.message }));
+        setErrors(prev => ({ ...prev, activities: error.message || 'Failed to load activities' }));
+        setActivities([]);
       } finally {
         setLoading(prev => ({ ...prev, activities: false }));
       }
@@ -110,6 +115,10 @@ const Dashboard = () => {
 
   const handleViewAllPets = () => {
     navigate('/pets');
+  };
+
+  const handleViewActivityLog = () => {
+    navigate('/activity-log');
   };
 
   return (
@@ -238,7 +247,10 @@ const Dashboard = () => {
             className="activity-card"
             headerAction={
               activities.length > 0 && (
-                <button className="btn-link">
+                <button 
+                  className="btn-link"
+                  onClick={handleViewActivityLog}
+                >
                   View Daily log
                 </button>
               )

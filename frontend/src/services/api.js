@@ -610,4 +610,90 @@ export const getAllBookingsAdmin = async (filters = {}) => {
   }
 };
 
+// ==================== ACTIVITY LOG ENDPOINTS ====================
+
+/**
+ * Create a new activity log entry
+ * @param {FormData} formData - Activity log data with optional photo
+ * @returns {Promise} API response with created activity log
+ */
+export const createActivityLog = async (formData) => {
+  try {
+    const response = await api.post('/activity-logs', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to create activity log' };
+  }
+};
+
+/**
+ * Get activity logs with optional filters
+ * @param {object} filters - Optional filters (pet_id, date, activity_type)
+ * @returns {Promise} API response with activity logs array
+ */
+export const getActivityLogs = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.pet_id) params.append('pet_id', filters.pet_id);
+    if (filters.date) params.append('date', filters.date);
+    if (filters.activity_type) params.append('activity_type', filters.activity_type);
+    
+    const response = await api.get(`/activity-logs${params.toString() ? '?' + params.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch activity logs' };
+  }
+};
+
+/**
+ * Get a specific activity log by ID
+ * @param {number} logId - Activity log ID
+ * @returns {Promise} API response with activity log data
+ */
+export const getActivityLogById = async (logId) => {
+  try {
+    const response = await api.get(`/activity-logs/${logId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch activity log' };
+  }
+};
+
+/**
+ * Update an activity log
+ * @param {number} logId - Activity log ID
+ * @param {FormData} formData - Updated activity log data with optional photo
+ * @returns {Promise} API response with updated activity log
+ */
+export const updateActivityLog = async (logId, formData) => {
+  try {
+    const response = await api.put(`/activity-logs/${logId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to update activity log' };
+  }
+};
+
+/**
+ * Delete an activity log
+ * @param {number} logId - Activity log ID
+ * @returns {Promise} API response
+ */
+export const deleteActivityLog = async (logId) => {
+  try {
+    const response = await api.delete(`/activity-logs/${logId}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to delete activity log' };
+  }
+};
+
 export default api;

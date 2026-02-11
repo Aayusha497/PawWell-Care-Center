@@ -4,7 +4,7 @@
  * Handles all pet profile CRUD operations
  */
 
-const { Pet } = require('../models');
+const { Pet, User } = require('../models');
 const { deleteImage } = require('../config/cloudinary');
 
 /**
@@ -74,13 +74,27 @@ const createPet = async (req, res) => {
 const getUserPets = async (req, res) => {
   try {
     const userId = req.user.id;
+    const userType = req.user.userType; // Changed from user_type to userType
+
+    // Build where clause - admin/staff can see all pets, users see only their own
+    let whereClause = {};
+    
+    if (userType === 'pet_owner') {
+      whereClause.user_id = userId;
+    }
+    // For admin/staff, whereClause remains empty to fetch all pets
 
     // Fetch only non-deleted pets (paranoid: true automatically excludes soft-deleted)
     const pets = await Pet.findAll({
-      where: {
-        user_id: userId,
-      },
+      where: whereClause,
       order: [['created_at', 'DESC']],
+      include: [
+        {
+          model: User,
+          as: 'owner',
+          attributes: ['id', 'first_name', 'last_name', 'email'],
+        },
+      ],
     });
 
     res.status(200).json({
@@ -105,33 +119,70 @@ const getUserPets = async (req, res) => {
 const getPetById = async (req, res) => {
   try {
     const userId = req.user.id;
+    const userType = req.user.userType; // Changed from user_type to userType
     const petId = parseInt(req.params.petId);
 
+    console.log(`[getPetById] Request from user ${userId} (${userType}) for pet ${petId}`);
+    console.log(`[getPetById] req.user details:`, { 
+      id: req.user.id, 
+      userType: req.user.userType,
+      email: req.user.email 
+    });
+
     // findByPk with paranoid mode automatically excludes soft-deleted pets
-    const pet = await Pet.findByPk(petId);
+    const pet = await Pet.findByPk(petId, {
+      include: [
+        {
+          model: User,
+          as: 'owner',
+          attributes: ['id', 'first_name', 'last_name', 'email'],
+        },
+      ],
+    });
 
     // Check if pet exists (or if it's soft-deleted)
     if (!pet) {
+      console.log(`[getPetById] Pet ${petId} not found`);
       return res.status(404).json({
         success: false,
         message: 'Pet not found',
       });
     }
 
-    // Check if pet belongs to the logged-in user
-    if (pet.user_id !== userId) {
+    console.log(`[getPetById] Pet found:`, { 
+      pet_id: pet.pet_id, 
+      name: pet.name, 
+      user_id: pet.user_id,
+      user_id_type: typeof pet.user_id
+    });
+
+    // Check permissions: owner can view their own pets, admin/staff can view all pets
+    const isOwner = pet.user_id === userId;
+    const isStaffOrAdmin = userType === 'admin' || userType === 'staff';
+    
+    console.log(`[getPetById] Permission check:`, { 
+      isOwner, 
+      isStaffOrAdmin,
+      pet_user_id: pet.user_id,
+      req_user_id: userId,
+      userType: userType 
+    });
+    
+    if (!isOwner && !isStaffOrAdmin) {
+      console.log(`[getPetById] Permission denied for user ${userId} to view pet ${petId}`);
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to view this pet',
       });
     }
 
+    console.log(`[getPetById] Returning pet data successfully`);
     res.status(200).json({
       success: true,
       data: pet,
     });
   } catch (error) {
-    console.error('Error fetching pet:', error);
+    console.error('[getPetById] Error fetching pet:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch pet',

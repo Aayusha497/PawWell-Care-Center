@@ -36,10 +36,13 @@ export default function PetProfileForm({ onBack, onSuccess, petId }: PetProfileF
   const loadPetData = async () => {
     try {
       setLoading(true);
+      console.log('Loading pet data for petId:', petId);
       const response = await getPetById(petId!);
-      console.log('Pet data response:', response); // Debug log
+      console.log('Pet data response:', response);
+      
       if (response.success && response.data) {
         const pet = response.data;
+        console.log('Pet data received:', pet);
         setFormData({
           name: pet.name || '',
           breed: pet.breed || '',
@@ -55,10 +58,15 @@ export default function PetProfileForm({ onBack, onSuccess, petId }: PetProfileF
         if (pet.photo) {
           setPhotoPreview(pet.photo);
         }
+        toast.success('Pet data loaded successfully');
+      } else {
+        console.error('Invalid response structure:', response);
+        toast.error('Invalid response from server');
       }
     } catch (error: any) {
-      console.error('Error loading pet:', error);
-      toast.error('Failed to load pet data');
+      console.error('Error loading pet - Full error:', error);
+      const errorMessage = error?.message || error?.error || 'Failed to load pet data';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -189,7 +197,12 @@ export default function PetProfileForm({ onBack, onSuccess, petId }: PetProfileF
               <span className="text-2xl">🐾</span>
             </div>
             <div className="flex items-center gap-6">
-              <button className="px-4 py-2 rounded-full bg-[#FFE4A3] font-medium">Home</button>
+              <button 
+                onClick={onBack}
+                className="px-4 py-2 rounded-full bg-[#FFE4A3] font-medium hover:bg-[#FFD966] transition"
+              >
+                Home
+              </button>
               <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Booking</button>
               <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Activity Log</button>
               <button className="px-4 py-2 hover:bg-gray-100 rounded-full">About</button>

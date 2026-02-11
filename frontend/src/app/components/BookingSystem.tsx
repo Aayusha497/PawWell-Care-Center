@@ -10,6 +10,7 @@ import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { CalendarDays, MapPin, Clock, CreditCard } from 'lucide-react';
 import { format, isBefore, startOfDay } from 'date-fns';
+import { toast } from 'sonner';
 
 interface Booking {
   id: string;
@@ -70,7 +71,10 @@ export default function BookingSystem() {
     e.preventDefault();
     
     if (!selectedDropOffDate || !selectedPickupDate) {
-      alert('Please select both drop-off and pickup dates');
+      toast.error('Dates Required', {
+        description: 'Please select both drop-off and pickup dates to continue.',
+        duration: 3000,
+      });
       return;
     }
 
@@ -96,7 +100,10 @@ export default function BookingSystem() {
       setBookings([...bookings, { ...selectedBooking, status: 'confirmed' }]);
       setPaymentDialogOpen(false);
       setSelectedBooking(null);
-      alert(`Payment via ${method === 'khalti' ? 'Khalti' : 'eSewa'} successful! Booking confirmed.`);
+      toast.success('Payment Successful!', {
+        description: `Payment via ${method === 'khalti' ? 'Khalti' : 'eSewa'} completed. Your booking is confirmed.`,
+        duration: 3000,
+      });
       resetForm();
     }
   };

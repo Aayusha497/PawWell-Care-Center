@@ -701,6 +701,98 @@ body {
   font-size: 14px;
 }
 
+/* ==================== TOAST NOTIFICATIONS ==================== */
+/* Custom styling for react-toastify to match PawWell theme */
+.Toastify__toast {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12) !important;
+  padding: 16px 20px !important;
+  min-height: 64px;
+}
+
+.Toastify__toast--success {
+  background: linear-gradient(135deg, #7FD8BE 0%, #A8D14F 100%) !important;
+  color: #ffffff !important;
+}
+
+.Toastify__toast--error {
+  background: linear-gradient(135deg, #FA9884 0%, #FF8C42 100%) !important;
+  color: #ffffff !important;
+}
+
+.Toastify__toast--info {
+  background: linear-gradient(135deg, #87CEEB 0%, #B19CD9 100%) !important;
+  color: #ffffff !important;
+}
+
+.Toastify__toast--warning {
+  background: linear-gradient(135deg, #FFE4A3 0%, #FF8C42 100%) !important;
+  color: #2C2C2C !important;
+}
+
+.Toastify__toast-body {
+  padding: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.Toastify__progress-bar {
+  height: 4px !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+.Toastify__close-button {
+  color: #ffffff !important;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1;
+}
+
+.Toastify__toast--success .Toastify__close-button,
+.Toastify__toast--error .Toastify__close-button,
+.Toastify__toast--info .Toastify__close-button {
+  color: #ffffff !important;
+}
+
+.Toastify__toast--warning .Toastify__close-button {
+  color: #2C2C2C !important;
+}
+
+/* Success icon styling */
+.Toastify__toast--success::before {
+  content: '✓';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  margin-right: 12px;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Error icon styling */
+.Toastify__toast--error::before {
+  content: '✕';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  margin-right: 12px;
+  font-weight: bold;
+  font-size: 16px;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .hero-container {
@@ -740,5 +832,16 @@ body {
   
   .signup-right {
     padding: 40px 30px;
+  }
+  
+  /* Mobile toast adjustments */
+  .Toastify__toast-container {
+    width: calc(100% - 32px) !important;
+    left: 16px !important;
+    right: 16px !important;
+  }
+  
+  .Toastify__toast {
+    margin-bottom: 12px !important;
   }
 }

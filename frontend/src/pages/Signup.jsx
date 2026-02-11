@@ -11,7 +11,6 @@ import * as Yup from 'yup';
 import { registerUser } from '../services/api';
 import { toast } from 'react-toastify';
 import { getPasswordStrength } from '../utils/auth';
-import SuccessModal from '../app/components/ui/SuccessModal';
 
 // Validation schema
 const SignupSchema = Yup.object().shape({
@@ -50,8 +49,6 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: 'None', color: '#ccc' });
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const initialValues = {
     first_name: '',
@@ -92,9 +89,11 @@ const Signup = () => {
       console.log('✅ Registration response:', response);
 
       if (response.success) {
-        console.log('🎉 Registration successful! Showing success modal...');
-        setRegisteredEmail(userData.email);
-        setShowSuccessModal(true);
+        console.log('🎉 Registration successful!');
+        toast.success('Registration successful!');
+        setTimeout(() => {
+          navigate('/login', { state: { email: userData.email, registered: true } });
+        }, 2000);
       } else {
         console.warn('⚠️ Registration response success=false:', response);
         toast.error(response.message || 'Registration failed. Please try again.');
@@ -120,22 +119,8 @@ const Signup = () => {
     }
   };
 
-  const handleSuccessModalClose = () => {
-    setShowSuccessModal(false);
-    navigate('/login', { state: { email: registeredEmail, registered: true } });
-  };
-
   return (
     <div className="auth-page">
-      <SuccessModal
-        isOpen={showSuccessModal}
-        onClose={handleSuccessModalClose}
-        title="Success"
-        message="Registration successful!"
-        actionText="OK"
-        autoRedirectSeconds={3}
-      />
-      
       <div className="signup-container">
         {/* Left Side - Image and Text */}
         <div className="signup-left">
@@ -274,7 +259,7 @@ const Signup = () => {
                       className="toggle-password-icon"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? '👁️' : '👁️'}
+                      {/* {showPassword ? '👁️' : '👁️'} */}
                     </button>
                   </div>
                   {values.password && (
@@ -315,7 +300,7 @@ const Signup = () => {
                       className="toggle-password-icon"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
-                      {showConfirmPassword ? '👁️' : '👁️'}
+                      {/* {showConfirmPassword ? '👁️' : '👁️'} */}
                     </button>
                   </div>
                   <ErrorMessage name="confirm_password" component="div" className="error-message" />

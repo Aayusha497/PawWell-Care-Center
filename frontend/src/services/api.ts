@@ -662,5 +662,48 @@ export const getAllBookingsAdmin = async (filters?: {
   }
 };
 
+// ==================== ACTIVITY LOG ENDPOINTS ====================
+
+/**
+ * Create a new activity log entry
+ * @param {FormData} formData - Activity log data with optional photo
+ * @returns {Promise<any>} API response with created activity log
+ */
+export const createActivityLog = async (formData: FormData): Promise<any> => {
+  try {
+    const response = await api.post('/activity-logs', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to create activity log' };
+  }
+};
+
+/**
+ * Get activity logs with optional filters
+ * @param {object} filters - Optional filters (pet_id, date, activity_type)
+ * @returns {Promise<any>} API response with activity logs array
+ */
+export const getActivityLogs = async (filters: {
+  pet_id?: string | number;
+  date?: string;
+  activity_type?: string;
+} = {}): Promise<any> => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.pet_id) params.append('pet_id', String(filters.pet_id));
+    if (filters.date) params.append('date', filters.date);
+    if (filters.activity_type) params.append('activity_type', filters.activity_type);
+
+    const response = await api.get(`/activity-logs${params.toString() ? '?' + params.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch activity logs' };
+  }
+};
+
 export default api;
 
