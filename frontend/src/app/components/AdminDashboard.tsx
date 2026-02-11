@@ -1,6 +1,7 @@
 import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
 import { createActivityLog, getPendingBookings, approveBooking, rejectBooking, getUserPets } from '../../services/api';
 import { toast } from 'sonner';
+import ActivityLogsManagement from './ActivityLogsManagement';
 
 interface User {
   id: string;
@@ -46,6 +47,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
   const [photo, setPhoto] = useState<File | null>(null);
   const [notifyOwner, setNotifyOwner] = useState(false);
   const [submittingLog, setSubmittingLog] = useState(false);
+  const [viewingActivityLogs, setViewingActivityLogs] = useState(false);
 
   const activityTypes = [
     { value: 'feeding', label: 'Feeding' },
@@ -387,88 +389,124 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
 
           {activeTab === 'activity-logs' && (
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Daily Activity Log</h1>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Activity</h2>
-
-                <form onSubmit={handleCreateActivityLog} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Pet</label>
-                    <select
-                      value={selectedPet}
-                      onChange={(event) => setSelectedPet(event.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                      required
-                    >
-                      <option value="">Select pet</option>
-                      {pets.map((pet) => (
-                        <option key={pet.pet_id} value={pet.pet_id}>
-                          {pet.name}
-                          {pet.owner?.first_name ? ` (${pet.owner.first_name} ${pet.owner.last_name || ''})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
-                    <select
-                      value={activityType}
-                      onChange={(event) => setActivityType(event.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                      required
-                    >
-                      <option value="">Select activity type</option>
-                      {activityTypes.map((type) => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <textarea
-                      value={description}
-                      onChange={(event) => setDescription(event.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                      rows={4}
-                      minLength={5}
-                      placeholder="Describe the activity and any observations..."
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Photo (optional)</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                    />
-                  </div>
-
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={notifyOwner}
-                      onChange={(event) => setNotifyOwner(event.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    Notify owner
-                  </label>
-
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-3xl font-bold text-gray-900">Daily Activity Log</h1>
+                <div className="flex gap-2">
                   <button
-                    type="submit"
-                    disabled={submittingLog}
-                    className="px-6 py-2 bg-yellow-300 hover:bg-yellow-400 text-gray-900 rounded-lg font-semibold transition-colors disabled:opacity-60"
+                    onClick={() => setViewingActivityLogs(false)}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                      !viewingActivityLogs
+                        ? 'bg-yellow-300 text-gray-900 hover:bg-yellow-400'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                   >
-                    {submittingLog ? 'Logging activity...' : 'Log Activity'}
+                    + Create New
                   </button>
-                </form>
+                  <button
+                    onClick={() => setViewingActivityLogs(true)}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                      viewingActivityLogs
+                        ? 'bg-yellow-300 text-gray-900 hover:bg-yellow-400'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    View Logs
+                  </button>
+                </div>
               </div>
+
+              {viewingActivityLogs ? (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <ActivityLogsManagement 
+                    onRefreshLogs={() => {
+                      // Refresh bookings if needed
+                      fetchPendingBookings();
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Activity</h2>
+
+                  <form onSubmit={handleCreateActivityLog} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Pet</label>
+                      <select
+                        value={selectedPet}
+                        onChange={(event) => setSelectedPet(event.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        required
+                      >
+                        <option value="">Select pet</option>
+                        {pets.map((pet) => (
+                          <option key={pet.pet_id} value={pet.pet_id}>
+                            {pet.name}
+                            {pet.owner?.first_name ? ` (${pet.owner.first_name} ${pet.owner.last_name || ''})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+                      <select
+                        value={activityType}
+                        onChange={(event) => setActivityType(event.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        required
+                      >
+                        <option value="">Select activity type</option>
+                        {activityTypes.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      <textarea
+                        value={description}
+                        onChange={(event) => setDescription(event.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        rows={4}
+                        minLength={5}
+                        placeholder="Describe the activity and any observations..."
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Photo (optional)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={notifyOwner}
+                        onChange={(event) => setNotifyOwner(event.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      Notify owner
+                    </label>
+
+                    <button
+                      type="submit"
+                      disabled={submittingLog}
+                      className="px-6 py-2 bg-yellow-300 hover:bg-yellow-400 text-gray-900 rounded-lg font-semibold transition-colors disabled:opacity-60"
+                    >
+                      {submittingLog ? 'Logging activity...' : 'Log Activity'}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           )}
         </div>

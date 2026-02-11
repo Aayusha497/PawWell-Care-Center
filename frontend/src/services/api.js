@@ -696,4 +696,22 @@ export const deleteActivityLog = async (logId) => {
   }
 };
 
+/**
+ * Get all activity logs (admin endpoint)
+ * @param {object} filters - Optional filters (pet_id, activity_type)
+ * @returns {Promise} API response with all activity logs
+ */
+export const getAllActivityLogs = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.pet_id) params.append('pet_id', String(filters.pet_id));
+    if (filters.activity_type) params.append('activity_type', filters.activity_type);
+
+    const response = await api.get(`/activity-logs/admin/all${params.toString() ? '?' + params.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch activity logs' };
+  }
+};
+
 export default api;

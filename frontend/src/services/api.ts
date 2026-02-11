@@ -705,5 +705,59 @@ export const getActivityLogs = async (filters: {
   }
 };
 
+/**
+ * Get all activity logs (admin endpoint)
+ * @param {object} filters - Optional filters (pet_id, activity_type)
+ * @returns {Promise<any>} API response with all activity logs array
+ */
+export const getAllActivityLogs = async (filters: {
+  pet_id?: string | number;
+  activity_type?: string;
+} = {}): Promise<any> => {
+  try {
+    const params = new URLSearchParams();
+    if (filters.pet_id) params.append('pet_id', String(filters.pet_id));
+    if (filters.activity_type) params.append('activity_type', filters.activity_type);
+
+    const response = await api.get(`/activity-logs/admin/all${params.toString() ? '?' + params.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch activity logs' };
+  }
+};
+
+/**
+ * Update an activity log
+ * @param {number} activityLogId - Activity log ID
+ * @param {FormData} formData - Updated activity log data (same format as create)
+ * @returns {Promise<any>} API response with updated activity log
+ */
+export const updateActivityLog = async (activityLogId: number, formData: FormData): Promise<any> => {
+  try {
+    const response = await api.put(`/activity-logs/${activityLogId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to update activity log' };
+  }
+};
+
+/**
+ * Delete an activity log
+ * @param {number} activityLogId - Activity log ID to delete
+ * @returns {Promise<any>} API response confirming deletion
+ */
+export const deleteActivityLog = async (activityLogId: number): Promise<any> => {
+  try {
+    const response = await api.delete(`/activity-logs/${activityLogId}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to delete activity log' };
+  }
+};
+
 export default api;
 

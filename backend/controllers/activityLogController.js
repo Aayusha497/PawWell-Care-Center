@@ -491,10 +491,80 @@ const deleteActivityLog = async (req, res) => {
   }
 };
 
+/**
+ * Get all activity logs (Admin endpoint)
+ * GET /api/activity-logs/admin/all
+ */
+const getAllActivityLogs = async (req, res) => {
+  try {
+    console.log('getAllActivityLogs called, user:', req.user?.id, 'userType:', req.user?.userType);
+    
+    const userType = req.user.userType;
+    const { pet_id, activity_type } = req.query;
+
+    // Only admin/staff can access all logs
+    if (userType !== 'admin' && userType !== 'staff') {
+      console.log('User not admin/staff, userType:', userType);
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin and staff can view all activity logs',
+      });
+    }
+
+    // Build where clause based on filters
+    const whereClause = {};
+    
+    if (pet_id) {
+      whereClause.pet_id = parseInt(pet_id);
+    }
+    
+    if (activity_type) {
+      whereClause.activity_type = activity_type;
+    }
+
+    console.log('Fetching activity logs with whereClause:', whereClause);
+
+    const activityLogs = await ActivityLog.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Pet,
+          as: 'pet',
+          attributes: ['pet_id', 'name', 'breed', 'photo', 'user_id'],
+          required: false,
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'first_name', 'last_name', 'user_type'],
+          required: false,
+        },
+      ],
+      order: [['timestamp', 'DESC']],
+    });
+
+    console.log('Found activity logs:', activityLogs.length);
+
+    res.status(200).json({
+      success: true,
+      count: activityLogs.length,
+      data: activityLogs,
+    });
+  } catch (error) {
+    console.error('Error fetching all activity logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch activity logs',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
 module.exports = {
   createActivityLog,
   getActivityLogs,
   getActivityLogById,
   updateActivityLog,
   deleteActivityLog,
+  getAllActivityLogs,
 };

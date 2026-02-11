@@ -14,6 +14,7 @@ const {
   getActivityLogById,
   updateActivityLog,
   deleteActivityLog,
+  getAllActivityLogs,
 } = require('../controllers/activityLogController');
 
 // All routes require authentication
@@ -36,6 +37,13 @@ router.post(
  * @access  Private (all authenticated users)
  */
 router.get('/', getActivityLogs);
+
+/**
+ * @route   GET /api/activity-logs/admin/all
+ * @desc    Get all activity logs (admin endpoint)
+ * @access  Private (admin, staff)
+ */
+router.get('/admin/all', getAllActivityLogs);
 
 /**
  * @route   GET /api/activity-logs/:id
