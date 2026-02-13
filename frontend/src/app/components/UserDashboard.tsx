@@ -20,7 +20,9 @@ interface User {
 interface UserDashboardProps {
   user: User;
   onLogout: () => void;
-  onNavigate?: (page: string) => void;
+  onNavigate?: (page: string, options?: { target?: 'contact' }) => void;
+  dashboardTarget?: 'booking' | 'add-pet' | 'activity-log' | null;
+  onClearDashboardTarget?: () => void;
 }
 
 interface Pet {
@@ -51,7 +53,13 @@ interface Activity {
   pet?: { name: string };
 }
 
-export default function UserDashboard({ user, onLogout, onNavigate }: UserDashboardProps) {
+export default function UserDashboard({
+  user,
+  onLogout,
+  onNavigate,
+  dashboardTarget,
+  onClearDashboardTarget,
+}: UserDashboardProps) {
   const [chatbotOpen, setChatbotOpen] = useState(false);
   const [pets, setPets] = useState<Pet[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -72,6 +80,36 @@ export default function UserDashboard({ user, onLogout, onNavigate }: UserDashbo
     fetchBookings();
     fetchActivities();
   }, []);
+
+  useEffect(() => {
+    if (!dashboardTarget) {
+      return;
+    }
+
+    setShowPetForm(false);
+    setShowPetListing(false);
+    setShowBookingPage(false);
+    setShowManageBookings(false);
+    setShowBookingHistory(false);
+    setShowActivityLog(false);
+
+    if (dashboardTarget === 'booking') {
+      setShowBookingPage(true);
+    }
+
+    if (dashboardTarget === 'add-pet') {
+      setSelectedPetId(undefined);
+      setShowPetForm(true);
+    }
+
+    if (dashboardTarget === 'activity-log') {
+      setShowActivityLog(true);
+    }
+
+    if (onClearDashboardTarget) {
+      onClearDashboardTarget();
+    }
+  }, [dashboardTarget, onClearDashboardTarget]);
 
   const fetchPets = async () => {
     try {
@@ -214,6 +252,7 @@ const handleAddPet = () => {
         onLogout={onLogout}
         userFullName={user.fullName}
         onActivityLog={handleViewActivityLog}
+        onNavigate={onNavigate}
       />
     );
   }
@@ -233,12 +272,13 @@ const handleAddPet = () => {
         onLogout={onLogout}
         userFullName={user.fullName}
         onBook={handleBookService}
+        onNavigate={onNavigate}
       />
     );
   }
 
   if (showPetListing) {
-    return <PetListingPage onBack={handleBackToDashboard} />;
+    return <PetListingPage onBack={handleBackToDashboard} onNavigate={onNavigate} />;
   }
 
   if (showPetForm) {
@@ -247,6 +287,7 @@ const handleAddPet = () => {
         onBack={handleBackToDashboard}
         onSuccess={handleBackToDashboard}
         petId={selectedPetId}
+        onNavigate={onNavigate}
       />
     );
   }
@@ -274,8 +315,18 @@ const handleAddPet = () => {
               >
                 Activity Log
               </button>
-              <button className="px-4 py-2 hover:bg-gray-100 rounded-full">About</button>
-              <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Contact</button>
+              <button
+                onClick={() => onNavigate?.('about')}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                About
+              </button>
+              <button
+                onClick={() => onNavigate?.('about', { target: 'contact' })}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                Contact
+              </button>
             </div>
           </div>
           <div className="flex items-center gap-4">

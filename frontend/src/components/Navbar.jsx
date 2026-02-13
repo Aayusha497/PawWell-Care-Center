@@ -81,8 +81,8 @@ const Navbar = () => {
           {isAuthenticated && (
             <li className="nav-item">
               <Link
-                to="/bookings"
-                className={`nav-link ${isActive('/bookings')}`}
+                to="/booking"
+                className={`nav-link ${isActive('/booking')}`}
                 onClick={closeMobileMenu}
               >
                 Booking
@@ -103,13 +103,13 @@ const Navbar = () => {
           )}
 
           <li className="nav-item">
-            <a
-              href="/#about"
+            <Link
+              to="/about"
               className="nav-link"
               onClick={closeMobileMenu}
             >
               About
-            </a>
+            </Link>
           </li>
 
           <li className="nav-item">
@@ -123,13 +123,13 @@ const Navbar = () => {
           </li>
 
           <li className="nav-item">
-            <a
-              href="/#contact"
+            <Link
+              to="/about#contact"
               className="nav-link"
               onClick={closeMobileMenu}
             >
               Contact
-            </a>
+            </Link>
           </li>
 
           {isAuthenticated ? (
@@ -183,8 +183,8 @@ const Navbar = () => {
                   </li>
                   <li className="nav-item">
                     <Link
-                      to="/bookings"
-                      className={`nav-link ${isActive('/bookings')}`}
+                      to="/booking"
+                      className={`nav-link ${isActive('/booking')}`}
                       onClick={closeMobileMenu}
                     >
                       My Bookings

@@ -6,9 +6,10 @@ interface PetProfileFormProps {
   onBack: () => void;
   onSuccess?: () => void;
   petId?: number;
+  onNavigate?: (page: string, options?: { target?: 'contact' }) => void;
 }
 
-export default function PetProfileForm({ onBack, onSuccess, petId }: PetProfileFormProps) {
+export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }: PetProfileFormProps) {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -205,8 +206,18 @@ export default function PetProfileForm({ onBack, onSuccess, petId }: PetProfileF
               </button>
               <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Booking</button>
               <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Activity Log</button>
-              <button className="px-4 py-2 hover:bg-gray-100 rounded-full">About</button>
-              <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Contact</button>
+              <button
+                onClick={() => onNavigate?.('about')}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                About
+              </button>
+              <button
+                onClick={() => onNavigate?.('about', { target: 'contact' })}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                Contact
+              </button>
             </div>
           </div>
           <div className="flex items-center gap-4">

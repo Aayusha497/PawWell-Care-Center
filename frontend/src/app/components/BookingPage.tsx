@@ -45,9 +45,10 @@ interface BookingPageProps {
   onLogout?: () => void;
   userFullName?: string;
   onActivityLog?: () => void;
+  onNavigate?: (page: string, options?: { target?: 'contact' }) => void;
 }
 
-const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullName, onActivityLog }) => {
+const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullName, onActivityLog, onNavigate }) => {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -342,10 +343,18 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
               >
                 Activity Log
               </button>
-              <button type="button" className="px-4 py-2 hover:bg-gray-100 rounded-full">
+              <button
+                type="button"
+                onClick={() => onNavigate?.('about')}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
                 About
               </button>
-              <button type="button" className="px-4 py-2 hover:bg-gray-100 rounded-full">
+              <button
+                type="button"
+                onClick={() => onNavigate?.('about', { target: 'contact' })}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
                 Contact
               </button>
             </div>

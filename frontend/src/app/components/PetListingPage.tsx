@@ -5,6 +5,7 @@ import PetProfileForm from './PetProfileForm';
 
 interface PetListingPageProps {
   onBack: () => void;
+  onNavigate?: (page: string, options?: { target?: 'contact' }) => void;
 }
 
 interface Pet {
@@ -21,7 +22,7 @@ interface Pet {
   medical_history?: string;
 }
 
-export default function PetListingPage({ onBack }: PetListingPageProps) {
+export default function PetListingPage({ onBack, onNavigate }: PetListingPageProps) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -92,6 +93,7 @@ export default function PetListingPage({ onBack }: PetListingPageProps) {
         onBack={handleBackToList}
         onSuccess={handleBackToList}
         petId={selectedPetId}
+        onNavigate={onNavigate}
       />
     );
   }
@@ -111,8 +113,18 @@ export default function PetListingPage({ onBack }: PetListingPageProps) {
               <button onClick={onBack} className="px-4 py-2 rounded-full bg-[#FFE4A3] font-medium">Home</button>
               <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Booking</button>
               <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Activity Log</button>
-              <button className="px-4 py-2 hover:bg-gray-100 rounded-full">About</button>
-              <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Contact</button>
+              <button
+                onClick={() => onNavigate?.('about')}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                About
+              </button>
+              <button
+                onClick={() => onNavigate?.('about', { target: 'contact' })}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                Contact
+              </button>
             </div>
           </div>
           <div className="flex items-center gap-4">

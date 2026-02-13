@@ -32,9 +32,10 @@ interface ActivityLogViewerProps {
   onLogout?: () => void;
   userFullName?: string;
   onBook?: () => void;
+  onNavigate?: (page: string, options?: { target?: 'contact' }) => void;
 }
 
-export default function ActivityLogViewer({ onBack, onLogout, userFullName, onBook }: ActivityLogViewerProps) {
+export default function ActivityLogViewer({ onBack, onLogout, userFullName, onBook, onNavigate }: ActivityLogViewerProps) {
   const userInitials = userFullName
     ? userFullName.split(' ').map((name) => name[0]).join('').toUpperCase()
     : 'U';
@@ -141,10 +142,18 @@ export default function ActivityLogViewer({ onBack, onLogout, userFullName, onBo
               <button type="button" className="px-4 py-2 hover:bg-gray-100 rounded-full">
                 Activity Log
               </button>
-              <button type="button" className="px-4 py-2 hover:bg-gray-100 rounded-full">
+              <button
+                type="button"
+                onClick={() => onNavigate?.('about')}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
                 About
               </button>
-              <button type="button" className="px-4 py-2 hover:bg-gray-100 rounded-full">
+              <button
+                type="button"
+                onClick={() => onNavigate?.('about', { target: 'contact' })}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
                 Contact
               </button>
             </div>

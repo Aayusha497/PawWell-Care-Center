@@ -43,11 +43,16 @@ const Login = () => {
       if (response.success) {
         // Store tokens and user data
         login(response.access, response.refresh, response.user);
+
+        const fromState = location.state?.from;
+        const redirectTo = typeof fromState === 'string'
+          ? fromState
+          : fromState?.pathname || '/dashboard';
         
         // Show success toast and navigate to dashboard
         toast.success('Login successful! Welcome back.');
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate(redirectTo);
         }, 1000);
       }
     } catch (error) {

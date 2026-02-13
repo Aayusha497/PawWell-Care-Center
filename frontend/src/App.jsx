@@ -23,6 +23,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import VerifyOTP from './pages/VerifyOTP';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import About from './pages/About';
+import Booking from './pages/Booking';
 import PetList from './pages/PetList';
 import AddPet from './pages/AddPet';
 import EditPet from './pages/EditPet';
@@ -40,6 +42,7 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/about" element={<About />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -52,6 +55,15 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
+
+              <Route 
+                path="/booking" 
+                element={
+                  <ProtectedRoute requiredRole="pet_owner">
+                    <Booking />
                   </ProtectedRoute>
                 } 
               />

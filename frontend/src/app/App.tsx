@@ -1,20 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
-import { ROLES, isAdmin } from '../utils/rbac';
+import { isAdmin } from '../utils/rbac';
+import AdminDashboard from './components/AdminDashboard';
+import ForgotPasswordPage from './components/ForgotPasswordPage';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
-import SignupPage from './components/SignupPage';
-import ForgotPasswordPage from './components/ForgotPasswordPage';
-import VerifyOTPPage from './components/VerifyOTPPage';
-import ResetPasswordPage from './components/ResetPasswordPage';
-import UserDashboard from './components/UserDashboard';
-import AdminDashboard from './components/AdminDashboard';
 import PermissionDenied from '../components/PermissionDenied';
+import ResetPasswordPage from './components/ResetPasswordPage';
+import SignupPage from './components/SignupPage';
+import UserDashboard from './components/UserDashboard';
+import VerifyOTPPage from './components/VerifyOTPPage';
+import AboutPage from './components/AboutPage';
 import { Toaster } from './components/ui/sonner';
-import { toast } from 'sonner';
 import type { LoginData, RegisterData } from '../services/api';
 
-type Page = 'landing' | 'login' | 'signup' | 'forgot-password' | 'verify-otp' | 'reset-password' | 'user-dashboard' | 'admin-dashboard' | 'permission-denied';
+type Page =
+  | 'landing'
+  | 'login'
+  | 'signup'
+  | 'forgot-password'
+  | 'verify-otp'
+  | 'reset-password'
+  | 'user-dashboard'
+  | 'admin-dashboard'
+  | 'permission-denied'
+  | 'about';
 
 export default function App() {
   const { user, login, register, logout, loading, isLoggedIn } = useAuth();
@@ -23,19 +34,23 @@ export default function App() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
+  const [aboutScrollTarget, setAboutScrollTarget] = useState<'contact' | null>(null);
+  const [dashboardTarget, setDashboardTarget] = useState<'booking' | 'add-pet' | 'activity-log' | null>(null);
 
-  // Redirect authenticated users to appropriate dashboard
   useEffect(() => {
     if (isLoggedIn && user) {
-      if (user.userType === 'admin') {
-        setCurrentPage('admin-dashboard');
-      } else {
-        setCurrentPage('user-dashboard');
+      const shouldRedirect = ['landing', 'login', 'signup', 'forgot-password', 'verify-otp', 'reset-password'].includes(currentPage);
+
+      if (shouldRedirect) {
+        if (user.userType === 'admin') {
+          setCurrentPage('admin-dashboard');
+        } else {
+          setCurrentPage('user-dashboard');
+        }
       }
     }
-  }, [isLoggedIn, user]);
+  }, [isLoggedIn, user, currentPage]);
 
-  // Show loading spinner while checking authentication (after all hooks)
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FFF8E8] flex items-center justify-center">
@@ -53,8 +68,7 @@ export default function App() {
       setFieldErrors({});
       const credentials: LoginData = { email, password };
       const response = await login(credentials);
-      
-      // Navigate based on user type
+
       if (response.user.userType === 'admin') {
         setCurrentPage('admin-dashboard');
       } else {
@@ -62,8 +76,7 @@ export default function App() {
       }
     } catch (err: any) {
       console.error('Login failed:', err);
-      
-      // Extract error message
+
       let errorMessage = 'Login failed. Please check your credentials.';
       if (err.message) {
         errorMessage = err.message;
@@ -71,7 +84,7 @@ export default function App() {
         setFieldErrors(err.errors);
         errorMessage = 'Please correct the errors below.';
       }
-      
+
       setError(errorMessage);
     }
   };
@@ -80,18 +93,17 @@ export default function App() {
     try {
       setError(null);
       setFieldErrors({});
-      
-      // Split full name into first and last name
+
       const nameParts = fullName.trim().split(/\s+/).filter(part => part.length > 0);
-      
+
       if (nameParts.length === 0) {
         setError('Please enter your name');
         return;
       }
-      
+
       const firstName = nameParts[0];
       const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : nameParts[0];
-      
+
       const userData: RegisterData = {
         email,
         password,
@@ -100,34 +112,33 @@ export default function App() {
         lastName,
         userType: 'pet_owner'
       };
-      
-      console.log('Attempting registration with:', { ...userData, password: '***' });
+
       const response = await register(userData);
-      
-      // Show success toast and redirect
-      toast.success('Registration successful! Redirecting to login...');
+
+      if (response) {
+        toast.success('Registration successful! Redirecting to login...');
+      }
+
       setError(null);
       setFieldErrors({});
-      
+
       setTimeout(() => {
         setCurrentPage('login');
       }, 2000);
     } catch (err: any) {
       console.error('Registration failed - Full error:', err);
-      
-      // Extract error message from various error formats
+
       let errorMessage = 'Registration failed. Please try again.';
-      
+
       if (err.message) {
         errorMessage = err.message;
       }
-      
+
       if (err.errors) {
-        // Handle validation errors from backend
         setFieldErrors(err.errors);
         errorMessage = 'Please correct the errors below.';
       }
-      
+
       setError(errorMessage);
     }
   };
@@ -136,29 +147,34 @@ export default function App() {
     try {
       await logout();
       setCurrentPage('landing');
+      setDashboardTarget(null);
     } catch (err: any) {
       console.error('Logout failed:', err);
-      // Still navigate to landing page even if API call fails
       setCurrentPage('landing');
+      setDashboardTarget(null);
     }
   };
 
-  // Show loading state
-  if (loading && isLoggedIn) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EAB308] mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleNavigate = (page: Page, options?: { target?: 'contact' }) => {
+    setCurrentPage(page);
+
+    if (page === 'about') {
+      setAboutScrollTarget(options?.target ?? null);
+    } else {
+      setAboutScrollTarget(null);
+    }
+  };
+
+  const handleDashboardTarget = (target: 'booking' | 'add-pet' | 'activity-log') => {
+    setDashboardTarget(target);
+    setCurrentPage(isLoggedIn ? 'user-dashboard' : 'login');
+  };
+
 
   return (
     <div className="min-h-screen">
       <Toaster position="top-right" richColors />
-      
+
       {currentPage === 'landing' && (
         <LandingPage
           onNavigateToLogin={() => setCurrentPage('login')}
@@ -180,6 +196,18 @@ export default function App() {
           onNavigateToLogin={() => setCurrentPage('login')}
           error={error}
           fieldErrors={fieldErrors}
+        />
+      )}
+      {currentPage === 'about' && (
+        <AboutPage
+          onBack={() => handleNavigate(isLoggedIn ? 'user-dashboard' : 'landing')}
+          onBook={() => handleDashboardTarget('booking')}
+          onAddPet={() => handleDashboardTarget('add-pet')}
+          onActivityLog={() => handleDashboardTarget('activity-log')}
+          onLogout={isLoggedIn ? handleLogout : undefined}
+          userFullName={user?.fullName}
+          scrollTarget={aboutScrollTarget}
+          onClearScrollTarget={() => setAboutScrollTarget(null)}
         />
       )}
       {currentPage === 'forgot-password' && (
@@ -212,48 +240,45 @@ export default function App() {
         />
       )}
       {currentPage === 'user-dashboard' && user && (
-        <>
-          {/* RBAC Check: Only pet owners can access user dashboard */}
-          {!isAdmin(user) ? (
-            <UserDashboard
-              user={{
-                id: user.id,
-                email: user.email,
-                role: user.userType === 'admin' ? 'admin' : 'user',
-                fullName: user.fullName
-              }}
-              onLogout={handleLogout}
-            />
-          ) : (
-            <PermissionDenied 
-              message="Admin users should use the Admin Dashboard."
-              redirectTo="/"
-              redirectLabel="Go to Admin Dashboard"
-            />
-          )}
-        </>
+        !isAdmin(user) ? (
+          <UserDashboard
+            user={{
+              id: user.id,
+              email: user.email,
+              role: user.userType === 'admin' ? 'admin' : 'user',
+              fullName: user.fullName
+            }}
+            onLogout={handleLogout}
+            onNavigate={(page, options) => handleNavigate(page as Page, options)}
+            dashboardTarget={dashboardTarget}
+            onClearDashboardTarget={() => setDashboardTarget(null)}
+          />
+        ) : (
+          <PermissionDenied
+            message="Admin users should use the Admin Dashboard."
+            redirectTo="/"
+            redirectLabel="Go to Admin Dashboard"
+          />
+        )
       )}
       {currentPage === 'admin-dashboard' && user && (
-        <>
-          {/* RBAC Check: Only admins can access admin dashboard */}
-          {isAdmin(user) ? (
-            <AdminDashboard
-              user={{
-                id: user.id,
-                email: user.email,
-                role: 'admin',
-                fullName: user.fullName
-              }}
-              onLogout={handleLogout}
-            />
-          ) : (
-            <PermissionDenied 
-              message="You need administrator privileges to access this page."
-              redirectTo="/"
-              redirectLabel="Go to Dashboard"
-            />
-          )}
-        </>
+        isAdmin(user) ? (
+          <AdminDashboard
+            user={{
+              id: user.id,
+              email: user.email,
+              role: 'admin',
+              fullName: user.fullName
+            }}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <PermissionDenied
+            message="You need administrator privileges to access this page."
+            redirectTo="/"
+            redirectLabel="Go to Dashboard"
+          />
+        )
       )}
       {currentPage === 'permission-denied' && (
         <PermissionDenied />

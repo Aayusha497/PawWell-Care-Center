@@ -1,0 +1,244 @@
+.about-page {
+  font-family: "Manrope", "Segoe UI", sans-serif;
+  color: #111827;
+  background: #fffaf3;
+}
+
+.about-page h1,
+.about-page h2,
+.about-page h3 {
+  font-family: "Playfair Display", "Georgia", serif;
+}
+
+.about-hero {
+  display: grid;
+  gap: 32px;
+  padding: 72px 8vw 56px;
+  background: radial-gradient(circle at top left, #fff1cf 0%, #ffeaf6 42%, #f4f7ff 100%);
+}
+
+.about-hero-content h1 {
+  font-size: clamp(2.4rem, 4vw, 3.6rem);
+  margin: 16px 0;
+  line-height: 1.1;
+}
+
+.about-hero-subtitle {
+  font-size: 1.1rem;
+  max-width: 540px;
+  color: #4b5563;
+}
+
+.about-pill {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.about-hero-actions {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btn-primary {
+  background: #111827;
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 999px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #111827;
+  padding: 12px 24px;
+  border-radius: 999px;
+  border: 1px solid #111827;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.about-hero-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  box-shadow: 0 24px 60px -40px rgba(15, 23, 42, 0.4);
+  display: grid;
+  gap: 20px;
+}
+
+.about-hero-highlight h3 {
+  margin: 8px 0;
+}
+
+.about-hero-badge {
+  background: #111827;
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 12px 16px;
+  width: fit-content;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.section-title p {
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+.about-cards,
+.about-why,
+.about-steps,
+.about-mv,
+.about-team,
+.about-contact {
+  padding: 64px 8vw;
+}
+
+.card-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.trust-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  box-shadow: 0 20px 40px -34px rgba(15, 23, 42, 0.4);
+}
+
+.why-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  align-items: start;
+}
+
+.why-grid ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.why-grid li {
+  display: flex;
+  gap: 10px;
+  align-items: start;
+}
+
+.why-grid li::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #111827;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.why-panel {
+  background: #fff4da;
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.steps-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.step-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.step-card span {
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.about-mv {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.mv-card {
+  background: #111827;
+  color: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.team-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.team-grid article {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.about-contact {
+  display: grid;
+  gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  background: #ffffff;
+  border-top: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.contact-form {
+  background: #f9fafb;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  display: grid;
+  gap: 16px;
+}
+
+.form-row label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.form-row input,
+.form-row textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  padding: 10px 12px;
+  margin-top: 6px;
+  font-family: inherit;
+}
+
+@media (min-width: 900px) {
+  .about-hero {
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: center;
+  }
+}
