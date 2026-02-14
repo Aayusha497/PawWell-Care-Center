@@ -16,6 +16,7 @@ interface ActivityLog {
   activity_id: number;
   activity_type: 'feeding' | 'walk' | 'playtime' | 'medication' | 'grooming' | 'training' | 'veterinary' | 'other';
   detail?: string | null;
+  photo?: string | null;
   timestamp: string;
   pet?: {
     pet_id: number;
@@ -252,7 +253,14 @@ export default function ActivityLogViewer({ onBack, onLogout, userFullName, onBo
                                   {format(new Date(activity.timestamp), 'h:mm a')}
                                 </span>
                               </div>
-                              {activity.detail && <p className="text-sm mb-1">{activity.detail}</p>}
+                              {activity.detail && <p className="text-sm mb-2">{activity.detail}</p>}
+                              {activity.photo && (
+                                <img
+                                  src={activity.photo}
+                                  alt="Activity"
+                                  className="mt-2 h-40 w-full max-w-md rounded-lg object-cover border border-gray-200"
+                                />
+                              )}
                             </CardContent>
                           </Card>
                         </div>
