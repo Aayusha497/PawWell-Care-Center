@@ -45,7 +45,7 @@ interface BookingPageProps {
   onLogout?: () => void;
   userFullName?: string;
   onActivityLog?: () => void;
-  onNavigate?: (page: string, options?: { target?: 'contact' }) => void;
+  onNavigate?: (page: string) => void;
 }
 
 const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullName, onActivityLog, onNavigate }) => {
@@ -352,7 +352,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
               </button>
               <button
                 type="button"
-                onClick={() => onNavigate?.('about', { target: 'contact' })}
+                onClick={() => onNavigate?.('contact')}
                 className="px-4 py-2 hover:bg-gray-100 rounded-full"
               >
                 Contact

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const adminController = require('../controllers/adminController');
+const contactController = require('../controllers/contactController');
 
 /**
  * All routes require authentication and admin role
@@ -48,6 +49,41 @@ router.get('/bookings', authenticate, requireAdmin, adminController.getAllBookin
  * @access  Admin only
  */
 router.get('/stats', authenticate, requireAdmin, adminController.getSystemStats);
+
+/**
+ * @route   GET /api/admin/notifications/summary
+ * @desc    Get notification summary counts
+ * @access  Admin only
+ */
+router.get('/notifications/summary', authenticate, requireAdmin, adminController.getNotificationSummary);
+
+/**
+ * @route   GET /api/admin/contact-messages
+ * @desc    Get contact messages
+ * @access  Admin only
+ */
+router.get('/contact-messages', authenticate, requireAdmin, contactController.getContactMessages);
+
+/**
+ * @route   PUT /api/admin/contact-messages/mark-read
+ * @desc    Mark all contact messages as read
+ * @access  Admin only
+ */
+router.put('/contact-messages/mark-read', authenticate, requireAdmin, contactController.markAllContactMessagesRead);
+
+/**
+ * @route   PUT /api/admin/contact-messages/:contactId/read
+ * @desc    Mark a contact message as read
+ * @access  Admin only
+ */
+router.put('/contact-messages/:contactId/read', authenticate, requireAdmin, contactController.markContactMessageRead);
+
+/**
+ * @route   GET /api/admin/emergency-requests
+ * @desc    Get emergency requests
+ * @access  Admin only
+ */
+router.get('/emergency-requests', authenticate, requireAdmin, adminController.getEmergencyRequests);
 
 /**
  * @route   PUT /api/admin/config

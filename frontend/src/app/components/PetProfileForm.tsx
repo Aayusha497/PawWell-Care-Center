@@ -6,7 +6,7 @@ interface PetProfileFormProps {
   onBack: () => void;
   onSuccess?: () => void;
   petId?: number;
-  onNavigate?: (page: string, options?: { target?: 'contact' }) => void;
+  onNavigate?: (page: string) => void;
 }
 
 export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }: PetProfileFormProps) {
@@ -213,7 +213,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                 About
               </button>
               <button
-                onClick={() => onNavigate?.('about', { target: 'contact' })}
+                onClick={() => onNavigate?.('contact')}
                 className="px-4 py-2 hover:bg-gray-100 rounded-full"
               >
                 Contact

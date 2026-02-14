@@ -5,7 +5,7 @@ import PetProfileForm from './PetProfileForm';
 
 interface PetListingPageProps {
   onBack: () => void;
-  onNavigate?: (page: string, options?: { target?: 'contact' }) => void;
+  onNavigate?: (page: string) => void;
 }
 
 interface Pet {
@@ -120,7 +120,7 @@ export default function PetListingPage({ onBack, onNavigate }: PetListingPagePro
                 About
               </button>
               <button
-                onClick={() => onNavigate?.('about', { target: 'contact' })}
+                onClick={() => onNavigate?.('contact')}
                 className="px-4 py-2 hover:bg-gray-100 rounded-full"
               >
                 Contact

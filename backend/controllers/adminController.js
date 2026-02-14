@@ -1,4 +1,4 @@
-const { User } = require('../models');
+const { User, Booking, EmergencyRequest, ContactMessage, Pet } = require('../models');
 const { Op } = require('sequelize');
 
 /**
@@ -281,6 +281,76 @@ const updateSystemConfig = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Get notification summary counts
+ * @route   GET /api/admin/notifications/summary
+ * @access  Admin only
+ */
+const getNotificationSummary = async (req, res) => {
+  try {
+    const [pendingBookings, unreadMessages, openEmergency] = await Promise.all([
+      Booking.count({ where: { status: 'pending' } }),
+      ContactMessage.count({ where: { status: 'unread' } }),
+      EmergencyRequest.count({ where: { status: { [Op.in]: ['pending', 'in_progress'] } } })
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        pendingBookings,
+        contactMessages: unreadMessages,
+        emergencyRequests: openEmergency
+      }
+    });
+  } catch (error) {
+    console.error('Get notification summary error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch notification summary',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Get emergency requests for admin
+ * @route   GET /api/admin/emergency-requests
+ * @access  Admin only
+ */
+const getEmergencyRequests = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const whereClause = {};
+
+    if (status) {
+      whereClause.status = status;
+    } else {
+      whereClause.status = { [Op.in]: ['pending', 'in_progress'] };
+    }
+
+    const requests = await EmergencyRequest.findAll({
+      where: whereClause,
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] },
+        { model: Pet, as: 'pet', attributes: ['pet_id', 'name'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: requests
+    });
+  } catch (error) {
+    console.error('Get emergency requests error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch emergency requests',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -288,5 +358,7 @@ module.exports = {
   deleteUser,
   getAllBookings,
   getSystemStats,
-  updateSystemConfig
+  updateSystemConfig,
+  getNotificationSummary,
+  getEmergencyRequests
 };

@@ -1,5 +1,17 @@
 import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
-import { createActivityLog, getPendingBookings, approveBooking, rejectBooking, getUserPets } from '../../services/api';
+import { Bell } from 'lucide-react';
+import {
+  createActivityLog,
+  getPendingBookings,
+  approveBooking,
+  rejectBooking,
+  getUserPets,
+  getAdminNotificationSummary,
+  getAdminContactMessages,
+  markAdminContactMessagesRead,
+  markAdminContactMessageRead,
+  getAdminEmergencyRequests
+} from '../../services/api';
 import { toast } from 'sonner';
 import ActivityLogsManagement from './ActivityLogsManagement';
 
@@ -34,6 +46,28 @@ interface Pet {
   };
 }
 
+interface ContactMessage {
+  contact_id: number;
+  full_name: string;
+  email: string;
+  phone_number?: string;
+  location?: string;
+  subject: string;
+  message: string;
+  status: 'unread' | 'read';
+  created_at: string;
+}
+
+interface EmergencyRequest {
+  emergency_id: number;
+  emergency_type: string;
+  contact_info: string;
+  status: 'pending' | 'in_progress' | 'resolved' | 'cancelled';
+  created_at: string;
+  pet?: { name?: string };
+  user?: { firstName?: string; lastName?: string; email?: string };
+}
+
 export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -48,6 +82,19 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
   const [notifyOwner, setNotifyOwner] = useState(false);
   const [submittingLog, setSubmittingLog] = useState(false);
   const [viewingActivityLogs, setViewingActivityLogs] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationSummary, setNotificationSummary] = useState({
+    contactMessages: 0,
+    pendingBookings: 0,
+    emergencyRequests: 0
+  });
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [contactLoading, setContactLoading] = useState(false);
+  const [emergencyRequests, setEmergencyRequests] = useState<EmergencyRequest[]>([]);
+  const [emergencyLoading, setEmergencyLoading] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
+  const [markingMessageId, setMarkingMessageId] = useState<number | null>(null);
 
   const activityTypes = [
     { value: 'feeding', label: 'Feeding' },
@@ -63,7 +110,25 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
   useEffect(() => {
     fetchPendingBookings();
     fetchPets();
+    fetchNotificationSummary();
+    const intervalId = window.setInterval(() => {
+      fetchNotificationSummary();
+    }, 45000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'contact-messages') {
+      fetchContactMessages();
+    }
+
+    if (activeTab === 'emergency-requests') {
+      fetchEmergencyRequests();
+    }
+  }, [activeTab]);
 
   const fetchPendingBookings = async () => {
     try {
@@ -101,12 +166,100 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
     }
   };
 
+  const fetchNotificationSummary = async () => {
+    try {
+      setNotificationLoading(true);
+      const response = await getAdminNotificationSummary();
+      const data = response.data || {};
+      setNotificationSummary({
+        contactMessages: data.contactMessages || 0,
+        pendingBookings: data.pendingBookings || 0,
+        emergencyRequests: data.emergencyRequests || 0
+      });
+    } catch (error: any) {
+      console.error('Error fetching notification summary:', error);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
+
+  const fetchContactMessages = async () => {
+    try {
+      setContactLoading(true);
+      const response = await getAdminContactMessages();
+      setContactMessages(response.data || []);
+    } catch (error: any) {
+      console.error('Error fetching contact messages:', error);
+      toast.error('Failed to load contact messages');
+    } finally {
+      setContactLoading(false);
+    }
+  };
+
+  const fetchEmergencyRequests = async () => {
+    try {
+      setEmergencyLoading(true);
+      const response = await getAdminEmergencyRequests();
+      setEmergencyRequests(response.data || []);
+    } catch (error: any) {
+      console.error('Error fetching emergency requests:', error);
+      toast.error('Failed to load emergency requests');
+    } finally {
+      setEmergencyLoading(false);
+    }
+  };
+
+  const handleMarkAllContactRead = async () => {
+    try {
+      await markAdminContactMessagesRead();
+      toast.success('Marked all contact messages as read.');
+      fetchContactMessages();
+      fetchNotificationSummary();
+    } catch (error: any) {
+      console.error('Error marking contact messages read:', error);
+      toast.error(error.message || 'Failed to update contact messages');
+    }
+  };
+
+  const handleMarkMessageRead = async (messageId: number) => {
+    try {
+      setMarkingMessageId(messageId);
+      await markAdminContactMessageRead(messageId);
+      setContactMessages((prev) =>
+        prev.map((message) =>
+          message.contact_id === messageId
+            ? { ...message, status: 'read' }
+            : message
+        )
+      );
+      setSelectedMessage((prev) =>
+        prev && prev.contact_id === messageId
+          ? { ...prev, status: 'read' }
+          : prev
+      );
+      fetchNotificationSummary();
+    } catch (error: any) {
+      console.error('Error marking contact message read:', error);
+      toast.error(error.message || 'Failed to update contact message');
+    } finally {
+      setMarkingMessageId(null);
+    }
+  };
+
+  const handleOpenMessage = (message: ContactMessage) => {
+    setSelectedMessage(message);
+    if (message.status === 'unread') {
+      handleMarkMessageRead(message.contact_id);
+    }
+  };
+
   const handleApproveBooking = async (booking_id: number) => {
     try {
       setApproving(booking_id);
       await approveBooking(booking_id);
       toast.success('Booking approved successfully');
       fetchPendingBookings();
+      fetchNotificationSummary();
     } catch (error: any) {
       console.error('Error approving booking:', error);
       toast.error(error.message || 'Failed to approve booking');
@@ -125,6 +278,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       await rejectBooking(booking_id);
       toast.success('Booking rejected successfully');
       fetchPendingBookings();
+      fetchNotificationSummary();
     } catch (error: any) {
       console.error('Error rejecting booking:', error);
       toast.error(error.message || 'Failed to reject booking');
@@ -186,6 +340,22 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       month: '2-digit',
       day: '2-digit'
     });
+  };
+
+  const notificationTotal =
+    notificationSummary.contactMessages +
+    notificationSummary.pendingBookings +
+    notificationSummary.emergencyRequests;
+
+  const titleMap: Record<string, string> = {
+    dashboard: 'Admin Dashboard',
+    'booking-management': 'Booking Management',
+    caretakers: 'Caretakers',
+    capacity: 'Capacity Management',
+    'activity-logs': 'Daily Activity Log',
+    announcements: 'Announcements',
+    'contact-messages': 'Contact Messages',
+    'emergency-requests': 'Emergency Requests'
   };
 
   return (
@@ -256,6 +426,28 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
           <div className="mt-8 pt-4 border-t border-gray-200">
             <p className="px-4 text-xs font-semibold text-gray-400 uppercase mb-2">System</p>
             <button
+              onClick={() => setActiveTab('contact-messages')}
+              className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                activeTab === 'contact-messages'
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span>✉️</span>
+              Contact messages
+            </button>
+            <button
+              onClick={() => setActiveTab('emergency-requests')}
+              className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                activeTab === 'emergency-requests'
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span>🚨</span>
+              Emergency requests
+            </button>
+            <button
               onClick={() => setActiveTab('announcements')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                 activeTab === 'announcements'
@@ -282,10 +474,82 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <div className="p-8">
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {titleMap[activeTab] || 'Admin Dashboard'}
+            </h1>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setNotificationOpen((prev) => {
+                    if (!prev) {
+                      fetchNotificationSummary();
+                    }
+                    return !prev;
+                  });
+                }}
+                className="relative flex items-center justify-center w-11 h-11 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition"
+                aria-label="Notifications"
+              >
+                <Bell size={20} className="text-gray-700" />
+                {notificationTotal > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[20px] px-1 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                    {notificationTotal}
+                  </span>
+                )}
+              </button>
+
+              {notificationOpen && (
+                <div className="absolute right-0 mt-3 w-72 rounded-xl border border-gray-200 bg-white shadow-lg z-20">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-semibold text-gray-900">Notifications</p>
+                    <p className="text-xs text-gray-500">Unread summary</p>
+                  </div>
+                  <div className="py-2">
+                    {notificationLoading ? (
+                      <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab('contact-messages');
+                            setNotificationOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
+                        >
+                          {notificationSummary.contactMessages} New Contact Messages
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab('booking-management');
+                            setNotificationOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
+                        >
+                          {notificationSummary.pendingBookings} Pending Booking Approvals
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab('emergency-requests');
+                            setNotificationOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
+                        >
+                          {notificationSummary.emergencyRequests} Emergency Requests
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
           {activeTab === 'dashboard' && (
             <>
-              <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
-
               {/* Stats Cards */}
               <div className="grid grid-cols-2 gap-6 mb-8">
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-yellow-200">
@@ -390,7 +654,6 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
           {activeTab === 'activity-logs' && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h1 className="text-3xl font-bold text-gray-900">Daily Activity Log</h1>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setViewingActivityLogs(false)}
@@ -505,6 +768,187 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                       {submittingLog ? 'Logging activity...' : 'Log Activity'}
                     </button>
                   </form>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'contact-messages' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Recent Contact Messages</h2>
+                <button
+                  type="button"
+                  onClick={handleMarkAllContactRead}
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                >
+                  Mark all as read
+                </button>
+              </div>
+
+              {contactLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading contact messages...</p>
+                </div>
+              ) : contactMessages.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No contact messages yet</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Subject</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Phone</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Location</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Received</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                        <th className="text-right py-3 px-4 font-semibold text-gray-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {contactMessages.map((message) => (
+                        <tr key={message.contact_id} className="border-b border-gray-100">
+                          <td className="py-3 px-4 text-gray-900">{message.full_name}</td>
+                          <td className="py-3 px-4 text-gray-600">{message.email}</td>
+                          <td className="py-3 px-4 text-gray-600">{message.subject}</td>
+                          <td className="py-3 px-4 text-gray-600">{message.phone_number || '-'}</td>
+                          <td className="py-3 px-4 text-gray-600">{message.location || '-'}</td>
+                          <td className="py-3 px-4 text-gray-600">{formatDate(message.created_at)}</td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                              message.status === 'unread'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {message.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenMessage(message)}
+                                className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              >
+                                View
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleMarkMessageRead(message.contact_id)}
+                                disabled={message.status === 'read' || markingMessageId === message.contact_id}
+                                className="px-3 py-1.5 text-sm rounded-lg bg-yellow-100 text-yellow-800 hover:bg-yellow-200 disabled:opacity-50"
+                              >
+                                {markingMessageId === message.contact_id ? 'Marking...' : 'Mark read'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {selectedMessage && (
+                <div className="fixed inset-0 bg-black/30 flex items-end justify-end z-30">
+                  <div className="bg-white w-full max-w-md h-full sm:h-auto sm:rounded-l-2xl p-6 shadow-xl overflow-y-auto">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Message Details</p>
+                        <h3 className="text-lg font-semibold text-gray-900">{selectedMessage.subject}</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMessage(null)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <p className="text-gray-500">From</p>
+                        <p className="text-gray-900 font-medium">{selectedMessage.full_name}</p>
+                        <p className="text-gray-600">{selectedMessage.email}</p>
+                        <p className="text-gray-600">{selectedMessage.phone_number || 'No phone provided'}</p>
+                        <p className="text-gray-600">{selectedMessage.location || 'No location provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Received</p>
+                        <p className="text-gray-900">{formatDate(selectedMessage.created_at)}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Message</p>
+                        <p className="text-gray-900 whitespace-pre-line">{selectedMessage.message}</p>
+                      </div>
+                    </div>
+                    <div className="mt-6 flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMessage(null)}
+                        className="flex-1 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      >
+                        Close
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMarkMessageRead(selectedMessage.contact_id)}
+                        disabled={selectedMessage.status === 'read' || markingMessageId === selectedMessage.contact_id}
+                        className="flex-1 px-4 py-2 rounded-lg bg-yellow-300 text-gray-900 hover:bg-yellow-400 disabled:opacity-50"
+                      >
+                        {markingMessageId === selectedMessage.contact_id ? 'Marking...' : 'Mark read'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'emergency-requests' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Emergency Requests</h2>
+
+              {emergencyLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading emergency requests...</p>
+                </div>
+              ) : emergencyRequests.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No active emergency requests</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Pet</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Contact</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Submitted</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {emergencyRequests.map((request) => (
+                        <tr key={request.emergency_id} className="border-b border-gray-100">
+                          <td className="py-3 px-4 text-gray-900">{request.pet?.name || 'Unknown'}</td>
+                          <td className="py-3 px-4 text-gray-600">{request.emergency_type}</td>
+                          <td className="py-3 px-4 text-gray-600">{request.contact_info}</td>
+                          <td className="py-3 px-4 text-gray-600">{formatDate(request.created_at)}</td>
+                          <td className="py-3 px-4">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                              {request.status.replace('_', ' ')}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

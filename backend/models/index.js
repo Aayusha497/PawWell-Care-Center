@@ -13,6 +13,7 @@ const WellnessTimeline = require('./WellnessTimeline')(sequelize);
 const PublicForum = require('./PublicForum')(sequelize);
 const ActivityLog = require('./ActivityLog')(sequelize);
 const Notification = require('./Notification')(sequelize);
+const ContactMessage = require('./ContactMessage')(sequelize);
 
 // Store all models
 const models = {
@@ -27,7 +28,8 @@ const models = {
   WellnessTimeline,
   PublicForum,
   ActivityLog,
-  Notification
+  Notification,
+  ContactMessage
 };
 
 // Set up associations

@@ -662,6 +662,95 @@ export const getAllBookingsAdmin = async (filters?: {
   }
 };
 
+/**
+ * Submit a contact message
+ */
+export const createContactMessage = async (data: {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  location: string;
+  subject: string;
+  message: string;
+}): Promise<any> => {
+  try {
+    const response = await api.post('/contact', data);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: 'Failed to send contact message' };
+  }
+};
+
+/**
+ * Admin: Get notification summary counts
+ */
+export const getAdminNotificationSummary = async (): Promise<any> => {
+  try {
+    const response = await api.get('/admin/notifications/summary');
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: 'Failed to fetch notifications' };
+  }
+};
+
+/**
+ * Admin: Get contact messages
+ */
+export const getAdminContactMessages = async (filters?: {
+  status?: 'unread' | 'read';
+  page?: number;
+  limit?: number;
+}): Promise<any> => {
+  try {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.page) params.append('page', String(filters.page));
+    if (filters?.limit) params.append('limit', String(filters.limit));
+
+    const response = await api.get(`/admin/contact-messages${params.toString() ? '?' + params.toString() : ''}`);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: 'Failed to fetch contact messages' };
+  }
+};
+
+/**
+ * Admin: Mark all contact messages as read
+ */
+export const markAdminContactMessagesRead = async (): Promise<any> => {
+  try {
+    const response = await api.put('/admin/contact-messages/mark-read');
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: 'Failed to update contact messages' };
+  }
+};
+
+/**
+ * Admin: Mark a contact message as read
+ */
+export const markAdminContactMessageRead = async (contactId: number): Promise<any> => {
+  try {
+    const response = await api.put(`/admin/contact-messages/${contactId}/read`);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: 'Failed to update contact message' };
+  }
+};
+
+/**
+ * Admin: Get emergency requests
+ */
+export const getAdminEmergencyRequests = async (status?: string): Promise<any> => {
+  try {
+    const params = status ? `?status=${encodeURIComponent(status)}` : '';
+    const response = await api.get(`/admin/emergency-requests${params}`);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: 'Failed to fetch emergency requests' };
+  }
+};
+
 // ==================== ACTIVITY LOG ENDPOINTS ====================
 
 /**

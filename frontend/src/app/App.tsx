@@ -12,6 +12,7 @@ import SignupPage from './components/SignupPage';
 import UserDashboard from './components/UserDashboard';
 import VerifyOTPPage from './components/VerifyOTPPage';
 import AboutPage from './components/AboutPage';
+import ContactPage from './components/ContactPage';
 import { Toaster } from './components/ui/sonner';
 import type { LoginData, RegisterData } from '../services/api';
 
@@ -25,7 +26,8 @@ type Page =
   | 'user-dashboard'
   | 'admin-dashboard'
   | 'permission-denied'
-  | 'about';
+  | 'about'
+  | 'contact';
 
 export default function App() {
   const { user, login, register, logout, loading, isLoggedIn } = useAuth();
@@ -34,7 +36,6 @@ export default function App() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
-  const [aboutScrollTarget, setAboutScrollTarget] = useState<'contact' | null>(null);
   const [dashboardTarget, setDashboardTarget] = useState<'booking' | 'add-pet' | 'activity-log' | null>(null);
 
   useEffect(() => {
@@ -155,14 +156,8 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (page: Page, options?: { target?: 'contact' }) => {
+  const handleNavigate = (page: Page) => {
     setCurrentPage(page);
-
-    if (page === 'about') {
-      setAboutScrollTarget(options?.target ?? null);
-    } else {
-      setAboutScrollTarget(null);
-    }
   };
 
   const handleDashboardTarget = (target: 'booking' | 'add-pet' | 'activity-log') => {
@@ -204,10 +199,19 @@ export default function App() {
           onBook={() => handleDashboardTarget('booking')}
           onAddPet={() => handleDashboardTarget('add-pet')}
           onActivityLog={() => handleDashboardTarget('activity-log')}
+          onContact={() => handleNavigate('contact')}
           onLogout={isLoggedIn ? handleLogout : undefined}
           userFullName={user?.fullName}
-          scrollTarget={aboutScrollTarget}
-          onClearScrollTarget={() => setAboutScrollTarget(null)}
+        />
+      )}
+      {currentPage === 'contact' && (
+        <ContactPage
+          onBack={() => handleNavigate(isLoggedIn ? 'user-dashboard' : 'landing')}
+          onBook={() => handleDashboardTarget('booking')}
+          onActivityLog={() => handleDashboardTarget('activity-log')}
+          onAbout={() => handleNavigate('about')}
+          onLogout={isLoggedIn ? handleLogout : undefined}
+          userFullName={user?.fullName}
         />
       )}
       {currentPage === 'forgot-password' && (
@@ -249,7 +253,7 @@ export default function App() {
               fullName: user.fullName
             }}
             onLogout={handleLogout}
-            onNavigate={(page, options) => handleNavigate(page as Page, options)}
+            onNavigate={(page) => handleNavigate(page as Page)}
             dashboardTarget={dashboardTarget}
             onClearDashboardTarget={() => setDashboardTarget(null)}
           />

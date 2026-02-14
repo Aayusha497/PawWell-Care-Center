@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import '../../pages/About.css';
 
 interface AboutPageProps {
@@ -9,8 +9,6 @@ interface AboutPageProps {
   onActivityLog?: () => void;
   onContact?: () => void;
   userFullName?: string;
-  scrollTarget?: 'contact' | null;
-  onClearScrollTarget?: () => void;
 }
 
 export default function AboutPage({
@@ -21,8 +19,6 @@ export default function AboutPage({
   onActivityLog,
   onContact,
   userFullName,
-  scrollTarget,
-  onClearScrollTarget,
 }: AboutPageProps) {
   const userInitials = userFullName
     ? userFullName.split(' ').map((name) => name[0]).join('').toUpperCase()
@@ -39,27 +35,9 @@ export default function AboutPage({
     []
   );
 
-  useEffect(() => {
-    if (scrollTarget === 'contact') {
-      const section = document.getElementById('contact');
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-      if (onClearScrollTarget) {
-        onClearScrollTarget();
-      }
-    }
-  }, [scrollTarget, onClearScrollTarget]);
-
   const handleContact = () => {
     if (onContact) {
       onContact();
-      return;
-    }
-
-    const section = document.getElementById('contact');
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -247,38 +225,6 @@ export default function AboutPage({
             <span>Project Supervisor</span>
           </article> */}
         </div>
-      </section>
-
-      <section id="contact" className="about-contact">
-        <div className="contact-info">
-          <h2>Contact PawWell</h2>
-          <p>Have a question about care, bookings, or availability? Reach out anytime.</p>
-          <div className="contact-details">
-            <p>📍 Kathmandu, Nepal</p>
-            <p>📞 +977-1-XXXXXXX</p>
-            <p>✉️ support@pawwell.com</p>
-            <p>⏱️ Emergency support available 24/7</p>
-          </div>
-        </div>
-        <form className="contact-form">
-          <div className="form-row">
-            <label>Full Name</label>
-            <input type="text" placeholder="Your full name" />
-          </div>
-          <div className="form-row">
-            <label>Email</label>
-            <input type="email" placeholder="you@example.com" />
-          </div>
-          <div className="form-row">
-            <label>Subject</label>
-            <input type="text" placeholder="How can we help?" />
-          </div>
-          <div className="form-row">
-            <label>Message</label>
-            <textarea rows={5} placeholder="Tell us about your pet and your needs." />
-          </div>
-          <button type="button" className="btn-primary">Send Message</button>
-        </form>
       </section>
     </div>
   );
