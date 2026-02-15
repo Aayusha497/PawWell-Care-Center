@@ -352,8 +352,28 @@ If you didn't request a password reset, please ignore this email and ensure your
   }
 };
 
+/**
+ * Send a generic email
+ */
+const sendEmail = async ({ to, subject, text, html }) => {
+    try {
+        await transporter.sendMail({
+            from: config.email.from,
+            to,
+            subject,
+            text,
+            html
+        });
+        return true;
+    } catch (error) {
+        console.error('Error sending email:', error);
+        return false;
+    }
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendPasswordChangedEmail,
-  sendOTPEmail
+    sendOTPEmail,
+    sendEmail
 };

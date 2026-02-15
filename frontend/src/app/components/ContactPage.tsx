@@ -8,6 +8,7 @@ interface ContactPageProps {
   onBook?: () => void;
   onActivityLog?: () => void;
   onAbout?: () => void;
+  onEmergency?: () => void;
   onLogout?: () => void;
   userFullName?: string;
 }
@@ -17,6 +18,7 @@ export default function ContactPage({
   onBook,
   onActivityLog,
   onAbout,
+  onEmergency,
   onLogout,
   userFullName,
 }: ContactPageProps) {
@@ -124,7 +126,10 @@ export default function ContactPage({
                 <span className="text-sm font-medium">{userInitials}</span>
               </div>
             )}
-            <button className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2">
+            <button
+              onClick={onEmergency}
+              className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
+            >
               <span>📞</span> Emergency
             </button>
             {onLogout && (

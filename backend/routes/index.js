@@ -6,6 +6,7 @@ const petRoutes = require('./pets');
 const bookingRoutes = require('./bookings');
 const activityLogRoutes = require('./activityLogs');
 const contactRoutes = require('./contact');
+const emergencyRoutes = require('./emergency');
 
 // Mount auth routes
 router.use('/accounts', authRoutes);
@@ -24,6 +25,9 @@ router.use('/activity-logs', activityLogRoutes);
 
 // Mount contact routes
 router.use('/contact', contactRoutes);
+
+// Mount emergency routes
+router.use('/emergency', emergencyRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

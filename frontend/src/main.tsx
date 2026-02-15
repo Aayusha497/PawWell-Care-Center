@@ -1,6 +1,6 @@
 
   import { createRoot } from "react-dom/client";
-  import { AuthProvider } from "./context/AuthContext.jsx";
+  import { AuthProvider } from './context/AuthContext.tsx';
   import App from "./app/App.tsx";
   import "./styles/index.css";
 

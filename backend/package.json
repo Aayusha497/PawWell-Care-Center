@@ -23,7 +23,8 @@
   "author": "PawWell Care Center",
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^7.2.0",
+    "@prisma/adapter-pg": "^7.4.0",
+    "@prisma/client": "^7.4.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.3",
@@ -39,13 +40,13 @@
     "nodemailer": "^6.9.7",
     "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",
-    "prisma": "^7.2.0",
     "sequelize": "^6.35.2",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@prisma/config": "^7.2.0",
     "dotenv": "^17.2.3",
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.2",
+    "prisma": "^7.4.0"
   }
 }

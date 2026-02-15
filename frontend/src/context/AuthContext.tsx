@@ -16,7 +16,7 @@ import {
   setUserData, 
   clearUserData,
   getAccessToken
-} from '../utils/auth';
+} from '../utils/auth.ts';
 
 interface AuthContextType {
   user: User | null;

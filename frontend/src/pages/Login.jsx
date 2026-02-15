@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { loginUser } from '../services/api';
+// Removed direct loginUser import as we use AuthContext
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 
@@ -35,15 +35,13 @@ const Login = () => {
 
   const handleSubmit = async (values, { setSubmitting, setErrors }) => {
     try {
-      const response = await loginUser({
+      // Use the login function from AuthContext which handles API call and state updates
+      const response = await login({
         email: values.email,
         password: values.password,
       });
 
       if (response.success) {
-        // Store tokens and user data
-        login(response.access, response.refresh, response.user);
-
         const fromState = location.state?.from;
         const redirectTo = typeof fromState === 'string'
           ? fromState

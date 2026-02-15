@@ -8,7 +8,7 @@
  */
 
 import axios, { AxiosError } from 'axios';
-import { getAccessToken, getRefreshToken, setTokens, removeTokens } from '../utils/auth';
+import { getAccessToken, getRefreshToken, setTokens, removeTokens } from '../utils/auth.ts';
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -17,6 +17,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 seconds
+  withCredentials: true, // Important for cookies
 });
 
 console.log('🔧 API Service initialized with baseURL:', api.defaults.baseURL);
@@ -744,10 +745,52 @@ export const markAdminContactMessageRead = async (contactId: number): Promise<an
 export const getAdminEmergencyRequests = async (status?: string): Promise<any> => {
   try {
     const params = status ? `?status=${encodeURIComponent(status)}` : '';
-    const response = await api.get(`/admin/emergency-requests${params}`);
+    const response = await api.get(`/emergency${params}`);
     return response.data;
   } catch (error: any) {
     throw error.response?.data || { message: 'Failed to fetch emergency requests' };
+  }
+};
+
+/**
+ * Create emergency request
+ */
+export const createEmergencyRequest = async (data: {
+  pet_id: number;
+  emergency_type: string;
+  description: string;
+  phone_number?: string;
+  location?: string;
+}): Promise<any> => {
+  try {
+    const response = await api.post('/emergency', data);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: 'Failed to submit emergency request' };
+  }
+};
+
+/**
+ * Get current user's emergency requests
+ */
+export const getMyEmergencyRequests = async (): Promise<any> => {
+  try {
+    const response = await api.get('/emergency/my');
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: 'Failed to fetch emergency requests' };
+  }
+};
+
+/**
+ * Admin: Update emergency request status
+ */
+export const updateEmergencyStatus = async (emergencyId: number, status: string): Promise<any> => {
+  try {
+    const response = await api.patch(`/emergency/${emergencyId}/status`, { status });
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { message: 'Failed to update emergency request' };
   }
 };
 

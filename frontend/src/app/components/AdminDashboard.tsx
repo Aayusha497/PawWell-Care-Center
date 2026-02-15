@@ -10,7 +10,8 @@ import {
   getAdminContactMessages,
   markAdminContactMessagesRead,
   markAdminContactMessageRead,
-  getAdminEmergencyRequests
+  getAdminEmergencyRequests,
+  updateEmergencyStatus
 } from '../../services/api';
 import { toast } from 'sonner';
 import ActivityLogsManagement from './ActivityLogsManagement';
@@ -63,9 +64,13 @@ interface EmergencyRequest {
   emergency_type: string;
   contact_info: string;
   status: 'pending' | 'in_progress' | 'resolved' | 'cancelled';
+  description?: string | null;
   created_at: string;
-  pet?: { name?: string };
-  user?: { firstName?: string; lastName?: string; email?: string };
+  pets?: { 
+    name?: string;
+    photo?: string;
+  };
+  users?: { first_name?: string; last_name?: string; email?: string };
 }
 
 export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
@@ -284,6 +289,18 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       toast.error(error.message || 'Failed to reject booking');
     } finally {
       setRejecting(null);
+    }
+  };
+
+  const handleUpdateEmergencyStatus = async (requestId: number, status: string) => {
+    try {
+      await updateEmergencyStatus(requestId, status);
+      toast.success('Emergency request updated.');
+      fetchEmergencyRequests();
+      fetchNotificationSummary();
+    } catch (error: any) {
+      console.error('Error updating emergency request:', error);
+      toast.error(error.message || 'Failed to update emergency request');
     }
   };
 
@@ -928,22 +945,62 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                       <tr className="border-b border-gray-200">
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Pet</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Description</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Contact</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Submitted</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                        <th className="text-right py-3 px-4 font-semibold text-gray-700">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {emergencyRequests.map((request) => (
                         <tr key={request.emergency_id} className="border-b border-gray-100">
-                          <td className="py-3 px-4 text-gray-900">{request.pet?.name || 'Unknown'}</td>
-                          <td className="py-3 px-4 text-gray-600">{request.emergency_type}</td>
-                          <td className="py-3 px-4 text-gray-600">{request.contact_info}</td>
+                          <td className="py-3 px-4 flex items-center gap-3">
+                            {request.pets?.photo ? (
+                              <img src={request.pets.photo} alt={request.pets.name} className="w-8 h-8 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                                <span className="text-xs">🐾</span>
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-gray-900">{request.pets?.name || 'Unknown'}</p>
+                              {request.users && <p className="text-xs text-gray-500">{request.users.first_name} {request.users.last_name}</p>}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-gray-600 font-medium">{request.emergency_type}</td>
+                          <td className="py-3 px-4 text-gray-600 max-w-xs truncate" title={request.description || ''}>{request.description || '-'}</td>
+                          <td className="py-3 px-4 text-gray-600 text-sm">{request.contact_info}</td>
                           <td className="py-3 px-4 text-gray-600">{formatDate(request.created_at)}</td>
                           <td className="py-3 px-4">
                             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
                               {request.status.replace('_', ' ')}
                             </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateEmergencyStatus(request.emergency_id, 'in_progress')}
+                                className="px-3 py-1.5 text-sm rounded-lg bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                              >
+                                In Progress
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateEmergencyStatus(request.emergency_id, 'resolved')}
+                                className="px-3 py-1.5 text-sm rounded-lg bg-green-100 text-green-800 hover:bg-green-200"
+                              >
+                                Resolve
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateEmergencyStatus(request.emergency_id, 'cancelled')}
+                                className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

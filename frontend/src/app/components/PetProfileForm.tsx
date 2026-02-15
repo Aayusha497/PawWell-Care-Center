@@ -221,7 +221,10 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2">
+            <button
+              onClick={() => onNavigate?.('emergency')}
+              className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
+            >
               <span>📞</span> Emergency
             </button>
           </div>

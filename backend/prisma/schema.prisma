@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -8,20 +7,20 @@ datasource db {
 }
 
 model activity_logs {
-  activity_id   Int      @id @default(autoincrement())
+  activity_id   Int       @id @default(autoincrement())
   user_id       Int
-  pet_id        Int?
-  activity_type String   @db.VarChar(100)
-  timestamp     DateTime @db.Timestamptz(6)
+  activity_type String    @db.VarChar(100)
+  timestamp     DateTime  @db.Timestamptz(6)
   detail        String?
-  photo         String?  @db.VarChar(500)
-  notify_owner  Boolean  @default(false)
-  ip_address    String?  @db.VarChar(45)
+  ip_address    String?   @db.VarChar(45)
   user_agent    String?
-  created_at    DateTime @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime @default(now()) @db.Timestamptz(6)
-  users         users    @relation(fields: [user_id], references: [id], onDelete: NoAction)
-  pets          pets?    @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+  pet_id        Int?
+  photo         String?   @db.VarChar(500)
+  notify_owner  Boolean?  @default(false)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  pets          pets?     @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade, onUpdate: NoAction)
+  users         users     @relation(fields: [user_id], references: [id], onDelete: NoAction)
 }
 
 model bookings {
@@ -31,7 +30,6 @@ model bookings {
   service_id        Int?
   service_type      String               @db.VarChar(100)
   price             Decimal              @db.Decimal(10, 2)
-  date              DateTime             @db.Timestamptz(6)
   status            enum_bookings_status @default(pending)
   payment_method    String?              @db.VarChar(50)
   confirmation_code String?              @unique @db.VarChar(50)
@@ -61,6 +59,7 @@ model emergency_requests {
   status         enum_emergency_requests_status @default(pending)
   created_at     DateTime                       @db.Timestamptz(6)
   updated_at     DateTime                       @db.Timestamptz(6)
+  description    String?
   pets           pets                           @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
   users          users                          @relation(fields: [user_id], references: [id], onDelete: NoAction)
 }
@@ -185,11 +184,12 @@ model users {
   last_login         DateTime?            @db.Timestamptz(6)
   activity_logs      activity_logs[]
   bookings           bookings[]
+  contact_messages   contact_messages[]
   emergency_requests emergency_requests[]
+  notifications      notifications[]
   password_resets    password_resets[]
   pets               pets[]
   public_forum       public_forum[]
-  notifications      notifications[]
 }
 
 model wellness_timeline {
@@ -208,10 +208,25 @@ model notifications {
   notification_id Int      @id @default(autoincrement())
   user_id         Int
   activity_id     Int?
-  message         String
+  message         String   @db.VarChar
   is_read         Boolean  @default(false)
   created_at      DateTime @default(now()) @db.Timestamptz(6)
-  users           users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  users           users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model contact_messages {
+  contact_id Int                          @id @default(autoincrement())
+  user_id    Int?
+  full_name  String                       @db.VarChar(150)
+  email        String                       @db.VarChar(255)
+  phone_number String?                      @db.VarChar(50)
+  location     String?                      @db.VarChar(255)
+  subject      String                       @db.VarChar(255)
+  message    String
+  status     enum_contact_messages_status @default(unread)
+  created_at DateTime                     @db.Timestamptz(6)
+  updated_at DateTime                     @db.Timestamptz(6)
+  users      users?                       @relation(fields: [user_id], references: [id])
 }
 
 enum enum_bookings_status {
@@ -232,4 +247,9 @@ enum enum_users_user_type {
   pet_owner
   admin
   staff
+}
+
+enum enum_contact_messages_status {
+  unread
+  read
 }

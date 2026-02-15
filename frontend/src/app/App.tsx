@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext.tsx';
 import { isAdmin } from '../utils/rbac';
 import AdminDashboard from './components/AdminDashboard';
 import ForgotPasswordPage from './components/ForgotPasswordPage';
@@ -13,6 +13,7 @@ import UserDashboard from './components/UserDashboard';
 import VerifyOTPPage from './components/VerifyOTPPage';
 import AboutPage from './components/AboutPage';
 import ContactPage from './components/ContactPage';
+import EmergencyPage from './components/EmergencyPage';
 import { Toaster } from './components/ui/sonner';
 import type { LoginData, RegisterData } from '../services/api';
 
@@ -27,7 +28,8 @@ type Page =
   | 'admin-dashboard'
   | 'permission-denied'
   | 'about'
-  | 'contact';
+  | 'contact'
+  | 'emergency';
 
 export default function App() {
   const { user, login, register, logout, loading, isLoggedIn } = useAuth();
@@ -200,6 +202,7 @@ export default function App() {
           onAddPet={() => handleDashboardTarget('add-pet')}
           onActivityLog={() => handleDashboardTarget('activity-log')}
           onContact={() => handleNavigate('contact')}
+          onEmergency={() => handleNavigate('emergency')}
           onLogout={isLoggedIn ? handleLogout : undefined}
           userFullName={user?.fullName}
         />
@@ -210,8 +213,20 @@ export default function App() {
           onBook={() => handleDashboardTarget('booking')}
           onActivityLog={() => handleDashboardTarget('activity-log')}
           onAbout={() => handleNavigate('about')}
+          onEmergency={() => handleNavigate('emergency')}
           onLogout={isLoggedIn ? handleLogout : undefined}
           userFullName={user?.fullName}
+        />
+      )}
+      {currentPage === 'emergency' && (
+        <EmergencyPage
+          onBack={() => handleNavigate(isLoggedIn ? 'user-dashboard' : 'landing')}
+          onBook={() => handleDashboardTarget('booking')}
+          onActivityLog={() => handleDashboardTarget('activity-log')}
+          onAbout={() => handleNavigate('about')}
+          onContact={() => handleNavigate('contact')}
+          onEmergency={() => handleNavigate('emergency')}
+          onLogout={isLoggedIn ? handleLogout : undefined}
         />
       )}
       {currentPage === 'forgot-password' && (

@@ -163,7 +163,10 @@ export default function ActivityLogViewer({ onBack, onLogout, userFullName, onBo
             <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
               <span className="text-sm font-medium">{userInitials}</span>
             </div>
-            <button className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2">
+            <button
+              onClick={() => onNavigate?.('emergency')}
+              className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
+            >
               <span>📞</span> Emergency
             </button>
             {onLogout && (

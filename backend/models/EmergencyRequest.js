@@ -37,6 +37,11 @@ module.exports = (sequelize) => {
       allowNull: false,
       field: 'emergency_type'
     },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'description'
+    },
     contact_info: {
       type: DataTypes.STRING(255),
       allowNull: false,

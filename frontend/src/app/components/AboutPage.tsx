@@ -8,6 +8,7 @@ interface AboutPageProps {
   onLogout?: () => void;
   onActivityLog?: () => void;
   onContact?: () => void;
+  onEmergency?: () => void;
   userFullName?: string;
 }
 
@@ -18,6 +19,7 @@ export default function AboutPage({
   onLogout,
   onActivityLog,
   onContact,
+  onEmergency,
   userFullName,
 }: AboutPageProps) {
   const userInitials = userFullName
@@ -92,7 +94,10 @@ export default function AboutPage({
                 <span className="text-sm font-medium">{userInitials}</span>
               </div>
             )}
-            <button className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2">
+            <button
+              onClick={onEmergency}
+              className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
+            >
               <span>📞</span> Emergency
             </button>
             {onLogout && (
