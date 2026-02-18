@@ -318,72 +318,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
     : 'U';
 
   return (
-    <div className="min-h-screen bg-[#FFF9F5]">
-      <nav className="bg-white border-b px-8 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🐾</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <button
-                type="button"
-                onClick={onBack}
-                className="px-4 py-2 rounded-full bg-[#FFE4A3] font-medium"
-              >
-                Home
-              </button>
-              <button type="button" className="px-4 py-2 hover:bg-gray-100 rounded-full">
-                Booking
-              </button>
-              <button
-                type="button"
-                onClick={handleGoToActivityLog}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
-              >
-                Activity Log
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate?.('about')}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
-              >
-                About
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate?.('contact')}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
-              >
-                Contact
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-              <span className="text-sm font-medium">{userInitials}</span>
-            </div>
-            <button
-              onClick={() => onNavigate?.('emergency')}
-              className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
-            >
-              <span>📞</span> Emergency
-            </button>
-            {onLogout && (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
-              >
-                Logout
-              </button>
-            )}
-          </div>
-        </div>
-      </nav>
-
-      <main className="py-8 px-4">
-        <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2">Book Pet Care Service</h1>
@@ -686,8 +621,6 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
             </div>
           </div>
         </form>
-        </div>
-      </main>
     </div>
   );
 };

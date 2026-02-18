@@ -10,6 +10,8 @@ import ManageBookings from './ManageBookings';
 import BookingHistory from './BookingHistory';
 import ActivityLogViewer from './ActivityLogViewer';
 import WellnessTimeline from './WellnessTimeline';
+import AboutPage from './AboutPage';
+import ContactPage from './ContactPage';
 
 interface User {
   id: string;
@@ -75,6 +77,8 @@ export default function UserDashboard({
   const [showBookingHistory, setShowBookingHistory] = useState(false);
   const [showActivityLog, setShowActivityLog] = useState(false);
   const [showWellnessTimeline, setShowWellnessTimeline] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [showContact, setShowContact] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
@@ -227,6 +231,8 @@ const handleAddPet = () => {
     setShowBookingHistory(false);
     setShowActivityLog(false);
     setShowWellnessTimeline(false);
+    setShowAbout(false);
+    setShowContact(false);
     setSelectedPetId(undefined);
     fetchPets(); // Refresh pets list
     fetchBookings(); // Refresh bookings list
@@ -260,148 +266,117 @@ const handleAddPet = () => {
     setShowBookingHistory(false);
     setShowActivityLog(false);
     setShowWellnessTimeline(true);
+    setShowAbout(false);
+    setShowContact(false);
   };
 
-  if (showBookingPage) {
+  const handleShowAbout = () => {
+    setShowBookingPage(false);
+    setShowManageBookings(false);
+    setShowBookingHistory(false);
+    setShowActivityLog(false);
+    setShowWellnessTimeline(false);
+    setShowAbout(true);
+    setShowContact(false);
+  };
+
+  const handleShowContact = () => {
+    setShowBookingPage(false);
+    setShowManageBookings(false);
+    setShowBookingHistory(false);
+    setShowActivityLog(false);
+    setShowWellnessTimeline(false);
+    setShowAbout(false);
+    setShowContact(true);
+  };
+
+  const renderContent = () => {
+    if (showBookingPage) {
+      return (
+        <BookingPage
+          onBack={handleBackToDashboard}
+          onLogout={onLogout}
+          userFullName={user.fullName}
+          onActivityLog={handleViewActivityLog}
+          onNavigate={onNavigate}
+        />
+      );
+    }
+
+    if (showManageBookings) {
+      return <ManageBookings onBack={handleBackToDashboard} />;
+    }
+
+    if (showBookingHistory) {
+      return <BookingHistory onBack={handleBackToDashboard} />;
+    }
+
+    if (showActivityLog) {
+      return (
+        <ActivityLogViewer
+          onBack={handleBackToDashboard}
+          onLogout={onLogout}
+          userFullName={user.fullName}
+          onBook={handleBookService}
+          onNavigate={onNavigate}
+        />
+      );
+    }
+
+    if (showWellnessTimeline) {
+      return (
+        <WellnessTimeline 
+          onBack={() => setShowWellnessTimeline(false)}
+          onLogout={onLogout}
+        />
+      );
+    }
+
+    if (showAbout) {
+      return (
+        <AboutPage 
+          onBack={handleBackToDashboard}
+          onBook={handleBookService}
+          onActivityLog={handleViewActivityLog}
+          onTimeline={handleViewWellnessTimeline}
+          onContact={handleShowContact}
+          onLogout={onLogout}
+          userFullName={user.fullName}
+        />
+      );
+    }
+
+    if (showContact) {
+      return (
+        <ContactPage 
+          onBack={handleBackToDashboard}
+          onBook={handleBookService}
+          onActivityLog={handleViewActivityLog}
+          onTimeline={handleViewWellnessTimeline}
+          onAbout={handleShowAbout}
+          onLogout={onLogout}
+          userFullName={user.fullName}
+        />
+      );
+    }
+
+    if (showPetListing) {
+      return <PetListingPage onBack={handleBackToDashboard} onNavigate={onNavigate} />;
+    }
+
+    if (showPetForm) {
+      return (
+        <PetProfileForm 
+          onBack={handleBackToDashboard}
+          onSuccess={handleBackToDashboard}
+          petId={selectedPetId}
+          onNavigate={onNavigate}
+        />
+      );
+    }
+
     return (
-      <BookingPage
-        onBack={handleBackToDashboard}
-        onLogout={onLogout}
-        userFullName={user.fullName}
-        onActivityLog={handleViewActivityLog}
-        onNavigate={onNavigate}
-      />
-    );
-  }
-
-  if (showManageBookings) {
-    return <ManageBookings onBack={handleBackToDashboard} />;
-  }
-
-  if (showBookingHistory) {
-    return <BookingHistory onBack={handleBackToDashboard} />;
-  }
-
-  if (showActivityLog) {
-    return (
-      <ActivityLogViewer
-        onBack={handleBackToDashboard}
-        onLogout={onLogout}
-        userFullName={user.fullName}
-        onBook={handleBookService}
-        onNavigate={onNavigate}
-      />
-    );
-  }
-
-  if (showWellnessTimeline) {
-    return (
-      <div className="min-h-screen bg-[#FFF9F5]">
-        <nav className="bg-white border-b px-8 py-3">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🐾</span>
-              </div>
-              <Button variant="ghost" onClick={handleBackToDashboard}>
-                Back to Dashboard
-              </Button>
-            </div>
-            <Button onClick={onLogout} variant="ghost" className="text-red-600">
-              Logout
-            </Button>
-          </div>
-        </nav>
-        <WellnessTimeline />
-      </div>
-    );
-  }
-
-  if (showPetListing) {
-    return <PetListingPage onBack={handleBackToDashboard} onNavigate={onNavigate} />;
-  }
-
-  if (showPetForm) {
-    return (
-      <PetProfileForm 
-        onBack={handleBackToDashboard}
-        onSuccess={handleBackToDashboard}
-        petId={selectedPetId}
-        onNavigate={onNavigate}
-      />
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-[#FFF9F5]">
-      {/* Navigation Header */}
-      <nav className="bg-white border-b px-8 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🐾</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <button className="px-4 py-2 rounded-full bg-[#FFE4A3] font-medium">Home</button>
-              <button 
-                onClick={handleBookService}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
-              >
-                Booking
-              </button>
-              <button
-                onClick={handleViewActivityLog}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
-              >
-                Activity Log
-              </button>
-              <button
-                onClick={handleViewWellnessTimeline}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
-              >
-                Timeline
-              </button>
-              <button
-                onClick={() => onNavigate?.('about')}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
-              >
-                About
-              </button>
-              <button
-                onClick={() => onNavigate?.('contact')}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
-              >
-                Contact
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-              <span className="text-sm font-medium">
-                {user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
-              </span>
-            </div>
-            <button
-              onClick={() => onNavigate?.('emergency')}
-              className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
-            >
-              <span>📞</span> Emergency
-            </button>
-          </div>
-
-          <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={onLogout}
-            className="w-full px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-8 py-8">
+      <>
         {/* Welcome Header */}
         <h1 className="text-4xl font-bold mb-8">Welcome {firstName}!</h1>
 
@@ -508,47 +483,44 @@ const handleAddPet = () => {
                 <p className="text-gray-500 mb-4">No upcoming bookings.</p>
                 <button 
                   onClick={handleBookService}
-                  className="bg-[#FA9884] text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-[#E8876F] transition"
+                  className="text-[#FA9884] font-medium hover:underline"
                 >
-                  Book a Service
+                  Book now
                 </button>
               </div>
             ) : (
-              <>
-                <div className="space-y-3 mb-4">
-                  {bookings.slice(0, 3).map((booking) => (
-                    <div key={booking.booking_id} className="bg-[#FFF9F5] rounded-xl p-4 flex justify-between items-center">
-                      <div>
-                        <h4 className="font-semibold">{booking.service_type}</h4>
-                        <p className="text-sm text-gray-600">{booking.pet?.name}</p>
-                        <p className="text-sm text-gray-600">{formatDate(booking.start_date)}</p>
+              <div className="space-y-4">
+                {bookings.slice(0, 3).map((booking) => (
+                  <div key={booking.booking_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#FFE4A3] rounded-full flex items-center justify-center">
+                        <span className="text-xl">📅</span>
                       </div>
-                      <div className={`px-4 py-1 rounded-full text-sm font-semibold ${
-                        booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                      <div>
+                        <h4 className="font-medium">{booking.service_type}</h4>
+                        <p className="text-sm text-gray-500">{formatDate(booking.start_date)}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleBookService}
-                    className="flex-1 bg-[#FFE4A3] text-gray-800 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#FFD97D] transition"
-                  >
-                    Book New
-                  </button>
-                  <button
-                    onClick={handleBookingHistory}
-                    className="flex-1 bg-white border-2 border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition"
-                  >
-                    History
-                  </button>
-                </div>
-              </>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                      booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {booking.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
+            
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <button 
+                onClick={handleBookingHistory}
+                className="w-full text-center text-gray-500 text-sm hover:text-[#FA9884]"
+              >
+                View Booking History
+              </button>
+            </div>
           </div>
 
           {/* Recent Activity */}
@@ -559,40 +531,116 @@ const handleAddPet = () => {
                 onClick={handleViewActivityLog}
                 className="text-[#FA9884] text-sm font-semibold hover:underline"
               >
-                View Daily log
+                View All
               </button>
             </div>
+            
             {activitiesLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FA9884]"></div>
               </div>
             ) : activities.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No recent activity.</p>
+              <div className="text-center py-8 text-gray-500">
+                No recent activity logged.
               </div>
             ) : (
               <div className="space-y-4">
-                {activities.map((activity) => {
-                  const petName = activity.pet?.name || 'Pet';
-                  const activityType = activity.activity_type 
-                    ? activity.activity_type.charAt(0).toUpperCase() + activity.activity_type.slice(1)
-                    : 'Activity';
-                  const description = activity.description || activity.detail || '';
-                  
-                  return (
-                    <div key={activity.activity_id} className="border-b pb-3 last:border-b-0">
-                      <p className="text-gray-800 font-medium">
-                        {petName} · <span className="text-[#FA9884]">{activityType}</span>
-                      </p>
-                      {description && <p className="text-sm text-gray-700 mt-1">{description}</p>}
-                      <p className="text-sm text-gray-500 mt-1">{getTimeAgo(activity.timestamp)}</p>
+                {activities.map((activity) => (
+                  <div key={activity.activity_id} className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 mt-1">
+                      {activity.activity_type === 'feeding' ? '🥣' : 
+                       activity.activity_type === 'walk' ? '🐕' : 
+                       activity.activity_type === 'medication' ? '💊' : '📝'}
                     </div>
-                  );
-                })}
+                    <div>
+                      <h4 className="font-medium text-sm">
+                        {activity.pet?.name} - {activity.activity_type}
+                      </h4>
+                      <p className="text-xs text-gray-500">{getTimeAgo(activity.timestamp)}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
+      </>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FFF9F5]">
+      {/* Navigation Header */}
+      <nav className="bg-white border-b px-8 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🐾</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <button 
+                onClick={handleBackToDashboard}
+                className={`px-4 py-2 rounded-full ${!showWellnessTimeline ? 'bg-[#FFE4A3] font-medium' : 'hover:bg-gray-100'}`}
+              >
+                Home
+              </button>
+              <button 
+                onClick={handleBookService}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                Booking
+              </button>
+              <button
+                onClick={handleViewActivityLog}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                Activity Log
+              </button>
+              <button
+                onClick={handleViewWellnessTimeline}
+                className={`px-4 py-2 rounded-full ${showWellnessTimeline ? 'bg-[#FFE4A3] font-medium' : 'hover:bg-gray-100'}`}
+              >
+                Timeline
+              </button>
+              <button
+                onClick={handleShowAbout}
+                className={`px-4 py-2 rounded-full ${showAbout ? 'bg-[#FFE4A3] font-medium' : 'hover:bg-gray-100'}`}
+              >
+                About
+              </button>
+              <button
+                onClick={handleShowContact}
+                className={`px-4 py-2 rounded-full ${showContact ? 'bg-[#FFE4A3] font-medium' : 'hover:bg-gray-100'}`}
+              >
+                Contact
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+              <span className="text-sm font-medium">
+                {user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+              </span>
+            </div>
+            <button
+              onClick={() => onNavigate?.('emergency')}
+              className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
+            >
+              <span>📞</span> Emergency
+            </button>
+            <button
+              onClick={onLogout}
+              className="px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-medium hover:bg-red-100 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-8 py-8">
+        {renderContent()}
       </main>
 
       {/* Footer */}
