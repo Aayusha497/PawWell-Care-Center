@@ -7,6 +7,7 @@ interface EmergencyPageProps {
   onBack?: () => void;
   onBook?: () => void;
   onActivityLog?: () => void;
+  onTimeline?: () => void;
   onAbout?: () => void;
   onContact?: () => void;
   onLogout?: () => void;
@@ -43,6 +44,7 @@ export default function EmergencyPage({
   onBack,
   onBook,
   onActivityLog,
+  onTimeline,
   onAbout,
   onContact,
   onLogout,
@@ -191,6 +193,9 @@ export default function EmergencyPage({
               </button>
               <button type="button" onClick={onActivityLog} className="px-4 py-2 hover:bg-gray-100 rounded-full">
                 Activity Log
+              </button>
+              <button type="button" onClick={onTimeline} className="px-4 py-2 hover:bg-gray-100 rounded-full">
+                Timeline
               </button>
               <button type="button" onClick={onAbout} className="px-4 py-2 hover:bg-gray-100 rounded-full">
                 About

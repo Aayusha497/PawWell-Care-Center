@@ -891,5 +891,91 @@ export const deleteActivityLog = async (activityLogId: number): Promise<any> => 
   }
 };
 
+// WELLNESS TIMELINE 
+
+/**
+ * Get wellness timeline entries for a pet
+ * @param {string | number} petId - Pet ID
+ * @returns {Promise<any>} List of timeline entries
+ */
+export const getTimelineEntries = async (petId: string | number): Promise<any> => {
+  try {
+    const response = await api.get(`/wellness-timeline?pet_id=${petId}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch timeline entries' };
+  }
+};
+
+/**
+ * Create a new timeline entry
+ * @param {object} data - Timeline entry data
+ * @returns {Promise<any>} Created entry
+ */
+export const createTimelineEntry = async (data: {
+  pet_id: string | number;
+  date: string;
+  type: string;
+  title: string;
+  description?: string;
+  next_due_date?: string;
+}): Promise<any> => {
+  try {
+    const response = await api.post('/wellness-timeline', data);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to create timeline entry' };
+  }
+};
+
+/**
+ * Get a single timeline entry
+ * @param {string | number} id - Timeline entry ID
+ * @returns {Promise<any>} Timeline entry details
+ */
+export const getTimelineEntry = async (id: string | number): Promise<any> => {
+  try {
+    const response = await api.get(`/wellness-timeline/${id}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch timeline entry' };
+  }
+};
+
+/**
+ * Update a timeline entry
+ * @param {string | number} id - Timeline entry ID
+ * @param {object} data - Updated data
+ * @returns {Promise<any>} Updated entry
+ */
+export const updateTimelineEntry = async (id: string | number, data: {
+  date?: string; // string for input compatibility
+  type?: string;
+  title?: string;
+  description?: string;
+  next_due_date?: string | null;
+}): Promise<any> => {
+  try {
+    const response = await api.put(`/wellness-timeline/${id}`, data);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to update timeline entry' };
+  }
+};
+
+/**
+ * Delete a timeline entry
+ * @param {string | number} id - Timeline entry ID
+ * @returns {Promise<any>} Deletion confirmation
+ */
+export const deleteTimelineEntry = async (id: string | number): Promise<any> => {
+  try {
+    const response = await api.delete(`/wellness-timeline/${id}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to delete timeline entry' };
+  }
+};
+
 export default api;
 

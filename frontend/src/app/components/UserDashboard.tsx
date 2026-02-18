@@ -9,6 +9,7 @@ import BookingPage from './BookingPage';
 import ManageBookings from './ManageBookings';
 import BookingHistory from './BookingHistory';
 import ActivityLogViewer from './ActivityLogViewer';
+import WellnessTimeline from './WellnessTimeline';
 
 interface User {
   id: string;
@@ -21,7 +22,7 @@ interface UserDashboardProps {
   user: User;
   onLogout: () => void;
   onNavigate?: (page: string) => void;
-  dashboardTarget?: 'booking' | 'add-pet' | 'activity-log' | null;
+  dashboardTarget?: 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | null;
   onClearDashboardTarget?: () => void;
 }
 
@@ -73,6 +74,7 @@ export default function UserDashboard({
   const [showManageBookings, setShowManageBookings] = useState(false);
   const [showBookingHistory, setShowBookingHistory] = useState(false);
   const [showActivityLog, setShowActivityLog] = useState(false);
+  const [showWellnessTimeline, setShowWellnessTimeline] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
@@ -92,6 +94,7 @@ export default function UserDashboard({
     setShowManageBookings(false);
     setShowBookingHistory(false);
     setShowActivityLog(false);
+    setShowWellnessTimeline(false);
 
     if (dashboardTarget === 'booking') {
       setShowBookingPage(true);
@@ -104,6 +107,10 @@ export default function UserDashboard({
 
     if (dashboardTarget === 'activity-log') {
       setShowActivityLog(true);
+    }
+
+    if (dashboardTarget === 'wellness-timeline') {
+      setShowWellnessTimeline(true);
     }
 
     if (onClearDashboardTarget) {
@@ -219,6 +226,7 @@ const handleAddPet = () => {
     setShowManageBookings(false);
     setShowBookingHistory(false);
     setShowActivityLog(false);
+    setShowWellnessTimeline(false);
     setSelectedPetId(undefined);
     fetchPets(); // Refresh pets list
     fetchBookings(); // Refresh bookings list
@@ -243,6 +251,15 @@ const handleAddPet = () => {
     setShowManageBookings(false);
     setShowBookingHistory(false);
     setShowActivityLog(true);
+    setShowWellnessTimeline(false);
+  };
+
+  const handleViewWellnessTimeline = () => {
+    setShowBookingPage(false);
+    setShowManageBookings(false);
+    setShowBookingHistory(false);
+    setShowActivityLog(false);
+    setShowWellnessTimeline(true);
   };
 
   if (showBookingPage) {
@@ -274,6 +291,29 @@ const handleAddPet = () => {
         onBook={handleBookService}
         onNavigate={onNavigate}
       />
+    );
+  }
+
+  if (showWellnessTimeline) {
+    return (
+      <div className="min-h-screen bg-[#FFF9F5]">
+        <nav className="bg-white border-b px-8 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🐾</span>
+              </div>
+              <Button variant="ghost" onClick={handleBackToDashboard}>
+                Back to Dashboard
+              </Button>
+            </div>
+            <Button onClick={onLogout} variant="ghost" className="text-red-600">
+              Logout
+            </Button>
+          </div>
+        </nav>
+        <WellnessTimeline />
+      </div>
     );
   }
 
@@ -314,6 +354,12 @@ const handleAddPet = () => {
                 className="px-4 py-2 hover:bg-gray-100 rounded-full"
               >
                 Activity Log
+              </button>
+              <button
+                onClick={handleViewWellnessTimeline}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                Timeline
               </button>
               <button
                 onClick={() => onNavigate?.('about')}

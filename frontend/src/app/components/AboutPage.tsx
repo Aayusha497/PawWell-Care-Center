@@ -7,6 +7,7 @@ interface AboutPageProps {
   onAddPet?: () => void;
   onLogout?: () => void;
   onActivityLog?: () => void;
+  onTimeline?: () => void;
   onContact?: () => void;
   onEmergency?: () => void;
   userFullName?: string;
@@ -18,6 +19,7 @@ export default function AboutPage({
   onAddPet,
   onLogout,
   onActivityLog,
+  onTimeline,
   onContact,
   onEmergency,
   userFullName,
@@ -72,6 +74,13 @@ export default function AboutPage({
                 className="px-4 py-2 hover:bg-gray-100 rounded-full"
               >
                 Activity Log
+              </button>
+              <button
+                type="button"
+                onClick={onTimeline}
+                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+              >
+                Timeline
               </button>
               <button
                 type="button"

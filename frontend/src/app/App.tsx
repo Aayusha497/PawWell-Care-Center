@@ -38,7 +38,7 @@ export default function App() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
-  const [dashboardTarget, setDashboardTarget] = useState<'booking' | 'add-pet' | 'activity-log' | null>(null);
+  const [dashboardTarget, setDashboardTarget] = useState<'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | null>(null);
 
   useEffect(() => {
     if (isLoggedIn && user) {
@@ -162,7 +162,7 @@ export default function App() {
     setCurrentPage(page);
   };
 
-  const handleDashboardTarget = (target: 'booking' | 'add-pet' | 'activity-log') => {
+  const handleDashboardTarget = (target: 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline') => {
     setDashboardTarget(target);
     setCurrentPage(isLoggedIn ? 'user-dashboard' : 'login');
   };
@@ -201,6 +201,7 @@ export default function App() {
           onBook={() => handleDashboardTarget('booking')}
           onAddPet={() => handleDashboardTarget('add-pet')}
           onActivityLog={() => handleDashboardTarget('activity-log')}
+          onTimeline={() => handleDashboardTarget('wellness-timeline')}
           onContact={() => handleNavigate('contact')}
           onEmergency={() => handleNavigate('emergency')}
           onLogout={isLoggedIn ? handleLogout : undefined}
@@ -212,6 +213,7 @@ export default function App() {
           onBack={() => handleNavigate(isLoggedIn ? 'user-dashboard' : 'landing')}
           onBook={() => handleDashboardTarget('booking')}
           onActivityLog={() => handleDashboardTarget('activity-log')}
+          onTimeline={() => handleDashboardTarget('wellness-timeline')}
           onAbout={() => handleNavigate('about')}
           onEmergency={() => handleNavigate('emergency')}
           onLogout={isLoggedIn ? handleLogout : undefined}
@@ -223,6 +225,7 @@ export default function App() {
           onBack={() => handleNavigate(isLoggedIn ? 'user-dashboard' : 'landing')}
           onBook={() => handleDashboardTarget('booking')}
           onActivityLog={() => handleDashboardTarget('activity-log')}
+          onTimeline={() => handleDashboardTarget('wellness-timeline')}
           onAbout={() => handleNavigate('about')}
           onContact={() => handleNavigate('contact')}
           onEmergency={() => handleNavigate('emergency')}

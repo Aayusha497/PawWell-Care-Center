@@ -1,371 +1,386 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Textarea } from './ui/textarea';
-import { Badge } from './ui/badge';
-import { Syringe, Calendar, Stethoscope, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Syringe, Calendar, Stethoscope, Plus, Activity, Scissors, Utensils, AlertCircle, Clock, Trash2, Edit, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
+import { getUserPets, getTimelineEntries, createTimelineEntry, updateTimelineEntry, deleteTimelineEntry } from '../../services/api';
 
-interface HealthRecord {
-  id: string;
-  petName: string;
-  type: 'vaccination' | 'appointment' | 'checkup';
+interface Pet {
+  pet_id: number;
+  name: string;
+}
+
+interface TimelineEntry {
+  timeline_id: number;
+  pet_id: number;
+  date: string;
+  type: string;
   title: string;
-  date: Date;
-  veterinarian?: string;
-  notes: string;
-  nextDueDate?: Date;
+  description?: string;
+  next_due_date?: string | null;
+  created_at: string;
 }
 
 export default function WellnessTimeline() {
-  const [selectedPet, setSelectedPet] = useState<string>('Max');
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [selectedPet, setSelectedPet] = useState<string>('');
+  const [entries, setEntries] = useState<TimelineEntry[]>([]);
+  const [loading, setLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [records, setRecords] = useState<HealthRecord[]>([
-    {
-      id: '1',
-      petName: 'Max',
-      type: 'vaccination',
-      title: 'Rabies Vaccination',
-      date: new Date(2024, 5, 15),
-      veterinarian: 'Dr. Emily Parker',
-      notes: 'Annual rabies vaccine administered. No adverse reactions.',
-      nextDueDate: new Date(2025, 5, 15)
-    },
-    {
-      id: '2',
-      petName: 'Max',
-      type: 'vaccination',
-      title: 'DHPP Vaccine',
-      date: new Date(2024, 5, 15),
-      veterinarian: 'Dr. Emily Parker',
-      notes: 'Distemper, Hepatitis, Parainfluenza, Parvovirus vaccine.',
-      nextDueDate: new Date(2025, 5, 15)
-    },
-    {
-      id: '3',
-      petName: 'Max',
-      type: 'checkup',
-      title: 'Annual Physical Examination',
-      date: new Date(2024, 8, 10),
-      veterinarian: 'Dr. Emily Parker',
-      notes: 'Overall health excellent. Weight: 30kg. Heart and lungs clear. Dental cleaning recommended.',
-      nextDueDate: new Date(2025, 8, 10)
-    },
-    {
-      id: '4',
-      petName: 'Max',
-      type: 'appointment',
-      title: 'Dental Cleaning',
-      date: new Date(2024, 10, 5),
-      veterinarian: 'Dr. Robert Chen',
-      notes: 'Professional dental cleaning performed. Two minor tartar removals. Teeth in good condition.'
-    }
-  ]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
 
+  // Form State
   const [formData, setFormData] = useState({
-    type: 'vaccination' as const,
+    date: new Date().toISOString().split('T')[0],
+    type: 'Medical Visit',
     title: '',
-    date: '',
-    veterinarian: '',
-    notes: '',
-    nextDueDate: ''
+    description: '',
+    next_due_date: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const fetchPets = async () => {
+    try {
+      const response = await getUserPets();
+      const petList = response.pets || response.data || [];
+      const petsArray = Array.isArray(petList) ? petList : [];
+      setPets(petsArray);
+      if (petsArray.length > 0) {
+        setSelectedPet(petsArray[0].pet_id.toString());
+      }
+    } catch (error) {
+      console.error('Error fetching pets:', error);
+      toast.error('Failed to load pets');
+    }
+  };
+
+  const fetchEntries = async () => {
+    if (!selectedPet) return;
+    
+    try {
+      setLoading(true);
+      const response = await getTimelineEntries(selectedPet);
+      const data = response.data || [];
+      setEntries(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching timeline:', error);
+      toast.error('Failed to load timeline entries');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPets();
+  }, []);
+
+  useEffect(() => {
+    if (selectedPet) {
+      fetchEntries();
+    }
+  }, [selectedPet]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      type: 'Medical Visit',
+      title: '',
+      description: '',
+      next_due_date: ''
+    });
+    setIsEditing(false);
+    setCurrentEntryId(null);
+  };
+
+  const handleAddNew = () => {
+    resetForm();
+    setIsDialogOpen(true);
+  };
+
+  const handleEdit = (entry: TimelineEntry) => {
+    setFormData({
+      date: new Date(entry.date).toISOString().split('T')[0],
+      type: entry.type,
+      title: entry.title,
+      description: entry.description || '',
+      next_due_date: entry.next_due_date ? new Date(entry.next_due_date).toISOString().split('T')[0] : ''
+    });
+    setIsEditing(true);
+    setCurrentEntryId(entry.timeline_id);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this entry?')) return;
+
+    try {
+      await deleteTimelineEntry(id);
+      toast.success('Entry deleted');
+      fetchEntries();
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      toast.error('Failed to delete entry');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newRecord: HealthRecord = {
-      id: Date.now().toString(),
-      petName: selectedPet,
-      type: formData.type,
-      title: formData.title,
-      date: new Date(formData.date),
-      veterinarian: formData.veterinarian,
-      notes: formData.notes,
-      nextDueDate: formData.nextDueDate ? new Date(formData.nextDueDate) : undefined
-    };
+    if (!selectedPet) {
+      toast.error('Please select a pet first');
+      return;
+    }
 
-    setRecords([...records, newRecord]);
-    setIsDialogOpen(false);
-    setFormData({
-      type: 'vaccination',
-      title: '',
-      date: '',
-      veterinarian: '',
-      notes: '',
-      nextDueDate: ''
-    });
-  };
+    try {
+      const payload = {
+        ...formData,
+        pet_id: parseInt(selectedPet),
+        next_due_date: formData.next_due_date ? formData.next_due_date : undefined
+      };
 
-  const filteredRecords = records
-    .filter(r => r.petName === selectedPet)
-    .sort((a, b) => b.date.getTime() - a.date.getTime());
+      if (isEditing && currentEntryId) {
+        await updateTimelineEntry(currentEntryId, payload);
+        toast.success('Entry updated successfully');
+      } else {
+        await createTimelineEntry(payload);
+        toast.success('Entry added successfully');
+      }
 
-  const getRecordIcon = (type: string) => {
-    switch (type) {
-      case 'vaccination':
-        return <Syringe className="text-blue-500" size={24} />;
-      case 'appointment':
-        return <Calendar className="text-green-500" size={24} />;
-      case 'checkup':
-        return <Stethoscope className="text-purple-500" size={24} />;
-      default:
-        return <Calendar size={24} />;
+      setIsDialogOpen(false);
+      resetForm();
+      fetchEntries();
+    } catch (error: any) {
+      console.error('Error saving entry:', error);
+      toast.error(error.message || 'Failed to save entry');
     }
   };
 
-  const getRecordColor = (type: string) => {
+  const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'vaccination':
-        return 'bg-blue-100 text-blue-700';
-      case 'appointment':
-        return 'bg-green-100 text-green-700';
-      case 'checkup':
-        return 'bg-purple-100 text-purple-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
+      case 'Medical Visit': return <Stethoscope className="h-5 w-5 text-blue-500" />;
+      case 'Vaccination': return <Syringe className="h-5 w-5 text-green-500" />;
+      case 'Grooming': return <Scissors className="h-5 w-5 text-purple-500" />;
+      case 'Diet': return <Utensils className="h-5 w-5 text-orange-500" />;
+      case 'Activity': return <Activity className="h-5 w-5 text-yellow-500" />;
+      case 'Symptoms': return <AlertCircle className="h-5 w-5 text-red-500" />;
+      default: return <Calendar className="h-5 w-5 text-gray-500" />;
     }
   };
 
-  const upcomingRecords = records.filter(r => 
-    r.nextDueDate && r.nextDueDate > new Date() && r.petName === selectedPet
-  );
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'Medical Visit': return 'bg-blue-100 text-blue-800';
+      case 'Vaccination': return 'bg-green-100 text-green-800';
+      case 'Grooming': return 'bg-purple-100 text-purple-800';
+      case 'Diet': return 'bg-orange-100 text-orange-800';
+      case 'Activity': return 'bg-yellow-100 text-yellow-800';
+      case 'Symptoms': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl">Pet Wellness Timeline</h2>
-        <div className="flex items-center gap-4">
-          <Select value={selectedPet} onValueChange={setSelectedPet}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Max">Max</SelectItem>
-              <SelectItem value="Bella">Bella</SelectItem>
-              <SelectItem value="Charlie">Charlie</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#EAB308] hover:bg-[#D4A017]">
-                <Plus className="mr-2" size={18} />
-                Add Record
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Add Health Record for {selectedPet}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="type">Record Type *</Label>
-                    <Select 
-                      value={formData.type}
-                      onValueChange={(value: any) => setFormData({ ...formData, type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="vaccination">Vaccination</SelectItem>
-                        <SelectItem value="appointment">Appointment</SelectItem>
-                        <SelectItem value="checkup">Checkup</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="date">Date *</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
+    <div className="container mx-auto p-4 md:p-8 max-w-4xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Wellness Timeline</h1>
+          <p className="text-gray-500 mt-1">Track your pet's health journey</p>
+        </div>
 
-                <div>
-                  <Label htmlFor="title">Title/Description *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="e.g., Rabies Vaccination"
-                    required
-                  />
-                </div>
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          {pets.length > 0 ? (
+            <select 
+              value={selectedPet} 
+              onChange={(e) => setSelectedPet(e.target.value)}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-[180px] border-gray-300"
+            >
+              <option value="" disabled>Select Pet</option>
+              {pets.map(pet => (
+                <option key={pet.pet_id} value={pet.pet_id.toString()}>
+                  {pet.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-sm text-gray-500">No pets found</span>
+          )}
 
-                <div>
-                  <Label htmlFor="veterinarian">Veterinarian</Label>
-                  <Input
-                    id="veterinarian"
-                    value={formData.veterinarian}
-                    onChange={(e) => setFormData({ ...formData, veterinarian: e.target.value })}
-                    placeholder="e.g., Dr. Smith"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="notes">Notes *</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Details about the visit or procedure..."
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="nextDueDate">Next Due Date (if applicable)</Label>
-                  <Input
-                    id="nextDueDate"
-                    type="date"
-                    value={formData.nextDueDate}
-                    onChange={(e) => setFormData({ ...formData, nextDueDate: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex gap-2 justify-end">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="bg-[#EAB308] hover:bg-[#D4A017]">
-                    Add Record
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <button 
+            className="inline-flex items-center justify-center rounded-md text-sm font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-8 py-2 bg-[#EAB308] hover:bg-[#CA8A04] text-white shadow-md hover:shadow-lg transform active:scale-95 whitespace-nowrap" 
+            onClick={handleAddNew}
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            <span>Add Entry</span>
+          </button>
         </div>
       </div>
 
-      {/* Upcoming Reminders */}
-      {upcomingRecords.length > 0 && (
-        <Card className="mb-6 bg-yellow-50 border-yellow-200">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Calendar className="text-yellow-600" size={20} />
-              Upcoming Reminders
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {upcomingRecords.map(record => (
-                <div key={record.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
-                  <div>
-                    <p>{record.title}</p>
-                    <p className="text-sm text-gray-600">Due: {format(record.nextDueDate!, 'MMMM dd, yyyy')}</p>
-                  </div>
-                  <Badge className="bg-yellow-100 text-yellow-700">
-                    {Math.ceil((record.nextDueDate!.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days
-                  </Badge>
-                </div>
-              ))}
+      {/* Modal Dialog */}
+      {isDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-[500px] p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold leading-none tracking-tight">
+                {isEditing ? 'Edit Entry' : 'Add New Entry'}
+              </h2>
+              <button 
+                onClick={() => setIsDialogOpen(false)}
+                className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </button>
             </div>
-          </CardContent>
-        </Card>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="date" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Date</label>
+                  <input 
+                    id="date" 
+                    type="date" 
+                    required 
+                    value={formData.date}
+                    onChange={(e) => handleInputChange('date', e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="type" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Type</label>
+                  <select 
+                    value={formData.type} 
+                    onChange={(e) => handleInputChange('type', e.target.value)}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300"
+                  >
+                    <option value="Medical Visit">Medical Visit</option>
+                    <option value="Vaccination">Vaccination</option>
+                    <option value="Activity">Activity</option>
+                    <option value="Grooming">Grooming</option>
+                    <option value="Diet">Diet</option>
+                    <option value="Symptoms">Symptoms</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="title" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Title</label>
+                <input 
+                  id="title" 
+                  placeholder="e.g. Annual Checkup" 
+                  required 
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="description" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Description (Optional)</label>
+                <textarea 
+                  id="description" 
+                  placeholder="Enter details..." 
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="next_due_date" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Next Due Date (Optional)</label>
+                <input 
+                  id="next_due_date" 
+                  type="date" 
+                  value={formData.next_due_date}
+                  onChange={(e) => handleInputChange('next_due_date', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 mt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setIsDialogOpen(false)}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 border-gray-300"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#EAB308] hover:bg-[#CA8A04] text-white h-10 px-4 py-2"
+                >
+                  {isEditing ? 'Save Changes' : 'Create Entry'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
-      {/* Health Records Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Health History</CardTitle>
-          <p className="text-sm text-gray-600">
-            Complete medical history and vaccination records
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 ml-4 border-l-2 border-gray-200 pl-6">
-            {filteredRecords.map((record) => (
-              <div key={record.id} className="relative">
-                <div className="absolute -left-[2.15rem] top-2 w-4 h-4 bg-[#EAB308] rounded-full border-4 border-white"></div>
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        {getRecordIcon(record.type)}
-                        <div>
-                          <h4 className="text-lg">{record.title}</h4>
-                          <p className="text-sm text-gray-600">
-                            {format(record.date, 'MMMM dd, yyyy')}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge className={getRecordColor(record.type)}>
-                        {record.type}
-                      </Badge>
-                    </div>
-                    
-                    {record.veterinarian && (
-                      <p className="text-sm mb-2">
-                        <span className="text-gray-600">Veterinarian:</span> {record.veterinarian}
-                      </p>
-                    )}
-                    
-                    <p className="text-sm text-gray-700 mb-2">{record.notes}</p>
-                    
-                    {record.nextDueDate && (
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                        <Calendar size={16} className="text-gray-500" />
-                        <p className="text-sm text-gray-600">
-                          Next due: {format(record.nextDueDate, 'MMMM dd, yyyy')}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
+      <div className="space-y-6 relative ml-0 md:ml-0">
+        {/* Vertical Line */}
+        <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-gray-200 -translate-x-1/2"></div>
+
+        {loading ? (
+           <div className="text-center py-10 pl-8 md:pl-0">Loading timeline...</div>
+        ) : entries.length === 0 ? (
+          <div className="text-center py-10 bg-white rounded-xl shadow-sm border border-gray-100 z-10 relative ml-8 md:ml-0">
+            <p className="text-gray-500">No timeline entries found for this pet.</p>
+            <button className="text-[#EAB308] hover:text-[#CA8A04] underline mt-2" onClick={handleAddNew}>Add your first entry</button>
           </div>
+        ) : (
+          entries.map((entry, index) => (
+            <div key={entry.timeline_id} className={`relative flex items-center justify-between md:justify-center group ${index % 2 === 0 ? 'md:flex-row-reverse' : ''}`}>
+              
+              {/* Icon */}
+              <div className="absolute left-4 md:left-1/2 transform -translate-x-1/2 flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-gray-50 shadow-sm z-10 shrink-0">
+                {getTypeIcon(entry.type)}
+              </div>
+              
+              {/* Card */}
+              <div className={`w-[calc(100%-3.5rem)] md:w-[calc(50%-2rem)] ml-14 md:ml-0 bg-white p-5 rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md ${index % 2 === 0 ? 'md:mr-auto md:text-right' : 'md:ml-auto md:text-left'}`}>
+                <div className={`flex items-center gap-2 mb-2 ${index % 2 === 0 ? 'md:flex-row-reverse' : ''}`}>
+                  <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${getTypeColor(entry.type)}`}>
+                    {entry.type}
+                  </span>
+                  <span className="text-xs font-medium text-gray-500">
+                    {format(new Date(entry.date), 'MMM d, yyyy')}
+                  </span>
+                </div>
+                
+                <h3 className="font-bold text-gray-900 mb-2 text-lg">{entry.title}</h3>
+                
+                {entry.description && (
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                    {entry.description}
+                  </p>
+                )}
+                
+                {entry.next_due_date && (
+                   <div className={`flex items-center gap-1 text-xs text-amber-600 font-medium mb-3 bg-amber-50 p-2 rounded inline-block`}>
+                      <Clock className="h-3 w-3 inline mr-1" />
+                      Next due: {format(new Date(entry.next_due_date), 'MMM d, yyyy')}
+                   </div>
+                )}
 
-          {filteredRecords.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>No health records for {selectedPet} yet.</p>
-              <p className="text-sm">Click "Add Record" to create the first entry.</p>
+                <div className={`flex items-center gap-2 mt-2 pt-2 border-t border-gray-50 ${index % 2 === 0 ? 'md:justify-end' : 'md:justify-start'}`}>
+                  <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2" onClick={() => handleEdit(entry)}>
+                     <Edit className="h-3.5 w-3.5 mr-1" /> Edit
+                  </button>
+                  <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 text-red-600 hover:text-red-700 hover:bg-red-50 px-2" onClick={() => handleDelete(entry.timeline_id)}>
+                     <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                  </button>
+                </div>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4 mt-6">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Syringe className="mx-auto mb-2 text-blue-500" size={32} />
-            <p className="text-2xl">
-              {filteredRecords.filter(r => r.type === 'vaccination').length}
-            </p>
-            <p className="text-sm text-gray-600">Vaccinations</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Stethoscope className="mx-auto mb-2 text-purple-500" size={32} />
-            <p className="text-2xl">
-              {filteredRecords.filter(r => r.type === 'checkup').length}
-            </p>
-            <p className="text-sm text-gray-600">Checkups</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Calendar className="mx-auto mb-2 text-green-500" size={32} />
-            <p className="text-2xl">
-              {filteredRecords.filter(r => r.type === 'appointment').length}
-            </p>
-            <p className="text-sm text-gray-600">Appointments</p>
-          </CardContent>
-        </Card>
+          ))
+        )}
       </div>
     </div>
   );
 }
+
+ 
