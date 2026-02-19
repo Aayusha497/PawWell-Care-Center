@@ -17,6 +17,7 @@ const {
   getPendingBookings,
   approveBooking,
   rejectBooking,
+  completeBooking,
   getAllBookings
 } = require('../controllers/bookingController');
 
@@ -33,5 +34,6 @@ router.get('/admin/pending', authenticate, requireAdmin, getPendingBookings);
 router.get('/admin/all', authenticate, requireAdmin, getAllBookings);
 router.put('/admin/:bookingId/approve', authenticate, requireAdmin, approveBooking);
 router.put('/admin/:bookingId/reject', authenticate, requireAdmin, rejectBooking);
+router.put('/admin/:bookingId/complete', authenticate, requireAdmin, completeBooking);
 
 module.exports = router;

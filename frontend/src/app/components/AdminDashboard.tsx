@@ -15,6 +15,7 @@ import {
 } from '../../services/api';
 import { toast } from 'sonner';
 import ActivityLogsManagement from './ActivityLogsManagement';
+import BookingManagement from './BookingManagement';
 
 interface User {
   id: string;
@@ -565,6 +566,13 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               )}
             </div>
           </div>
+
+          {activeTab === 'booking-management' && (
+            <div className="mb-6">
+              <BookingManagement />
+            </div>
+          )}
+
           {activeTab === 'dashboard' && (
             <>
               {/* Stats Cards */}

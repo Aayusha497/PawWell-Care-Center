@@ -841,6 +841,72 @@ const rejectBooking = async (req, res) => {
 };
 
 /**
+ * Admin: Complete a booking
+ * PUT /api/bookings/admin/:bookingId/complete
+ */
+const completeBooking = async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.bookingId);
+    
+    // Check if the booking exists
+    const booking = await Booking.findByPk(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Only confirmed bookings can be completed
+    if (booking.status !== 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only confirmed bookings can be marked as completed'
+      });
+    }
+
+    // Check if the service date has passed
+    const now = new Date();
+    const endDate = booking.end_date ? new Date(booking.end_date) : new Date(booking.start_date);
+    
+    // Simple check: compare dates. 
+    // If end_date is today, we might want to check time, but usually service ends at end of day.
+    // Let's assume passed means strictly greater than end_date, 
+    // or if only start_date exists (e.g. Daycation), verify against that.
+    
+    // Ensure accurate comparisons by setting time to midnight for next day comparison 
+    // or just comparing timestamps if we care about specific time.
+    // For simplicity and user friendliness, let's just check if end_date is in the past.
+    
+    if (now <= endDate) {
+       return res.status(400).json({
+         success: false,
+         message: 'Booking cannot be completed before the service end date'
+       });
+    }
+
+    booking.status = 'completed';
+    booking.updated_at = new Date();
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking marked as completed',
+      data: booking
+    });
+
+  } catch (error) {
+    console.error('Error completing booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to complete booking',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
  * Admin: Get all bookings with filters
  * GET /api/bookings/admin/all
  */
@@ -877,7 +943,7 @@ const getAllBookings = async (req, res) => {
           attributes: ['pet_id', 'name', 'breed', 'photo'],
           include: [{
             model: require('../models').User,
-            as: 'user',
+            as: 'owner',
             attributes: ['id', 'first_name', 'last_name', 'email', 'phone_number']
           }]
         }
@@ -911,6 +977,7 @@ module.exports = {
   getPendingBookings,
   approveBooking,
   rejectBooking,
+  completeBooking,
   getAllBookings,
   SERVICE_CONFIG
 };

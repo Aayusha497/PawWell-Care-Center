@@ -664,6 +664,20 @@ export const getAllBookingsAdmin = async (filters?: {
 };
 
 /**
+ * Admin: Complete a booking
+ * @param {number} bookingId - Booking ID
+ * @returns {Promise<any>} Completed booking
+ */
+export const completeBooking = async (bookingId: number): Promise<any> => {
+  try {
+    const response = await api.put(`/bookings/admin/${bookingId}/complete`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to complete booking' };
+  }
+};
+
+/**
  * Submit a contact message
  */
 export const createContactMessage = async (data: {
