@@ -188,51 +188,11 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#FFF9F5]">
-      {/* Navigation Header */}
-      <nav className="bg-white border-b px-8 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🐾</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <button 
-                onClick={onBack}
-                className="px-4 py-2 rounded-full bg-[#FFE4A3] font-medium hover:bg-[#FFD966] transition"
-              >
-                Home
-              </button>
-              <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Booking</button>
-              <button className="px-4 py-2 hover:bg-gray-100 rounded-full">Activity Log</button>
-              <button
-                onClick={() => onNavigate?.('about')}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
-              >
-                About
-              </button>
-              <button
-                onClick={() => onNavigate?.('contact')}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
-              >
-                Contact
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => onNavigate?.('emergency')}
-              className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
-            >
-              <span>📞</span> Emergency
-            </button>
-          </div>
-        </div>
-      </nav>
 
+  return (
+    <div className="bg-[#FFF9F5]">
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-8 py-8">
+      <div className="max-w-5xl mx-auto py-8">
         <h1 className="text-3xl font-bold mb-8">{petId ? formData.name + "'s Profile" : "Add New Pet"}</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -425,14 +385,8 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
             </form>
           </div>
         </div>
-      </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t mt-12 py-6">
-        <div className="max-w-7xl mx-auto px-8 text-center text-gray-600">
-          <p>2025 PawWell. All rights reserved.</p>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }

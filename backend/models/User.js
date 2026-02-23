@@ -49,6 +49,26 @@ const User = sequelize.define('User', {
     allowNull: true,
     field: 'profile_picture'
   },
+  address: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'address'
+  },
+  city: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'city'
+  },
+  emergencyContactNumber: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    field: 'emergency_contact_number'
+  },
+  isProfileComplete: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'is_profile_complete'
+  },
   emailVerified: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,

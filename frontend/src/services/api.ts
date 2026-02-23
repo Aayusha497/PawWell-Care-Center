@@ -157,6 +157,10 @@ export interface User {
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;
+  address?: string;
+  city?: string;
+  emergencyContactNumber?: string;
+  isProfileComplete?: boolean;
 }
 
 export interface RegisterData {
@@ -272,6 +276,23 @@ export const getProfile = async (): Promise<{ success: boolean; user: User }> =>
   } catch (error) {
     console.error('🌐 API: Profile fetch error:', (error as AxiosError).response?.data || error);
     throw (error as AxiosError).response?.data || { message: 'Failed to fetch profile' };
+  }
+};
+
+/**
+ * Update user profile
+ * @param {Partial<User>} userData - Updated user data
+ * @returns {Promise<any>} API response with updated user
+ */
+export const updateProfile = async (userData: Partial<User>): Promise<{ success: boolean; message: string; user: User }> => {
+  try {
+    console.log('🌐 API: Updating user profile...', userData);
+    const response = await api.put('/accounts/profile', userData);
+    console.log('🌐 API: Update profile response received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('🌐 API: Update profile error:', (error as AxiosError).response?.data || error);
+    throw (error as AxiosError).response?.data || { message: 'Failed to update profile' };
   }
 };
 

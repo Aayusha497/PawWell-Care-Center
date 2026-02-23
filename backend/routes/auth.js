@@ -91,6 +91,13 @@ router.post('/token/refresh', authController.refreshToken);
 router.get('/profile', authenticate, authController.getProfile);
 
 /**
+ * @route   PUT /api/accounts/profile
+ * @desc    Update user profile
+ * @access  Private
+ */
+router.put('/profile', authenticate, authController.updateProfile);
+
+/**
  * @route   POST /api/accounts/logout
  * @desc    Logout user
  * @access  Private

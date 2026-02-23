@@ -149,6 +149,9 @@ const login = async (req, res) => {
     // Prepare user data
     const userData = user.toJSON();
 
+    // Ensure isProfileComplete is explicitly boolean
+    userData.isProfileComplete = !!userData.isProfileComplete;
+
     return res.status(200).json({
       success: true,
       message: 'Login successful!',
@@ -409,6 +412,7 @@ const resetPassword = async (req, res) => {
 const getProfile = async (req, res) => {
   try {
     const userData = req.user.toJSON();
+    userData.isProfileComplete = !!userData.isProfileComplete;
 
     return res.status(200).json({
       success: true,
@@ -419,6 +423,55 @@ const getProfile = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'An error occurred while fetching your profile.',
+      error: error.message
+    });
+  }
+};
+
+
+/**
+ * @route   PUT /api/accounts/profile
+ * @desc    Update user profile
+ * @access  Private
+ */
+const updateProfile = async (req, res) => {
+  try {
+    const { firstName, lastName, phoneNumber, address, city, emergencyContactNumber } = req.body;
+    const userId = req.user.id; // Corrected: retrieve ID from authenticated user
+
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.'
+      });
+    }
+
+    // Update fields
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (address) user.address = address;
+    if (city) user.city = city;
+    if (emergencyContactNumber) user.emergencyContactNumber = emergencyContactNumber;
+
+    // Check if profile is complete
+    const isComplete = !!(user.address && user.city && user.emergencyContactNumber && user.phoneNumber && user.firstName && user.lastName);
+    user.isProfileComplete = isComplete;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'An error occurred while updating profile.',
       error: error.message
     });
   }
@@ -532,6 +585,7 @@ module.exports = {
   verifyOTP,
   resetPassword,
   getProfile,
+  updateProfile,
   refreshToken,
   logout
 };

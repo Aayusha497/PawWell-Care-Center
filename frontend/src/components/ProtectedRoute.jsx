@@ -26,10 +26,19 @@ const ProtectedRoute = ({
   redirectTo = null,
   requireAuth = true 
 }) => {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isLoggedIn, loading } = useAuth();
   const location = useLocation();
 
-  // Show loading state
+  // Debugging logs
+  console.log('ProtectedRoute Debug:', {
+    path: location.pathname,
+    isLoggedIn,
+    userEmail: user?.email,
+    isProfileComplete: user?.isProfileComplete,
+    loading
+  });
+
+  // Show loading state while auth is initializing
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -41,15 +50,31 @@ const ProtectedRoute = ({
     );
   }
 
-  // Check authentication
-  if (requireAuth && !isAuthenticated) {
+  // 1. Check Authentication
+  if (requireAuth && !isLoggedIn) {
     // Redirect to login, but save the location they were trying to access
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check role-based authorization
+  // 2. Check Profile Completion
+  // Redirect to profile setup if user is logged in but profile is incomplete.
+  // We skip this check if the user is already on the profile setup page or logging out.
+  // Robust check for falsy values on isProfileComplete
+  if (requireAuth && isLoggedIn && user && !user.isProfileComplete) {
+    // Handle trailing slashes in pathname check
+    const currentPath = location.pathname.replace(/\/$/, '');
+    const isProfileSetup = currentPath === '/profile-setup';
+    const isLogout = location.pathname.includes('/logout');
+
+    if (!isProfileSetup && !isLogout) {
+      console.log('Redirecting to /profile-setup because profile is incomplete');
+      return <Navigate to="/profile-setup" replace />;
+    }
+  }
+
+  // 3. Check Role-based Authorization
   if (requiredRoles && user) {
-    if (!hasRole(user.userType, requiredRoles)) {
+    if (!hasRole(user.userType || user.role, requiredRoles)) {
       // Determine appropriate redirect
       let defaultRedirect = '/';
       if (isAdmin(user)) {
@@ -58,7 +83,7 @@ const ProtectedRoute = ({
         defaultRedirect = '/dashboard';
       }
 
-      // If redirectTo is specified, redirect there
+      // If redirectTo is specified, redirect there immediately
       if (redirectTo) {
         return <Navigate to={redirectTo} replace />;
       }
@@ -67,7 +92,7 @@ const ProtectedRoute = ({
       const roleNames = Array.isArray(requiredRoles) ? requiredRoles.join(' or ') : requiredRoles;
       return (
         <PermissionDenied 
-          message={`This page requires ${roleNames} role. You are logged in as ${user.userType}.`}
+          message={`This page requires ${roleNames} role. You are logged in as ${user.userType || user.role}.`}
           redirectTo={defaultRedirect}
           redirectLabel="Go to Dashboard"
         />

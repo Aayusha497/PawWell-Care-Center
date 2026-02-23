@@ -30,13 +30,30 @@ import AddPet from './pages/AddPet';
 import EditPet from './pages/EditPet';
 import ViewPet from './pages/ViewPet';
 import ActivityLog from './pages/ActivityLog';
+import ProfileSetup from './pages/ProfileSetup';
+
+import { useLocation } from 'react-router-dom';
 
 function App() {
   return (
     <AuthProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AppContent />
+      </Router>
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const location = useLocation();
+  const isDashboardRoute = location.pathname.startsWith('/dashboard') || 
+                          location.pathname.startsWith('/pets') || 
+                          location.pathname.startsWith('/booking') || 
+                          location.pathname.startsWith('/activity-log');
+
+  return (
         <div className="app">
-          <Navbar />
+          {!isDashboardRoute && <Navbar />}
           
           <main className="main-content">
             <Routes>
@@ -111,6 +128,16 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+
+              {/* Profile Setup Route */}
+              <Route 
+                path="/profile-setup" 
+                element={
+                  <ProtectedRoute>
+                    <ProfileSetup />
+                  </ProtectedRoute>
+                } 
+              />
               
               {/* Catch all - redirect to home */}
               <Route path="*" element={<Navigate to="/" replace />} />
@@ -145,8 +172,6 @@ function App() {
             }}
           />
         </div>
-      </Router>
-    </AuthProvider>
   );
 }
 

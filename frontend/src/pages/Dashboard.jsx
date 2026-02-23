@@ -125,10 +125,31 @@ const Dashboard = () => {
     <DashboardLayout>
       <div className="user-dashboard">
         {/* Header Section */}
-        <div className="dashboard-header">
-          <h1 className="dashboard-title">
-            Welcome{user?.first_name ? `, ${user.first_name}` : ''}!
-          </h1>
+        <div className="dashboard-header d-flex justify-content-between align-items-center" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 className="dashboard-title">
+              Welcome{user?.first_name ? `, ${user.first_name}` : ''}!
+            </h1>
+            <p className="text-muted" style={{ marginTop: '8px' }}>Here's what's happening with your pets today.</p>
+          </div>
+          <button 
+            className="btn btn-outline-primary"
+            onClick={() => navigate('/profile-setup')}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: '1px solid var(--primary-color)',
+              background: 'white',
+              color: 'var(--primary-color)',
+              cursor: 'pointer'
+            }}
+          >
+            <span>👤</span> My Profile
+          </button>
+        </div>
         </div>
 
         {/* Main Dashboard Grid */}
@@ -278,7 +299,7 @@ const Dashboard = () => {
             )}
           </DashboardCard>
         </div>
-      </div>
+      
     </DashboardLayout>
   );
 };
