@@ -30,7 +30,7 @@ import AddPet from './pages/AddPet';
 import EditPet from './pages/EditPet';
 import ViewPet from './pages/ViewPet';
 import ActivityLog from './pages/ActivityLog';
-import ProfileSetup from './pages/ProfileSetup';
+import Profile from './pages/Profile';
 
 import { useLocation } from 'react-router-dom';
 
@@ -46,14 +46,12 @@ function App() {
 
 function AppContent() {
   const location = useLocation();
-  const isDashboardRoute = location.pathname.startsWith('/dashboard') || 
-                          location.pathname.startsWith('/pets') || 
-                          location.pathname.startsWith('/booking') || 
-                          location.pathname.startsWith('/activity-log');
+  // Show Navbar on all pages, or customize if needed for future specific routes
+  // Previously excluded dashboard routes which caused navigation issues
 
   return (
         <div className="app">
-          {!isDashboardRoute && <Navbar />}
+          <Navbar />
           
           <main className="main-content">
             <Routes>
@@ -129,12 +127,12 @@ function AppContent() {
                 } 
               />
 
-              {/* Profile Setup Route */}
+              {/* Profile Route - handles both first-time setup and profile editing */}
               <Route 
-                path="/profile-setup" 
+                path="/profile" 
                 element={
                   <ProtectedRoute>
-                    <ProfileSetup />
+                    <Profile />
                   </ProtectedRoute>
                 } 
               />

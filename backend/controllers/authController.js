@@ -23,17 +23,66 @@ const register = async (req, res) => {
     });
 
     const { email, password, firstName, lastName, phoneNumber, userType } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
 
-    // Create user - active and verified immediately
+    // Check if user with this email already exists
+    const existingUser = await User.findOne({
+      where: { email: normalizedEmail }
+    });
+
+    if (existingUser) {
+      // If user exists but account is inactive (soft-deleted), reactivate it
+      if (!existingUser.isActive) {
+        console.log('🔄 Reactivating deleted account:', existingUser.email);
+        
+        // Update user with new data and reactivate
+        existingUser.password = password; // Will be hashed by beforeUpdate hook
+        existingUser.firstName = firstName;
+        existingUser.lastName = lastName;
+        existingUser.phoneNumber = phoneNumber;
+        existingUser.userType = userType || 'pet_owner';
+        existingUser.emailVerified = true;
+        existingUser.isActive = true;
+        existingUser.isProfileComplete = false;
+        existingUser.profilePicture = null; // Reset profile picture
+        existingUser.address = null;
+        existingUser.city = null;
+        existingUser.emergencyContactName = null;
+        existingUser.emergencyContactNumber = null;
+        
+        await existingUser.save();
+        
+        console.log('✅ Account reactivated successfully:', existingUser.email);
+        
+        return res.status(201).json({
+          success: true,
+          message: 'Registration successful! Your account has been reactivated. You can now login.',
+          email: existingUser.email
+        });
+      } else {
+        // User exists and is active - cannot register again
+        console.log('❌ Active user already exists:', normalizedEmail);
+        return res.status(400).json({
+          success: false,
+          message: 'User with this email already exists',
+          errors: {
+            email: ['This email is already registered']
+          }
+        });
+      }
+    }
+
+    // Create new user if doesn't exist
     const user = await User.create({
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       password,
       firstName,
       lastName,
       phoneNumber,
       userType: userType || 'pet_owner',
       emailVerified: true,
-      isActive: true
+      isActive: true,
+      isProfileComplete: false
     });
 
     console.log('✅ User created successfully:', user.email);
@@ -59,7 +108,7 @@ const register = async (req, res) => {
       });
     }
     
-    // Handle unique constraint errors
+    // Handle unique constraint errors (shouldn't happen now, but keep as fallback)
     if (error.name === 'SequelizeUniqueConstraintError') {
       const errors = {};
       error.errors.forEach(err => {
@@ -436,7 +485,20 @@ const getProfile = async (req, res) => {
  */
 const updateProfile = async (req, res) => {
   try {
-    const { firstName, lastName, phoneNumber, address, city, emergencyContactNumber } = req.body;
+    console.log('📝 Update profile request received');
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+    
+    const { 
+      firstName, 
+      lastName, 
+      phoneNumber, 
+      address, 
+      city, 
+      emergencyContactName, 
+      emergencyContactNumber 
+    } = req.body;
+    
     const userId = req.user.id; // Corrected: retrieve ID from authenticated user
 
     const user = await User.findByPk(userId);
@@ -448,16 +510,36 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    // Update fields
+    // Handle profile picture upload
+    if (req.file) {
+      console.log('📷 Profile picture uploaded:', req.file.path);
+      user.profilePicture = req.file.path;
+    } else {
+      console.log('⚠️ No file received in request');
+    }
+
+    // Update fields if provided
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
     if (phoneNumber) user.phoneNumber = phoneNumber;
     if (address) user.address = address;
     if (city) user.city = city;
+    if (emergencyContactName) user.emergencyContactName = emergencyContactName;
     if (emergencyContactNumber) user.emergencyContactNumber = emergencyContactNumber;
 
     // Check if profile is complete
-    const isComplete = !!(user.address && user.city && user.emergencyContactNumber && user.phoneNumber && user.firstName && user.lastName);
+    // Required: firstName, lastName, phoneNumber, address, city, emergencyContactName, emergencyContactNumber, profilePicture
+    const isComplete = !!(
+      user.firstName && 
+      user.lastName && 
+      user.phoneNumber && 
+      user.address && 
+      user.city && 
+      user.emergencyContactName && 
+      user.emergencyContactNumber && 
+      user.profilePicture
+    );
+    
     user.isProfileComplete = isComplete;
 
     await user.save();
@@ -472,6 +554,55 @@ const updateProfile = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'An error occurred while updating profile.',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Delete user account
+ * @route   DELETE /api/accounts/profile
+ * @desc    Soft delete user account (set isActive to false)
+ * @access  Private
+ */
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.'
+      });
+    }
+
+    // Soft delete: Set isActive to false instead of destroying the record
+    user.isActive = false;
+    await user.save();
+
+    // Clear authentication cookies
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: config.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: config.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully.'
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'An error occurred while deleting account.',
       error: error.message
     });
   }
@@ -586,6 +717,7 @@ module.exports = {
   resetPassword,
   getProfile,
   updateProfile,
+  deleteAccount,
   refreshToken,
   logout
 };

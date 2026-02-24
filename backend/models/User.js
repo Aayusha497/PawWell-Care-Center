@@ -59,6 +59,11 @@ const User = sequelize.define('User', {
     allowNull: true,
     field: 'city'
   },
+  emergencyContactName: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'emergency_contact_name'
+  },
   emergencyContactNumber: {
     type: DataTypes.STRING(20),
     allowNull: true,

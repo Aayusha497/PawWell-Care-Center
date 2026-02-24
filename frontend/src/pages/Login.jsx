@@ -42,6 +42,15 @@ const Login = () => {
       });
 
       if (response.success) {
+        // Check if profile is complete - prioritize this over other redirects
+        if (response.user && response.user.isProfileComplete !== true) {
+          toast.info('Please complete your profile setup to continue.');
+          setTimeout(() => {
+            navigate('/profile');
+          }, 1000);
+          return;
+        }
+
         const fromState = location.state?.from;
         const redirectTo = typeof fromState === 'string'
           ? fromState

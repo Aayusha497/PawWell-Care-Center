@@ -4,12 +4,14 @@ const authController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { handleValidationErrors } = require('../middleware/validator');
 const { authLimiter, passwordResetLimiter, otpVerificationLimiter } = require('../middleware/rateLimiter');
+const { upload } = require('../config/cloudinary');
 const {
   registerValidation,
   loginValidation,
   forgotPasswordValidation,
   verifyOTPValidation,
-  resetPasswordValidation
+  resetPasswordValidation,
+  profileUpdateValidation
 } = require('../validators/authValidators');
 
 /**
@@ -94,8 +96,15 @@ router.get('/profile', authenticate, authController.getProfile);
  * @route   PUT /api/accounts/profile
  * @desc    Update user profile
  * @access  Private
+ */ 
+router.put('/profile', authenticate, upload.single('profilePicture'), authController.updateProfile);
+
+/**
+ * @route   DELETE /api/accounts/profile
+ * @desc    Delete user account
+ * @access  Private
  */
-router.put('/profile', authenticate, authController.updateProfile);
+router.delete('/profile', authenticate, authController.deleteAccount);
 
 /**
  * @route   POST /api/accounts/logout

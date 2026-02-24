@@ -157,11 +157,84 @@ code {
   padding: 8px 16px;
   border-radius: var(--border-radius);
   transition: var(--transition);
+  cursor: pointer;
 }
 
 .nav-link:hover,
 .nav-link.active {
   background-color: var(--background-light);
+  color: var(--primary-color);
+}
+
+/* Profile avatar link styling */
+.nav-link.profile-link {
+  padding: 4px 12px;
+}
+
+.nav-link.profile-link:hover {
+  background-color: rgba(74, 144, 226, 0.1);
+  transform: scale(1.02);
+}
+
+.nav-link.profile-link:hover img,
+.nav-link.profile-link:hover div {
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3);
+}
+
+/* User Profile Avatar Styles */
+/* Profile Link - extends nav-link */
+.nav-link.profile-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+}
+
+.profile-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid white;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.nav-link.profile-link:hover .profile-avatar-img {
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3), 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+}
+
+.profile-avatar-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #4a90e2;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  border: 2px solid white;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.nav-link.profile-link:hover .profile-avatar-circle {
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3), 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+  background-color: #357abd;
+}
+
+.profile-username {
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.nav-link.profile-link:hover .profile-username {
   color: var(--primary-color);
 }
 
@@ -366,6 +439,11 @@ code {
 
   .nav-link.active:hover {
     background-color: var(--primary-dark);
+  }
+
+  /* Mobile profile link styling */
+  .nav-link.profile-link {
+    width: 100%;
   }
 
   .user-greeting {

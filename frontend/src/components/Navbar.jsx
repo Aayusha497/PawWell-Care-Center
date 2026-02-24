@@ -193,11 +193,30 @@ const Navbar = () => {
                 </>
               )}
 
+              {/* User Profile Avatar - Clickable */}
               <li className="nav-item">
-                <span className="nav-link user-greeting">
-                  Hello, {user?.firstName || user?.first_name || 'User'}
-                  {isAdmin(user) && <span className="admin-badge"> (Admin)</span>}
-                </span>
+                <Link
+                  to="/profile"
+                  className="nav-link profile-link"
+                  onClick={closeMobileMenu}
+                  title="View/Edit Profile"
+                >
+                  {user?.profilePicture ? (
+                    <img
+                      src={user.profilePicture}
+                      alt="Profile"
+                      className="profile-avatar-img"
+                    />
+                  ) : (
+                    <div className="profile-avatar-circle">
+                      {(user?.firstName || user?.first_name || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="profile-username">
+                    {user?.firstName || user?.first_name || 'User'}
+                    {isAdmin(user) && <span className="admin-badge"> (Admin)</span>}
+                  </span>
+                </Link>
               </li>
               <li className="nav-item">
                 <button onClick={handleLogout} className="nav-btn btn-logout">

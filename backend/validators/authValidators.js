@@ -12,7 +12,8 @@ const registerValidation = [
     .normalizeEmail()
     .custom(async (value) => {
       const existingUser = await User.findOne({ where: { email: value.toLowerCase() } });
-      if (existingUser) {
+      // Allow registration if user doesn't exist OR if user exists but is inactive (soft-deleted)
+      if (existingUser && existingUser.isActive) {
         throw new Error('A user with this email already exists.');
       }
       return true;
@@ -134,10 +135,66 @@ const resetPasswordValidation = [
     })
 ];
 
+/**
+ * Validation rules for profile update
+ */
+const profileUpdateValidation = [
+  body('firstName')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('First name cannot be empty.')
+    .isLength({ max: 150 })
+    .withMessage('First name must be less than 150 characters.'),
+  
+  body('lastName')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Last name cannot be empty.')
+    .isLength({ max: 150 })
+    .withMessage('Last name must be less than 150 characters.'),
+  
+  body('phoneNumber')
+    .optional()
+    .trim()
+    .matches(/^[0-9\s\-\(\)\+]+$/)
+    .withMessage('Enter a valid phone number.')
+    .isLength({ min: 10, max: 20 })
+    .withMessage('Phone number must be between 10 and 20 characters.'),
+  
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('Address must be less than 255 characters.'),
+  
+  body('city')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('City must be less than 100 characters.'),
+  
+  body('emergencyContactName')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Emergency contact name must be less than 100 characters.'),
+  
+  body('emergencyContactNumber')
+    .optional()
+    .trim()
+    .matches(/^[0-9\s\-\(\)\+]+$/)
+    .withMessage('Enter a valid emergency contact number.')
+    .isLength({ min: 10, max: 20 })
+    .withMessage('Emergency contact number must be between 10 and 20 characters.')
+];
+
 module.exports = {
   registerValidation,
   loginValidation,
   forgotPasswordValidation,
   verifyOTPValidation,
-  resetPasswordValidation
+  resetPasswordValidation,
+  profileUpdateValidation
 };

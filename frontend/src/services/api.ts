@@ -160,7 +160,20 @@ export interface User {
   address?: string;
   city?: string;
   emergencyContactNumber?: string;
+  emergencyContactName?: string;
+  profilePicture?: string;
   isProfileComplete?: boolean;
+}
+
+export interface UpdateProfileData {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  address?: string;
+  city?: string;
+  emergencyContactName?: string;
+  emergencyContactNumber?: string;
+  profilePicture?: string;
 }
 
 export interface RegisterData {
@@ -281,18 +294,39 @@ export const getProfile = async (): Promise<{ success: boolean; user: User }> =>
 
 /**
  * Update user profile
- * @param {Partial<User>} userData - Updated user data
+ * @param {UpdateProfileData | FormData} userData - Updated user data
  * @returns {Promise<any>} API response with updated user
  */
-export const updateProfile = async (userData: Partial<User>): Promise<{ success: boolean; message: string; user: User }> => {
+export const updateProfile = async (userData: UpdateProfileData | FormData): Promise<{ success: boolean; message: string; user: User }> => {
   try {
     console.log('🌐 API: Updating user profile...', userData);
-    const response = await api.put('/accounts/profile', userData);
+    
+    const config = userData instanceof FormData 
+      ? { headers: { 'Content-Type': 'multipart/form-data' } }
+      : {};
+
+    const response = await api.put('/accounts/profile', userData, config);
     console.log('🌐 API: Update profile response received:', response.data);
     return response.data;
   } catch (error) {
     console.error('🌐 API: Update profile error:', (error as AxiosError).response?.data || error);
     throw (error as AxiosError).response?.data || { message: 'Failed to update profile' };
+  }
+};
+
+/**
+ * Delete user account
+ * @returns {Promise<any>} API response with deletion confirmation
+ */
+export const deleteAccount = async (): Promise<{ success: boolean; message: string }> => {
+  try {
+    console.log('🌐 API: Deleting user account...');
+    const response = await api.delete('/accounts/profile');
+    console.log('🌐 API: Delete account response received:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('🌐 API: Delete account error:', (error as AxiosError).response?.data || error);
+    throw (error as AxiosError).response?.data || { message: 'Failed to delete account' };
   }
 };
 

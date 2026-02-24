@@ -14,6 +14,7 @@ import VerifyOTPPage from './components/VerifyOTPPage';
 import AboutPage from './components/AboutPage';
 import ContactPage from './components/ContactPage';
 import EmergencyPage from './components/EmergencyPage';
+import ProfilePage from './components/ProfilePage';
 import { Toaster } from './components/ui/sonner';
 import type { LoginData, RegisterData } from '../services/api';
 
@@ -29,7 +30,8 @@ type Page =
   | 'permission-denied'
   | 'about'
   | 'contact'
-  | 'emergency';
+  | 'emergency'
+  | 'profile';
 
 export default function App() {
   const { user, login, register, logout, loading, isLoggedIn } = useAuth();
@@ -75,7 +77,13 @@ export default function App() {
       if (response.user.userType === 'admin') {
         setCurrentPage('admin-dashboard');
       } else {
-        setCurrentPage('user-dashboard');
+        // Check if profile is complete
+        if (!response.user.isProfileComplete) {
+          // Redirect to profile setup page first
+          setCurrentPage('profile');
+        } else {
+          setCurrentPage('user-dashboard');
+        }
       }
     } catch (err: any) {
       console.error('Login failed:', err);
@@ -232,6 +240,13 @@ export default function App() {
           onLogout={isLoggedIn ? handleLogout : undefined}
         />
       )}
+      {currentPage === 'profile' && user && (
+        <ProfilePage
+          onBack={() => handleNavigate('user-dashboard')}
+          onLogout={handleLogout}
+          userFullName={user.fullName}
+        />
+      )}
       {currentPage === 'forgot-password' && (
         <ForgotPasswordPage
           onNavigateToLogin={() => setCurrentPage('login')}
@@ -268,7 +283,8 @@ export default function App() {
               id: user.id,
               email: user.email,
               role: user.userType === 'admin' ? 'admin' : 'user',
-              fullName: user.fullName
+              fullName: user.fullName,
+              profilePicture: user.profilePicture
             }}
             onLogout={handleLogout}
             onNavigate={(page) => handleNavigate(page as Page)}

@@ -18,6 +18,7 @@ interface User {
   email: string;
   role: 'user' | 'admin';
   fullName: string;
+  profilePicture?: string;
 }
 
 interface UserDashboardProps {
@@ -617,11 +618,25 @@ const handleAddPet = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-              <span className="text-sm font-medium">
-                {user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
-              </span>
-            </div>
+            <button
+              onClick={() => onNavigate?.('profile')}
+              className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-white overflow-hidden"
+              title="View Profile"
+            >
+              {user.profilePicture ? (
+                <img 
+                  src={user.profilePicture} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
+                  <span className="text-sm font-bold text-white">
+                    {user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </span>
+                </div>
+              )}
+            </button>
             <button
               onClick={() => onNavigate?.('emergency')}
               className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"

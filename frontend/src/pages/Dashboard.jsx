@@ -20,6 +20,13 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Force redirect if profile is incomplete
+  useEffect(() => {
+    if (user && user.isProfileComplete === false) {
+      navigate('/profile');
+    }
+  }, [user, navigate]);
+
   // State management
   const [pets, setPets] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -132,24 +139,56 @@ const Dashboard = () => {
             </h1>
             <p className="text-muted" style={{ marginTop: '8px' }}>Here's what's happening with your pets today.</p>
           </div>
-          <button 
-            className="btn btn-outline-primary"
-            onClick={() => navigate('/profile-setup')}
+          <div 
+            onClick={() => navigate('/profile')}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '8px',
+              gap: '12px',
+              cursor: 'pointer',
               padding: '8px 16px',
-              borderRadius: '8px',
-              border: '1px solid var(--primary-color)',
+              borderRadius: '30px',
+              border: '1px solid #e0e0e0',
               background: 'white',
-              color: 'var(--primary-color)',
-              cursor: 'pointer'
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s ease'
             }}
+            className="profile-link-card"
           >
-            <span>👤</span> My Profile
-          </button>
-        </div>
+            {user?.profilePicture ? (
+              <img 
+                src={user.profilePicture} 
+                alt="Profile" 
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  objectFit: 'cover'
+                }}
+              />
+            ) : (
+              <div 
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: 'var(--primary-color, #4a90e2)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '18px',
+                  fontWeight: 'bold'
+                }}
+              >
+                {(user?.first_name || user?.firstName || 'U').charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>My Profile</span>
+              <span style={{ fontSize: '12px', color: '#666' }}>View & Edit</span>
+            </div>
+          </div>
         </div>
 
         {/* Main Dashboard Grid */}
@@ -299,6 +338,7 @@ const Dashboard = () => {
             )}
           </DashboardCard>
         </div>
+      </div>
       
     </DashboardLayout>
   );

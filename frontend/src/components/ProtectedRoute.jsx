@@ -63,12 +63,12 @@ const ProtectedRoute = ({
   if (requireAuth && isLoggedIn && user && !user.isProfileComplete) {
     // Handle trailing slashes in pathname check
     const currentPath = location.pathname.replace(/\/$/, '');
-    const isProfileSetup = currentPath === '/profile-setup';
+    const isProfileSetup = currentPath === '/profile';
     const isLogout = location.pathname.includes('/logout');
 
     if (!isProfileSetup && !isLogout) {
-      console.log('Redirecting to /profile-setup because profile is incomplete');
-      return <Navigate to="/profile-setup" replace />;
+      console.log('Redirecting to /profile because profile is incomplete');
+      return <Navigate to="/profile" replace />;
     }
   }
 
