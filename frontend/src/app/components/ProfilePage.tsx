@@ -1,21 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { updateProfile, deleteAccount } from '../../services/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 interface ProfilePageProps {
   onBack: () => void;
   onLogout: () => void;
   userFullName: string;
+  onNavigate?: (page: 'booking' | 'activity-log' | 'about' | 'contact' | 'emergency' | 'user-dashboard' | 'profile') => void;
+  onDashboardTarget?: (target: 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline') => void;
 }
 
-export default function ProfilePage({ onBack, onLogout, userFullName }: ProfilePageProps) {
+export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate, onDashboardTarget }: ProfilePageProps) {
   const { user, refreshUserProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -43,10 +46,9 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
         setAvatarPreview(user.profilePicture);
       }
       
-      // If profile is not complete, force editing mode
-      if (!user.isProfileComplete) {
-        setEditing(true);
-      }
+      // Only force editing mode if profile is incomplete
+      // This ensures view mode is shown when profile is complete
+      setEditing(!user.isProfileComplete);
     }
   }, [user]);
 
@@ -56,6 +58,15 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
       ...prev,
       [name]: value
     }));
+    
+    // Clear error for this field when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const updated = { ...prev };
+        delete updated[name];
+        return updated;
+      });
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,25 +97,59 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
     console.log('🔵 Profile form submitted');
     console.log('Form data:', formData);
     
-    // Validation
-    if (!formData.firstName || !formData.lastName || !formData.phoneNumber) {
-      console.error('❌ Validation failed: Missing required fields');
-      alert('Please fill in all required fields (First Name, Last Name, Phone)');
+    // Validation - check all required fields
+    const errors: Record<string, string> = {};
+    const isInitialSetup = !user?.isProfileComplete;
+    
+    // Always required fields
+    if (!formData.firstName || formData.firstName.trim() === '') {
+      errors.firstName = 'First Name is required';
+    }
+    if (!formData.lastName || formData.lastName.trim() === '') {
+      errors.lastName = 'Last Name is required';
+    }
+    if (!formData.phoneNumber || formData.phoneNumber.trim() === '') {
+      errors.phoneNumber = 'Phone Number is required';
+    }
+    
+    // Required only during initial profile setup
+    if (isInitialSetup) {
+      if (!formData.address || formData.address.trim() === '') {
+        errors.address = 'Address is required';
+      }
+      if (!formData.city || formData.city.trim() === '') {
+        errors.city = 'City is required';
+      }
+      if (!formData.emergencyContactName || formData.emergencyContactName.trim() === '') {
+        errors.emergencyContactName = 'Emergency Contact Name is required';
+      }
+      if (!formData.emergencyContactNumber || formData.emergencyContactNumber.trim() === '') {
+        errors.emergencyContactNumber = 'Emergency Contact Number is required';
+      }
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      console.error('❌ Validation failed: Missing required fields:', errors);
+      setFieldErrors(errors);
+      toast.error('Please fill in all required fields marked below');
       return;
     }
+    
+    // Clear any existing errors
+    setFieldErrors({});
     
     setLoading(true);
     
     try {
       console.log('📤 Preparing form data for submission...');
       const submitData = new FormData();
-      submitData.append('firstName', formData.firstName);
-      submitData.append('lastName', formData.lastName);
-      submitData.append('phoneNumber', formData.phoneNumber);
-      submitData.append('address', formData.address);
-      submitData.append('city', formData.city);
-      submitData.append('emergencyContactName', formData.emergencyContactName);
-      submitData.append('emergencyContactNumber', formData.emergencyContactNumber);
+      submitData.append('firstName', formData.firstName.trim());
+      submitData.append('lastName', formData.lastName.trim());
+      submitData.append('phoneNumber', formData.phoneNumber.trim());
+      submitData.append('address', formData.address.trim());
+      submitData.append('city', formData.city.trim());
+      submitData.append('emergencyContactName', formData.emergencyContactName.trim());
+      submitData.append('emergencyContactNumber', formData.emergencyContactNumber.trim());
       
       if (profilePictureFile) {
         console.log('📷 Adding profile picture to form data:', profilePictureFile.name);
@@ -121,18 +166,21 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
       const response = await updateProfile(submitData);
       console.log('✅ Update profile response:', response);
       
-      alert('Profile updated successfully!');
+      toast.success(isInitialSetup ? 'Profile setup completed! Welcome to PawWell Care Center!' : 'Profile updated successfully!');
       
       console.log('🔄 Refreshing user profile...');
       await refreshUserProfile();
       
-      setEditing(false);
-      
-      // If this was first-time setup, go back to dashboard
-      if (!user?.isProfileComplete) {
-        console.log('✅ First-time profile setup complete, navigating back');
-        onBack();
+      // If this was initial setup, redirect to dashboard
+      if (isInitialSetup) {
+        setTimeout(() => {
+          onBack(); // Navigate to dashboard
+        }, 1500);
+      } else {
+        // Exit editing mode to show view mode with Edit/Delete buttons
+        setEditing(false);
       }
+      
     } catch (error: any) {
       console.error('❌ Profile update error:', error);
       console.error('Error details:', {
@@ -140,7 +188,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
         response: error.response,
         data: error.response?.data
       });
-      alert('Failed to update profile: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+      toast.error('Failed to update profile: ' + (error.response?.data?.message || error.message || 'Unknown error'));
     } finally {
       setLoading(false);
       console.log('✅ Profile update process completed');
@@ -149,7 +197,21 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
 
   const handleCancel = () => {
     console.log('🔵 Cancel button clicked');
-    // Reset form to original user data
+    
+    // If profile is incomplete (initial setup), log out the user
+    if (!user?.isProfileComplete) {
+      const confirmLogout = window.confirm(
+        'Are you sure you want to cancel? You will be logged out and need to complete your profile setup next time you login.'
+      );
+      
+      if (confirmLogout) {
+        console.log('🚪 Logging out user from profile setup');
+        onLogout();
+      }
+      return;
+    }
+    
+    // If profile is complete, just cancel editing and reset form
     if (user) {
       setFormData({
         firstName: user.firstName || '',
@@ -164,14 +226,10 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
       setProfilePictureFile(null);
     }
     
-    // Only allow cancel if profile is already complete
-    if (user?.isProfileComplete) {
-      setEditing(false);
-      console.log('✅ Editing cancelled, returning to view mode');
-    } else {
-      alert('Please complete your profile before continuing');
-      console.log('⚠️ Profile incomplete, cannot cancel');
-    }
+    // Clear any field errors
+    setFieldErrors({});
+    setEditing(false);
+    console.log('✅ Editing cancelled, returning to view mode');
   };
 
   const handleDeleteAccount = async () => {
@@ -199,11 +257,13 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
       console.log('🗑️ Deleting account...');
       await deleteAccount();
       console.log('✅ Account deleted successfully');
-      alert('Your account has been deleted successfully. You will be redirected to the homepage.');
-      onLogout(); // This will sign out the user and redirect to landing page
+      toast.success('Your account has been deleted successfully. Redirecting...');
+      setTimeout(() => {
+        onLogout(); // This will sign out the user and redirect to landing page
+      }, 2000);
     } catch (error: any) {
       console.error('❌ Account deletion error:', error);
-      alert('Failed to delete account: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+      toast.error('Failed to delete account: ' + (error.response?.data?.message || error.message || 'Unknown error'));
     } finally {
       setDeleting(false);
     }
@@ -219,40 +279,103 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
 
   return (
     <div className="min-h-screen bg-[#FFF9F5]">
-      {/* Navigation Header */}
-      <nav className="bg-white border-b px-8 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <span className="text-2xl">🐾</span>
-            <h1 className="text-xl font-semibold">Profile</h1>
+      {/* Navigation Header - Only show if profile is complete */}
+      {user.isProfileComplete && (
+        <nav className="bg-white border-b px-8 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🐾</span>
+              </div>
+              <div className="flex items-center gap-6">
+                <button 
+                  onClick={() => onNavigate?.('user-dashboard')}
+                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                >
+                  Home
+                </button>
+                <button 
+                  onClick={() => onDashboardTarget?.('booking')}
+                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                >
+                  Booking
+                </button>
+                <button
+                  onClick={() => onDashboardTarget?.('activity-log')}
+                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                >
+                  Activity Log
+                </button>
+                <button
+                  onClick={() => onDashboardTarget?.('wellness-timeline')}
+                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                >
+                  Timeline
+                </button>
+                <button
+                  onClick={() => onNavigate?.('about')}
+                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                >
+                  About
+                </button>
+                <button
+                  onClick={() => onNavigate?.('contact')}
+                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                >
+                  Contact
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => onNavigate?.('profile')}
+                className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-white overflow-hidden"
+                title="View Profile"
+              >
+                {user.profilePicture ? (
+                  <img 
+                    src={user.profilePicture} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">
+                      {user.firstName?.charAt(0)?.toUpperCase() || 'U'}{user.lastName?.charAt(0)?.toUpperCase() || ''}
+                    </span>
+                  </div>
+                )}
+              </button>
+              <button
+                onClick={() => onNavigate?.('emergency')}
+                className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
+              >
+                <span>📞</span> Emergency
+              </button>
+              <button
+                onClick={onLogout}
+                className="px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-medium hover:bg-red-100 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onBack}
-              className="px-4 py-2 border border-gray-300 rounded-full text-sm font-medium hover:bg-gray-50"
-            >
-              ← Back to Dashboard
-            </button>
-            <button
-              onClick={onLogout}
-              className="px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-medium hover:bg-red-100"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-8 py-8">
         <div className="bg-white rounded-2xl shadow-md p-8">
           <div className="flex justify-between items-center mb-6 pb-4 border-b">
             <h2 className="text-2xl font-bold text-gray-800">
-              {editing ? (user.isProfileComplete ? 'Edit Profile' : 'Complete Your Profile') : 'My Profile'}
+              {editing ? 'Edit Profile' : 'My Profile'}
             </h2>
             {user.isProfileComplete && !editing && (
               <button
-                onClick={() => setEditing(true)}
+                onClick={() => {
+                  setEditing(true);
+                  setFieldErrors({});
+                }}
                 className="px-6 py-2 bg-[#FA9884] text-white rounded-lg font-semibold hover:bg-[#E8876F] transition"
               >
                 Edit Profile
@@ -300,9 +423,13 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#FA9884] focus:outline-none transition"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
+                      fieldErrors.firstName ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                    }`}
                   />
+                  {fieldErrors.firstName && (
+                    <p className="text-red-600 text-sm mt-1">{fieldErrors.firstName}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name *</label>
@@ -311,9 +438,13 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#FA9884] focus:outline-none transition"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
+                      fieldErrors.lastName ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                    }`}
                   />
+                  {fieldErrors.lastName && (
+                    <p className="text-red-600 text-sm mt-1">{fieldErrors.lastName}</p>
+                  )}
                 </div>
               </div>
 
@@ -325,9 +456,13 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#FA9884] focus:outline-none transition"
+                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
+                    fieldErrors.phoneNumber ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                  }`}
                 />
+                {fieldErrors.phoneNumber && (
+                  <p className="text-red-600 text-sm mt-1">{fieldErrors.phoneNumber}</p>
+                )}
               </div>
 
               <div>
@@ -341,50 +476,70 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Address {!user.isProfileComplete && '*'}</label>
                 <input
                   type="text"
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#FA9884] focus:outline-none transition"
+                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
+                    fieldErrors.address ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                  }`}
                 />
+                {fieldErrors.address && (
+                  <p className="text-red-600 text-sm mt-1">{fieldErrors.address}</p>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">City {!user.isProfileComplete && '*'}</label>
                 <input
                   type="text"
                   name="city"
                   value={formData.city}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#FA9884] focus:outline-none transition"
+                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
+                    fieldErrors.city ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                  }`}
                 />
+                {fieldErrors.city && (
+                  <p className="text-red-600 text-sm mt-1">{fieldErrors.city}</p>
+                )}
               </div>
 
               {/* Emergency Contact */}
               <div className="pt-6 border-t">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">Emergency Contact</h3>
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">Emergency Contact {!user.isProfileComplete && '(Required)'}</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Emergency Contact Name</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Emergency Contact Name {!user.isProfileComplete && '*'}</label>
                     <input
                       type="text"
                       name="emergencyContactName"
                       value={formData.emergencyContactName}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#FA9884] focus:outline-none transition"
+                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
+                        fieldErrors.emergencyContactName ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                      }`}
                     />
+                    {fieldErrors.emergencyContactName && (
+                      <p className="text-red-600 text-sm mt-1">{fieldErrors.emergencyContactName}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Emergency Contact Number</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Emergency Contact Number {!user.isProfileComplete && '*'}</label>
                     <input
                       type="tel"
                       name="emergencyContactNumber"
                       value={formData.emergencyContactNumber}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#FA9884] focus:outline-none transition"
+                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
+                        fieldErrors.emergencyContactNumber ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                      }`}
                     />
+                    {fieldErrors.emergencyContactNumber && (
+                      <p className="text-red-600 text-sm mt-1">{fieldErrors.emergencyContactNumber}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -398,16 +553,14 @@ export default function ProfilePage({ onBack, onLogout, userFullName }: ProfileP
                 >
                   {loading ? 'Saving...' : 'Save Profile'}
                 </button>
-                {user.isProfileComplete && (
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    disabled={loading}
-                    className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                  >
-                    Cancel
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={loading}
+                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           ) : (

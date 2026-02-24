@@ -243,9 +243,8 @@ export const loginUser = async (credentials: LoginData): Promise<LoginResponse> 
     const response = await api.post('/accounts/login', credentials);
     console.log('🌐 API: Login response received:', response.data);
     
-    // Store tokens
-    const { access, refresh } = response.data;
-    setTokens(access, refresh);
+    // Tokens are automatically stored in httpOnly cookies by the backend
+    // No need to manually store them
     
     return response.data;
   } catch (error) {

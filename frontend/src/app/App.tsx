@@ -50,7 +50,12 @@ export default function App() {
         if (user.userType === 'admin') {
           setCurrentPage('admin-dashboard');
         } else {
-          setCurrentPage('user-dashboard');
+          // Check if profile is complete before redirecting to dashboard
+          if (!user.isProfileComplete) {
+            setCurrentPage('profile');
+          } else {
+            setCurrentPage('user-dashboard');
+          }
         }
       }
     }
@@ -245,6 +250,8 @@ export default function App() {
           onBack={() => handleNavigate('user-dashboard')}
           onLogout={handleLogout}
           userFullName={user.fullName}
+          onNavigate={(page) => handleNavigate(page as Page)}
+          onDashboardTarget={handleDashboardTarget}
         />
       )}
       {currentPage === 'forgot-password' && (

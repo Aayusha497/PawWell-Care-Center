@@ -1,4 +1,4 @@
-const { User, PasswordReset } = require('../models');
+const { User, PasswordReset, Pet, Booking, EmergencyRequest, ActivityLog, WellnessTimeline } = require('../models');
 const {
   sendPasswordResetEmail,
   sendPasswordChangedEmail,
@@ -35,7 +35,56 @@ const register = async (req, res) => {
       if (!existingUser.isActive) {
         console.log('🔄 Reactivating deleted account:', existingUser.email);
         
-        // Update user with new data and reactivate
+        // STEP 1: Hard delete all old data to ensure fresh start
+        console.log('🗑️ Deleting all old data for user:', existingUser.id);
+        
+        // Get all pet IDs (including soft-deleted ones) before deleting
+        const oldPets = await Pet.findAll({
+          where: { user_id: existingUser.id },
+          paranoid: false // Include soft-deleted pets
+        });
+        const oldPetIds = oldPets.map(pet => pet.id);
+        console.log('Found old pets:', oldPetIds.length);
+        
+        // Delete wellness timeline entries for old pets
+        if (oldPetIds.length > 0) {
+          const deletedTimeline = await WellnessTimeline.destroy({
+            where: { pet_id: oldPetIds },
+            force: true
+          });
+          console.log('Deleted wellness timeline entries:', deletedTimeline);
+        }
+        
+        // Hard delete all pets (including soft-deleted ones)
+        const deletedPets = await Pet.destroy({
+          where: { user_id: existingUser.id },
+          force: true,
+          paranoid: false
+        });
+        console.log('Deleted pets:', deletedPets);
+        
+        // Hard delete all bookings
+        const deletedBookings = await Booking.destroy({
+          where: { user_id: existingUser.id },
+          force: true
+        });
+        console.log('Deleted bookings:', deletedBookings);
+        
+        // Hard delete all emergency requests
+        const deletedEmergencies = await EmergencyRequest.destroy({
+          where: { user_id: existingUser.id },
+          force: true
+        });
+        console.log('Deleted emergency requests:', deletedEmergencies);
+        
+        // Hard delete all activity logs
+        const deletedLogs = await ActivityLog.destroy({
+          where: { user_id: existingUser.id },
+          force: true
+        });
+        console.log('Deleted activity logs:', deletedLogs);
+        
+        // STEP 2: Update user with new data and reactivate
         existingUser.password = password; // Will be hashed by beforeUpdate hook
         existingUser.firstName = firstName;
         existingUser.lastName = lastName;
@@ -562,7 +611,7 @@ const updateProfile = async (req, res) => {
 /**
  * Delete user account
  * @route   DELETE /api/accounts/profile
- * @desc    Soft delete user account (set isActive to false)
+ * @desc    Soft delete user account and all related data (pets, bookings, emergency requests)
  * @access  Private
  */
 const deleteAccount = async (req, res) => {
@@ -578,9 +627,30 @@ const deleteAccount = async (req, res) => {
       });
     }
 
-    // Soft delete: Set isActive to false instead of destroying the record
+    // Soft delete user's pets (paranoid mode will set deleted_at)
+    await Pet.destroy({
+      where: { user_id: userId }
+    });
+    console.log(`✅ Soft deleted pets for user ${userId}`);
+
+    // Cancel all user's bookings
+    await Booking.update(
+      { status: 'cancelled' },
+      { where: { user_id: userId, status: ['pending', 'confirmed'] } }
+    );
+    console.log(`✅ Cancelled bookings for user ${userId}`);
+
+    // Cancel all user's emergency requests
+    await EmergencyRequest.update(
+      { status: 'cancelled' },
+      { where: { user_id: userId, status: ['pending', 'in_progress'] } }
+    );
+    console.log(`✅ Cancelled emergency requests for user ${userId}`);
+
+    // Soft delete user account: Set isActive to false
     user.isActive = false;
     await user.save();
+    console.log(`✅ Soft deleted user account ${userId}`);
 
     // Clear authentication cookies
     res.clearCookie('accessToken', {
