@@ -1,6 +1,7 @@
 const emergencyService = require('../services/emergencyService');
 const { sendEmail } = require('../utils/emailService');
 const config = require('../config/config');
+const { createNotification } = require('./notificationController');
 
 const VALID_TYPES = ['Injury', 'Breathing Issue', 'Poisoning', 'Seizure', 'Vomiting/Diarrhea', 'Other'];
 const VALID_STATUSES = ['pending', 'in_progress', 'resolved', 'cancelled'];
@@ -51,6 +52,16 @@ const createEmergencyRequest = async (req, res) => {
       description: description.trim(),
       contactInfo
     });
+
+    // Create notification for user
+    await createNotification(
+      userId,
+      'emergency_created',
+      'Emergency Request Submitted',
+      `Your emergency request for ${pet.name} has been submitted. Our team will contact you soon.`,
+      'emergency',
+      emergency.emergency_id
+    );
 
     const admins = await emergencyService.getAdmins();
     const adminIds = admins.map((admin) => admin.id);
@@ -147,6 +158,43 @@ const updateEmergencyStatus = async (req, res) => {
     }
 
     const updated = await emergencyService.updateEmergencyStatus(emergencyId, status);
+    
+    // Create notification for user based on status change
+    let notificationTitle = '';
+    let notificationMessage = '';
+    let notificationType = '';
+
+    switch (status) {
+      case 'in_progress':
+        notificationType = 'emergency_updated';
+        notificationTitle = 'Emergency Request In Progress';
+        notificationMessage = `We are currently handling your emergency request for ${updated.pets?.name || 'your pet'}.`;
+        break;
+      case 'resolved':
+        notificationType = 'emergency_resolved';
+        notificationTitle = 'Emergency Request Resolved';
+        notificationMessage = `Your emergency request for ${updated.pets?.name || 'your pet'} has been resolved.`;
+        break;
+      case 'cancelled':
+        notificationType = 'emergency_updated';
+        notificationTitle = 'Emergency Request Cancelled';
+        notificationMessage = `Your emergency request for ${updated.pets?.name || 'your pet'} has been cancelled.`;
+        break;
+      default:
+        notificationType = 'emergency_updated';
+        notificationTitle = 'Emergency Request Updated';
+        notificationMessage = `Your emergency request for ${updated.pets?.name || 'your pet'} has been updated.`;
+    }
+
+    await createNotification(
+      updated.user_id,
+      notificationType,
+      notificationTitle,
+      notificationMessage,
+      'emergency',
+      emergencyId
+    );
+
     return res.status(200).json({
       success: true,
       message: 'Emergency request updated.',

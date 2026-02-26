@@ -1,7 +1,7 @@
 /**
  * Notification Model
  * 
- * Represents notifications for users about pet activity updates
+ * Represents notifications for users about bookings, pets, emergencies, etc.
  */
 
 const { DataTypes } = require('sequelize');
@@ -23,14 +23,41 @@ module.exports = (sequelize) => {
         key: 'id'
       }
     },
-    activity_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      field: 'activity_id'
+    type: {
+      type: DataTypes.ENUM(
+        'booking_created',
+        'booking_approved', 
+        'booking_rejected',
+        'booking_completed',
+        'booking_cancelled',
+        'pet_created',
+        'pet_updated',
+        'emergency_created',
+        'emergency_updated',
+        'emergency_resolved'
+      ),
+      allowNull: false,
+      field: 'type'
+    },
+    title: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      field: 'title'
     },
     message: {
-      type: DataTypes.STRING,
-      allowNull: false
+      type: DataTypes.TEXT,
+      allowNull: false,
+      field: 'message'
+    },
+    reference_type: {
+      type: DataTypes.ENUM('booking', 'pet', 'emergency', 'activity'),
+      allowNull: true,
+      field: 'reference_type'
+    },
+    reference_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'reference_id'
     },
     is_read: {
       type: DataTypes.BOOLEAN,
@@ -43,7 +70,7 @@ module.exports = (sequelize) => {
     timestamps: true,
     underscored: true,
     createdAt: 'created_at',
-    updatedAt: false
+    updatedAt: 'updated_at'
   });
 
   Notification.associate = (models) => {

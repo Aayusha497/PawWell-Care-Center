@@ -12,6 +12,7 @@ import ActivityLogViewer from './ActivityLogViewer';
 import WellnessTimeline from './WellnessTimeline';
 import AboutPage from './AboutPage';
 import ContactPage from './ContactPage';
+import NotificationBell from '../../components/NotificationBell';
 
 interface User {
   id: string;
@@ -618,6 +619,7 @@ const handleAddPet = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationBell userId={parseInt(user.id)} />
             <button
               onClick={() => onNavigate?.('profile')}
               className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-white overflow-hidden"

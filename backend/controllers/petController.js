@@ -6,6 +6,7 @@
 
 const { Pet, User } = require('../models');
 const { deleteImage } = require('../config/cloudinary');
+const { createNotification } = require('./notificationController');
 
 /**
  * Create a new pet profile
@@ -41,6 +42,16 @@ const createPet = async (req, res) => {
       medical_history: medical_history?.trim() || null,
       photo: photoUrl,
     });
+
+    // Create notification for pet profile creation
+    await createNotification(
+      userId,
+      'pet_created',
+      'Pet Profile Created',
+      `${pet.name}'s profile has been successfully created!`,
+      'pet',
+      pet.pet_id
+    );
 
     res.status(201).json({
       success: true,
@@ -246,6 +257,16 @@ const updatePet = async (req, res) => {
 
     // Update pet in database
     await existingPet.update(updateData);
+
+    // Create notification for pet profile update
+    await createNotification(
+      userId,
+      'pet_updated',
+      'Pet Profile Updated',
+      `${existingPet.name}'s profile has been successfully updated!`,
+      'pet',
+      petId
+    );
 
     res.status(200).json({
       success: true,

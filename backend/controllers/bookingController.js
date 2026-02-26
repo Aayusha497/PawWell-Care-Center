@@ -6,6 +6,7 @@
 
 const { Booking, Pet } = require('../models');
 const { Op } = require('sequelize');
+const { createNotification } = require('./notificationController');
 
 // Service pricing and capacity configuration
 const SERVICE_CONFIG = {
@@ -289,6 +290,16 @@ const createBooking = async (req, res) => {
         attributes: ['pet_id', 'name', 'breed', 'photo']
       }]
     });
+
+    // Create notification for booking submission
+    await createNotification(
+      booking.user_id,
+      'booking_created',
+      'Booking Submitted',
+      'Your booking has been sent. Wait for approval.',
+      'booking',
+      booking.booking_id
+    );
 
     res.status(201).json({
       success: true,
@@ -780,6 +791,21 @@ const approveBooking = async (req, res) => {
     booking.updated_at = new Date();
     await booking.save();
 
+    // Create notification for booking approval
+    const serviceDate = booking.start_date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+    await createNotification(
+      booking.user_id,
+      'booking_approved',
+      'Booking Approved',
+      `Your booking has been approved! Service scheduled for ${serviceDate}.`,
+      'booking',
+      booking.booking_id
+    );
+
     res.status(200).json({
       success: true,
       message: 'Booking approved successfully',
@@ -823,6 +849,16 @@ const rejectBooking = async (req, res) => {
     booking.status = 'cancelled';
     booking.updated_at = new Date();
     await booking.save();
+
+    // Create notification for booking rejection
+    await createNotification(
+      booking.user_id,
+      'booking_rejected',
+      'Booking Declined',
+      'Your booking was declined. Please contact us for more details.',
+      'booking',
+      booking.booking_id
+    );
 
     res.status(200).json({
       success: true,
@@ -889,6 +925,16 @@ const completeBooking = async (req, res) => {
     booking.status = 'completed';
     booking.updated_at = new Date();
     await booking.save();
+
+    // Create notification for booking completion
+    await createNotification(
+      booking.user_id,
+      'booking_completed',
+      'Booking Complete',
+      'Your booking is complete! Please rate and review the service.',
+      'booking',
+      booking.booking_id
+    );
 
     res.status(200).json({
       success: true,

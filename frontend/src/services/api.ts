@@ -1045,5 +1045,63 @@ export const deleteTimelineEntry = async (id: string | number): Promise<any> => 
   }
 };
 
+// ================================
+// NOTIFICATION ENDPOINTS
+// ================================
+
+/**
+ * Get all notifications for the current user
+ * @returns {Promise<{notifications: any[], unreadCount: number}>} Notifications and unread count
+ */
+export const getNotifications = async (): Promise<{ notifications: any[]; unreadCount: number }> => {
+  try {
+    const response = await api.get('/notifications');
+    return response.data.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch notifications' };
+  }
+};
+
+/**
+ * Mark a notification as read
+ * @param {string | number} id - Notification ID
+ * @returns {Promise<any>} Updated notification
+ */
+export const markNotificationAsRead = async (id: string | number): Promise<any> => {
+  try {
+    const response = await api.patch(`/notifications/${id}/read`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to mark notification as read' };
+  }
+};
+
+/**
+ * Mark all notifications as read
+ * @returns {Promise<any>} Update confirmation
+ */
+export const markAllNotificationsAsRead = async (): Promise<any> => {
+  try {
+    const response = await api.patch('/notifications/mark-all-read');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to mark all notifications as read' };
+  }
+};
+
+/**
+ * Delete a notification
+ * @param {string | number} id - Notification ID
+ * @returns {Promise<any>} Deletion confirmation
+ */
+export const deleteNotification = async (id: string | number): Promise<any> => {
+  try {
+    const response = await api.delete(`/notifications/${id}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to delete notification' };
+  }
+};
+
 export default api;
 
