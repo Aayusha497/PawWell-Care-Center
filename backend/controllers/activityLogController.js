@@ -72,12 +72,16 @@ const createActivityLog = async (req, res) => {
 
     // If notify_owner is true, create notification for pet owner
     if (notify_owner === 'true' || notify_owner === true) {
+      const notificationTitle = `Pet Activity Update`;
       const notificationMessage = `New ${activityTitles[activity_type] || activity_type} activity logged for ${pet.name}`;
       
       await Notification.create({
         user_id: pet.user_id,
-        activity_id: activityLog.activity_id,
+        type: 'pet_updated',
+        title: notificationTitle,
         message: notificationMessage,
+        reference_type: 'activity',
+        reference_id: activityLog.activity_id,
         is_read: false,
       });
 
@@ -218,7 +222,10 @@ const getActivityLogs = async (req, res) => {
         const logData = log.toJSON();
         if (log.notify_owner) {
           const notification = await Notification.findOne({
-            where: { activity_id: log.activity_id },
+            where: { 
+              reference_type: 'activity',
+              reference_id: log.activity_id 
+            },
           });
           logData.notified = !!notification;
         } else {
@@ -286,7 +293,10 @@ const getActivityLogById = async (req, res) => {
     const logData = activityLog.toJSON();
     if (activityLog.notify_owner) {
       const notification = await Notification.findOne({
-        where: { activity_id: activityLog.activity_id },
+        where: { 
+          reference_type: 'activity',
+          reference_id: activityLog.activity_id 
+        },
       });
       logData.notified = !!notification;
     } else {
@@ -472,7 +482,10 @@ const deleteActivityLog = async (req, res) => {
 
     // Delete related notifications
     await Notification.destroy({
-      where: { activity_id: logId },
+      where: { 
+        reference_type: 'activity',
+        reference_id: logId 
+      },
     });
 
     await activityLog.destroy();
