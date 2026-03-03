@@ -8,6 +8,10 @@ const { ROLES, hasRole, isAdmin } = require('../utils/rbac');
  */
 const authenticate = async (req, res, next) => {
   try {
+    console.log('🔐 Auth middleware - URL:', req.url);
+    console.log('🍪 Cookies received:', req.cookies);
+    console.log('📨 Authorization header:', req.headers.authorization);
+    
     // Get token from cookie (preferred) or Authorization header (fallback)
     let token = req.cookies.accessToken;
     
@@ -19,27 +23,35 @@ const authenticate = async (req, res, next) => {
     }
     
     if (!token) {
+      console.log('❌ No token found in cookies or headers');
       return res.status(401).json({
         success: false,
         message: 'No token provided. Authentication required.'
       });
     }
 
+    console.log('✅ Token found:', token.substring(0, 20) + '...');
+
     // Verify token
     const decoded = jwt.verify(token, config.jwt.secret);
+    console.log('✅ Token decoded:', { userId: decoded.userId, userType: decoded.userType });
 
     // Get user from database
     const user = await User.findByPk(decoded.userId);
 
     if (!user) {
+      console.log('❌ User not found in database');
       return res.status(401).json({
         success: false,
         message: 'User not found. Token invalid.'
       });
     }
 
+    console.log('✅ User authenticated:', { id: user.id, email: user.email, userType: user.userType });
+
     // Check if user is active
     if (!user.isActive) {
+      console.log('❌ User account is deactivated');
       return res.status(403).json({
         success: false,
         message: 'Your account has been deactivated. Please contact support.'
@@ -50,6 +62,8 @@ const authenticate = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    console.error('❌ Authentication error:', error.message);
+    
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,

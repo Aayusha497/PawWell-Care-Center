@@ -52,12 +52,22 @@ const ReviewPage: React.FC<ReviewPageProps> = ({ onBackToBookingHistory, onBackT
   const fetchReviewableBookings = async () => {
     try {
       setLoading(true);
+      console.log('📋 Fetching reviewable bookings...');
+      
       const response = await getReviewableBookings();
+      console.log('📋 Raw response:', response);
+      
       const bookingData = response.data || response.bookings || response || [];
+      console.log('📋 Booking data extracted:', bookingData);
+      console.log('📋 Is array?', Array.isArray(bookingData));
+      console.log('📋 Count:', bookingData.length);
+      
       setBookings(Array.isArray(bookingData) ? bookingData : []);
     } catch (error: any) {
-      console.error('Error fetching reviewable bookings:', error);
-      toast.error('Failed to load bookings');
+      console.error('❌ Error fetching reviewable bookings:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error data:', error.response?.data);
+      toast.error(error.message || 'Failed to load bookings');
     } finally {
       setLoading(false);
     }
@@ -175,14 +185,23 @@ const ReviewPage: React.FC<ReviewPageProps> = ({ onBackToBookingHistory, onBackT
           </div>
         ) : bookings.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center shadow-md">
-            <p className="text-gray-500 text-lg mb-4">
-              No completed bookings available for review
-            </p>
+            <div className="mb-6">
+              <div className="text-6xl mb-4">✅</div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                All Caught Up!
+              </h2>
+              <p className="text-gray-600 text-lg mb-2">
+                You've already submitted reviews for this services.
+              </p>
+              <p className="text-gray-500 text-sm">
+                Thank you for sharing your feedback with us! 🙏
+              </p>
+            </div>
             <button
               onClick={onBackToBookingHistory}
-              className="bg-[#FA9884] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#E8876F] transition"
+              className="bg-[#FA9884] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#E8876F] transition shadow-md"
             >
-              Go Back
+              Back to Booking History
             </button>
           </div>
         ) : (

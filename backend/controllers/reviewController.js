@@ -380,7 +380,21 @@ const getMyReviews = async (req, res) => {
  */
 const getReviewableBookings = async (req, res) => {
   try {
+    console.log('📋 getReviewableBookings called');
+    console.log('👤 User from req.user:', req.user);
+    console.log('🍪 Cookies:', req.cookies);
+    console.log('📨 Headers:', req.headers.authorization);
+    
+    if (!req.user || !req.user.id) {
+      console.error('❌ No user found in request');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+    }
+    
     const userId = req.user.id;
+    console.log('✅ User ID:', userId);
 
     // Get completed bookings without reviews
     const bookings = await Booking.findAll({
@@ -403,8 +417,12 @@ const getReviewableBookings = async (req, res) => {
       order: [['end_date', 'DESC']],
     });
 
+    console.log(`📊 Found ${bookings.length} completed bookings for user ${userId}`);
+
     // Filter out bookings that already have reviews
     const reviewableBookings = bookings.filter(booking => !booking.review);
+    
+    console.log(`✅ ${reviewableBookings.length} bookings are reviewable (without existing reviews)`);
 
     res.status(200).json({
       success: true,
@@ -412,7 +430,7 @@ const getReviewableBookings = async (req, res) => {
       data: reviewableBookings,
     });
   } catch (error) {
-    console.error('Error fetching reviewable bookings:', error);
+    console.error('❌ Error fetching reviewable bookings:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch reviewable bookings',
