@@ -236,6 +236,15 @@
   font-family: inherit;
 }
 
+.about-reviews {
+  padding: 64px 8vw;
+  background: #ffffff;
+}
+
+.about-reviews .section-title {
+  margin-bottom: 40px;
+}
+
 @media (min-width: 900px) {
   .about-hero {
     grid-template-columns: 1.1fr 0.9fr;

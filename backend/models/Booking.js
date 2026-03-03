@@ -133,6 +133,10 @@ module.exports = (sequelize) => {
       foreignKey: 'booking_id',
       as: 'payment'
     });
+    Booking.hasOne(models.Review, {
+      foreignKey: 'booking_id',
+      as: 'review'
+    });
   };
 
   return Booking;

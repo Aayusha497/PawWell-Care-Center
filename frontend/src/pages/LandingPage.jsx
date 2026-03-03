@@ -7,6 +7,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ReviewList from '../components/ReviewList';
 
 const LandingPage = () => {
   const { isAuthenticated } = useAuth();
@@ -111,6 +112,20 @@ const LandingPage = () => {
               {index === 1 && <button className="service-arrow">▶</button>}
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Featured Reviews Section */}
+      <section className="reviews-section">
+        <div className="reviews-container">
+          <div className="reviews-header">
+            <h2>What Our Customers Say</h2>
+            <p>Real experiences from pet parents who trust PawWell</p>
+          </div>
+          <ReviewList featured={true} limit={3} />
+          <div className="reviews-footer">
+            <Link to="/about" className="btn-see-all-reviews">See All Reviews</Link>
+          </div>
         </div>
       </section>
 

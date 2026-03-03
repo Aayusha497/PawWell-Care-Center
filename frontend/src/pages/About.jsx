@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ReviewList from '../components/ReviewList';
 import './About.css';
 
 const About = () => {
@@ -191,6 +192,14 @@ const About = () => {
           </div>
           <button type="button" className="btn-primary">Send Message</button>
         </form>
+      </section>
+
+      <section className="about-reviews">
+        <div className="section-title">
+          <h2>What Our Customers Say</h2>
+          <p>Real experiences from pet parents who trust PawWell Care Center.</p>
+        </div>
+        <ReviewList limit={6} />
       </section>
     </div>
   );

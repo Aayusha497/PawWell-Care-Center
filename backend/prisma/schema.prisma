@@ -47,6 +47,7 @@ model bookings {
   services          services?            @relation(fields: [service_id], references: [service_id])
   users             users                @relation(fields: [user_id], references: [id], onDelete: NoAction)
   payments          payments?
+  reviews           reviews?
 }
 
 model emergency_requests {
@@ -112,6 +113,7 @@ model pets {
   emergency_requests emergency_requests[]
   users              users                @relation(fields: [user_id], references: [id], onDelete: NoAction)
   wellness_timeline  wellness_timeline[]
+  reviews            reviews[]
 }
 
 model public_forum {
@@ -178,6 +180,7 @@ model users {
   profile_picture    String?              @db.VarChar(255)
   address            String?              @db.VarChar(255)
   city               String?              @db.VarChar(100)
+  emergency_contact_name String?          @db.VarChar(100)
   emergency_contact_number String?        @db.VarChar(20)
   is_profile_complete Boolean             @default(false)
   email_verified     Boolean?             @default(false)
@@ -194,6 +197,7 @@ model users {
   password_resets    password_resets[]
   pets               pets[]
   public_forum       public_forum[]
+  reviews            reviews[]
 }
 
 model wellness_timeline {
@@ -239,6 +243,38 @@ model contact_messages {
   created_at DateTime                     @db.Timestamptz(6)
   updated_at DateTime                     @db.Timestamptz(6)
   users      users?                       @relation(fields: [user_id], references: [id])
+}
+
+model reviews {
+  review_id              Int       @id @default(autoincrement())
+  booking_id             Int       @unique
+  user_id                Int
+  pet_id                 Int?
+  service_type           String    @db.VarChar(100)
+  rating_service         Int
+  rating_staff           Int
+  rating_cleanliness     Int
+  rating_value           Int
+  rating_communication   Int
+  rating_pet_condition   Int
+  overall_rating         Decimal   @db.Decimal(2, 1)
+  review_text            String?   @db.Text
+  photos                 String?   @db.VarChar(1000)
+  is_verified            Boolean   @default(true)
+  is_approved            Boolean   @default(false)
+  is_featured            Boolean   @default(false)
+  admin_response         String?   @db.Text
+  admin_response_date    DateTime? @db.Timestamptz(6)
+  helpful_count          Int       @default(0)
+  created_at             DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime  @default(now()) @db.Timestamptz(6)
+  bookings               bookings  @relation(fields: [booking_id], references: [booking_id], onDelete: Cascade)
+  users                  users     @relation(fields: [user_id], references: [id], onDelete: NoAction)
+  pets                   pets?     @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+
+  @@index([user_id], name: "idx_reviews_user")
+  @@index([is_approved, is_featured], name: "idx_reviews_approved_featured")
+  @@index([service_type], name: "idx_reviews_service_type")
 }
 
 enum enum_bookings_status {

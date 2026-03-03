@@ -1103,5 +1103,169 @@ export const deleteNotification = async (id: string | number): Promise<any> => {
   }
 };
 
+// ================================
+// Review APIs
+// ================================
+
+/**
+ * Create a new review
+ * @param {FormData} reviewData - Review data including ratings and optional photo
+ * @returns {Promise<any>} Created review
+ */
+export const createReview = async (reviewData: FormData): Promise<any> => {
+  try {
+    const response = await api.post('/reviews', reviewData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to create review' };
+  }
+};
+
+/**
+ * Get all approved reviews (public)
+ * @param {object} params - Query parameters (service_type, min_rating, page, limit, featured)
+ * @returns {Promise<any>} Paginated reviews
+ */
+export const getReviews = async (params: {
+  service_type?: string;
+  min_rating?: number;
+  page?: number;
+  limit?: number;
+  featured?: boolean;
+} = {}): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params.service_type) queryParams.append('service_type', params.service_type);
+    if (params.min_rating) queryParams.append('min_rating', String(params.min_rating));
+    if (params.page) queryParams.append('page', String(params.page));
+    if (params.limit) queryParams.append('limit', String(params.limit));
+    if (params.featured) queryParams.append('featured', 'true');
+
+    const response = await api.get(`/reviews${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch reviews' };
+  }
+};
+
+/**
+ * Get review statistics
+ * @returns {Promise<any>} Review statistics (averages, distribution)
+ */
+export const getReviewStats = async (): Promise<any> => {
+  try {
+    const response = await api.get('/reviews/stats');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch review statistics' };
+  }
+};
+
+/**
+ * Get current user's reviews
+ * @returns {Promise<any>} User's reviews
+ */
+export const getMyReviews = async (): Promise<any> => {
+  try {
+    const response = await api.get('/reviews/my-reviews');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch your reviews' };
+  }
+};
+
+/**
+ * Get completed bookings that can be reviewed
+ * @returns {Promise<any>} Reviewable bookings
+ */
+export const getReviewableBookings = async (): Promise<any> => {
+  try {
+    const response = await api.get('/reviews/reviewable-bookings');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch reviewable bookings' };
+  }
+};
+
+/**
+ * Update a review
+ * @param {string | number} id - Review ID
+ * @param {FormData} reviewData - Updated review data
+ * @returns {Promise<any>} Updated review
+ */
+export const updateReview = async (id: string | number, reviewData: FormData): Promise<any> => {
+  try {
+    const response = await api.put(`/reviews/${id}`, reviewData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to update review' };
+  }
+};
+
+/**
+ * Delete a review
+ * @param {string | number} id - Review ID
+ * @returns {Promise<any>} Deletion confirmation
+ */
+export const deleteReview = async (id: string | number): Promise<any> => {
+  try {
+    const response = await api.delete(`/reviews/${id}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to delete review' };
+  }
+};
+
+/**
+ * Get all reviews (admin) including unapproved
+ * @param {object} params - Query parameters (page, limit, status)
+ * @returns {Promise<any>} All reviews
+ */
+export const getAllReviews = async (params: {
+  page?: number;
+  limit?: number;
+  status?: string;
+} = {}): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', String(params.page));
+    if (params.limit) queryParams.append('limit', String(params.limit));
+    if (params.status) queryParams.append('status', params.status);
+
+    const response = await api.get(`/reviews/admin/all${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch all reviews' };
+  }
+};
+
+/**
+ * Approve/reject or feature a review (admin)
+ * @param {string | number} id - Review ID
+ * @param {object} data - Approval data (is_approved, is_featured, admin_response)
+ * @returns {Promise<any>} Updated review
+ */
+export const approveReview = async (id: string | number, data: {
+  is_approved?: boolean;
+  is_featured?: boolean;
+  admin_response?: string;
+}): Promise<any> => {
+  try {
+    const response = await api.patch(`/reviews/${id}/approve`, data);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to update review approval' };
+  }
+};
+
 export default api;
+
 

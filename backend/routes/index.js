@@ -9,6 +9,7 @@ const contactRoutes = require('./contact');
 const emergencyRoutes = require('./emergency');
 const wellnessTimelineRoutes = require('./wellnessTimeline');
 const notificationRoutes = require('./notifications');
+const reviewRoutes = require('./reviews');
 
 // Mount auth routes
 router.use('/accounts', authRoutes);
@@ -36,6 +37,9 @@ router.use('/wellness-timeline', wellnessTimelineRoutes);
 
 // Mount notification routes
 router.use('/notifications', notificationRoutes);
+
+// Mount review routes
+router.use('/reviews', reviewRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {
