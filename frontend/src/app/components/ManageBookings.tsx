@@ -260,17 +260,9 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
     <div className="min-h-screen bg-[#FFF9F5] py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Manage Bookings</h1>
-            <p className="text-gray-600">View, reschedule, or cancel your upcoming bookings</p>
-          </div>
-          <button
-            onClick={onBack}
-            className="px-6 py-2 bg-white border-2 border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition"
-          >
-            Back to Dashboard
-          </button>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Manage Bookings</h1>
+          <p className="text-gray-600">View, reschedule, or cancel your upcoming bookings</p>
         </div>
 
         {/* Bookings List */}

@@ -30,9 +30,10 @@ interface Booking {
 
 interface BookingHistoryProps {
   onBack: () => void;
+  onLeaveReview?: (bookingId: number) => void;
 }
 
-const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack }) => {
+const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack, onLeaveReview }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
@@ -89,17 +90,9 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack }) => {
     <div className="min-h-screen bg-[#FFF9F5] py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Booking History</h1>
-            <p className="text-gray-600">View your past and completed bookings</p>
-          </div>
-          <button
-            onClick={onBack}
-            className="px-6 py-2 bg-white border-2 border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition"
-          >
-            Back to Dashboard
-          </button>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Booking History</h1>
+          <p className="text-gray-600">View your past and completed bookings</p>
         </div>
 
         {/* Filter Buttons */}
@@ -223,8 +216,16 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack }) => {
 
                 {/* Additional Info for Completed Bookings */}
                 {booking.status === 'completed' && (
-                  <div className="mt-4 pt-4 border-t">
+                  <div className="mt-4 pt-4 border-t flex items-center justify-between">
                     <p className="text-sm text-green-600 font-medium">✓ Service completed successfully</p>
+                    {onLeaveReview && (
+                      <button
+                        onClick={() => onLeaveReview(booking.booking_id)}
+                        className="px-4 py-2 bg-[#FA9884] text-white rounded-lg font-semibold hover:bg-[#E8876F] transition text-sm"
+                      >
+                        ⭐ Leave a Review
+                      </button>
+                    )}
                   </div>
                 )}
 

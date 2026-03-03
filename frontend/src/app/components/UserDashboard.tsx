@@ -13,6 +13,7 @@ import WellnessTimeline from './WellnessTimeline';
 import AboutPage from './AboutPage';
 import ContactPage from './ContactPage';
 import NotificationBell from '../../components/NotificationBell';
+import ReviewPage from './ReviewPage';
 
 interface User {
   id: string;
@@ -81,7 +82,9 @@ export default function UserDashboard({
   const [showWellnessTimeline, setShowWellnessTimeline] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showContact, setShowContact] = useState(false);
+  const [showReviewPage, setShowReviewPage] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<number | undefined>(undefined);
+  const [selectedBookingId, setSelectedBookingId] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     fetchPets();
@@ -101,6 +104,7 @@ export default function UserDashboard({
     setShowBookingHistory(false);
     setShowActivityLog(false);
     setShowWellnessTimeline(false);
+    setShowReviewPage(false);
 
     if (dashboardTarget === 'booking') {
       setShowBookingPage(true);
@@ -235,7 +239,9 @@ const handleAddPet = () => {
     setShowWellnessTimeline(false);
     setShowAbout(false);
     setShowContact(false);
+    setShowReviewPage(false);
     setSelectedPetId(undefined);
+    setSelectedBookingId(undefined);
     fetchPets(); // Refresh pets list
     fetchBookings(); // Refresh bookings list
     fetchActivities(); // Refresh activity logs
@@ -292,6 +298,24 @@ const handleAddPet = () => {
     setShowContact(true);
   };
 
+  const handleLeaveReview = (bookingId: number) => {
+    setSelectedBookingId(bookingId);
+    setShowBookingPage(false);
+    setShowManageBookings(false);
+    setShowBookingHistory(false);
+    setShowActivityLog(false);
+    setShowWellnessTimeline(false);
+    setShowAbout(false);
+    setShowContact(false);
+    setShowReviewPage(true);
+  };
+
+  const handleBackToBookingHistory = () => {
+    setShowReviewPage(false);
+    setShowBookingHistory(true);
+    setSelectedBookingId(undefined);
+  };
+
   const renderContent = () => {
     if (showBookingPage) {
       return (
@@ -310,7 +334,11 @@ const handleAddPet = () => {
     }
 
     if (showBookingHistory) {
-      return <BookingHistory onBack={handleBackToDashboard} />;
+      return <BookingHistory onBack={handleBackToDashboard} onLeaveReview={handleLeaveReview} />;
+    }
+
+    if (showReviewPage) {
+      return <ReviewPage onBackToBookingHistory={handleBackToBookingHistory} onBackToDashboard={handleBackToDashboard} bookingId={selectedBookingId} />;
     }
 
     if (showActivityLog) {

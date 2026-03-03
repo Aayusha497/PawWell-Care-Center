@@ -3,10 +3,11 @@ const config = require('../config/config');
 
 /**
  * General rate limiter for API endpoints
+ * Much more lenient in development to avoid blocking during testing
  */
 const generalLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.maxRequests,
+  max: process.env.NODE_ENV === 'production' ? config.rateLimit.maxRequests : 1000, // 1000 in dev, 100 in prod
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
