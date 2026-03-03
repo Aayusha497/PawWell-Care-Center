@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ReviewList from '../components/ReviewList';
 import './About.css';
 
 const About = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isLoggedIn } = useAuth();
 
   const whyItems = useMemo(() => ([
     'Pet profiles store allergies and medical needs for safer care.',
@@ -17,7 +17,7 @@ const About = () => {
   ]), []);
 
   const handleBookService = () => {
-    if (isAuthenticated) {
+    if (isLoggedIn) {
       navigate('/booking');
       return;
     }
@@ -33,7 +33,7 @@ const About = () => {
   };
 
   const handleAddPet = () => {
-    if (isAuthenticated) {
+    if (isLoggedIn) {
       navigate('/pets/add');
       return;
     }
@@ -199,7 +199,12 @@ const About = () => {
           <h2>What Our Customers Say</h2>
           <p>Real experiences from pet parents who trust PawWell Care Center.</p>
         </div>
-        <ReviewList limit={6} />
+        <ReviewList limit={3} />
+        <div className="reviews-view-all">
+          <Link to="/reviews" className="btn-view-all-reviews">
+            View All Reviews
+          </Link>
+        </div>
       </section>
     </div>
   );

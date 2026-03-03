@@ -24,6 +24,7 @@ import VerifyOTP from './pages/VerifyOTP';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import About from './pages/About';
+import ReviewsPage from './pages/ReviewsPage';
 import Booking from './pages/Booking';
 import PetList from './pages/PetList';
 import AddPet from './pages/AddPet';
@@ -58,6 +59,7 @@ function AppContent() {
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/about" element={<About />} />
+              <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -59,11 +59,16 @@ const ReviewList = ({ featured = false, limit = 10, serviceType = '' }) => {
         params.min_rating = parseInt(filterRating);
       }
 
+      console.log('📊 Fetching reviews with params:', params);
       const response = await getReviews(params);
+      console.log('📊 Reviews response:', response);
+      console.log('📊 Reviews data:', response.data);
+      console.log('📊 Number of reviews:', response.data?.length || 0);
+      
       setReviews(response.data || []);
       setTotalPages(response.totalPages || 1);
     } catch (error) {
-      console.error('Error fetching reviews:', error);
+      console.error('❌ Error fetching reviews:', error);
       toast.error(error.message || 'Failed to load reviews');
     } finally {
       setLoading(false);
@@ -269,11 +274,23 @@ const ReviewList = ({ featured = false, limit = 10, serviceType = '' }) => {
 
       <div className="reviews-list">
         {loading ? (
-          <div className="loading">Loading reviews...</div>
+          <div className="loading">
+            <div className="spinner"></div>
+            <p>Loading reviews...</p>
+          </div>
         ) : reviews.length === 0 ? (
           <div className="no-reviews">
-            <h3>No reviews yet</h3>
-            <p>Be the first to share your experience!</p>
+            {featured ? (
+              <>
+                <h3>🌟 No featured reviews yet</h3>
+                <p>Admins haven't featured any reviews yet. Check back soon!</p>
+              </>
+            ) : (
+              <>
+                <h3>📝 No reviews yet</h3>
+                <p>Be the first to share your experience with PawWell Care Center!</p>
+              </>
+            )}
           </div>
         ) : (
           reviews.map(review => (

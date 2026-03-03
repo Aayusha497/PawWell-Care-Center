@@ -16,6 +16,7 @@ import {
 import { toast } from 'sonner';
 import ActivityLogsManagement from './ActivityLogsManagement';
 import BookingManagement from './BookingManagement';
+import ReviewManagement from './ReviewManagement';
 
 interface User {
   id: string;
@@ -93,7 +94,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
   const [notificationSummary, setNotificationSummary] = useState({
     contactMessages: 0,
     pendingBookings: 0,
-    emergencyRequests: 0
+    emergencyRequests: 0,
+    pendingReviews: 0
   });
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [contactLoading, setContactLoading] = useState(false);
@@ -180,7 +182,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       setNotificationSummary({
         contactMessages: data.contactMessages || 0,
         pendingBookings: data.pendingBookings || 0,
-        emergencyRequests: data.emergencyRequests || 0
+        emergencyRequests: data.emergencyRequests || 0,
+        pendingReviews: data.pendingReviews || 0
       });
     } catch (error: any) {
       console.error('Error fetching notification summary:', error);
@@ -363,7 +366,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
   const notificationTotal =
     notificationSummary.contactMessages +
     notificationSummary.pendingBookings +
-    notificationSummary.emergencyRequests;
+    notificationSummary.emergencyRequests +
+    notificationSummary.pendingReviews;
 
   const titleMap: Record<string, string> = {
     dashboard: 'Admin Dashboard',
@@ -373,7 +377,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
     'activity-logs': 'Daily Activity Log',
     announcements: 'Announcements',
     'contact-messages': 'Contact Messages',
-    'emergency-requests': 'Emergency Requests'
+    'emergency-requests': 'Emergency Requests',
+    'reviews': 'Review Management'
   };
 
   return (
@@ -464,6 +469,17 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
             >
               <span>🚨</span>
               Emergency requests
+            </button>
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                activeTab === 'reviews'
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span>⭐</span>
+              Reviews
             </button>
             <button
               onClick={() => setActiveTab('announcements')}
@@ -558,6 +574,16 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                           className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
                         >
                           {notificationSummary.emergencyRequests} Emergency Requests
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab('reviews');
+                            setNotificationOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
+                        >
+                          {notificationSummary.pendingReviews} Pending Reviews
                         </button>
                       </>
                     )}
@@ -1017,6 +1043,10 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                 </div>
               )}
             </div>
+          )}
+
+          {activeTab === 'reviews' && (
+            <ReviewManagement />
           )}
         </div>
       </main>

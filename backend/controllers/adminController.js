@@ -288,10 +288,13 @@ const updateSystemConfig = async (req, res) => {
  */
 const getNotificationSummary = async (req, res) => {
   try {
-    const [pendingBookings, unreadMessages, openEmergency] = await Promise.all([
+    const { Review } = require('../models');
+    
+    const [pendingBookings, unreadMessages, openEmergency, pendingReviews] = await Promise.all([
       Booking.count({ where: { status: 'pending' } }),
       ContactMessage.count({ where: { status: 'unread' } }),
-      EmergencyRequest.count({ where: { status: { [Op.in]: ['pending', 'in_progress'] } } })
+      EmergencyRequest.count({ where: { status: { [Op.in]: ['pending', 'in_progress'] } } }),
+      Review.count({ where: { is_approved: false } })
     ]);
 
     return res.status(200).json({
@@ -299,7 +302,8 @@ const getNotificationSummary = async (req, res) => {
       data: {
         pendingBookings,
         contactMessages: unreadMessages,
-        emergencyRequests: openEmergency
+        emergencyRequests: openEmergency,
+        pendingReviews
       }
     });
   } catch (error) {

@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import ReviewList from '../components/ReviewList';
 
 const LandingPage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isLoggedIn } = useAuth();
 
   const petTypes = [
     { icon: '🐕', name: 'Dogs' },
@@ -124,7 +124,7 @@ const LandingPage = () => {
           </div>
           <ReviewList featured={true} limit={3} />
           <div className="reviews-footer">
-            <Link to="/about" className="btn-see-all-reviews">See All Reviews</Link>
+            <Link to="/reviews" className="btn-see-all-reviews">See All Reviews</Link>
           </div>
         </div>
       </section>
@@ -135,13 +135,13 @@ const LandingPage = () => {
           <h2>Ready to Give Your Pet the Best Care?</h2>
           <p>Join thousands of happy pet owners who trust PawWell</p>
           <div className="cta-buttons">
-            {!isAuthenticated && (
+            {!isLoggedIn && (
               <>
                 <Link to="/signup" className="btn-cta-primary">Sign Up Now</Link>
                 <Link to="/login" className="btn-cta-secondary">Login</Link>
               </>
             )}
-            {isAuthenticated && (
+            {isLoggedIn && (
               <Link to="/dashboard" className="btn-cta-primary">Go to Dashboard</Link>
             )}
           </div>

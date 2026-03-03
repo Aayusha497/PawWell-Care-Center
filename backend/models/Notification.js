@@ -24,24 +24,14 @@ module.exports = (sequelize) => {
       }
     },
     type: {
-      type: DataTypes.ENUM(
-        'booking_created',
-        'booking_approved', 
-        'booking_rejected',
-        'booking_completed',
-        'booking_cancelled',
-        'pet_created',
-        'pet_updated',
-        'emergency_created',
-        'emergency_updated',
-        'emergency_resolved'
-      ),
+      type: DataTypes.STRING(50),
       allowNull: false,
+      defaultValue: 'booking_created',
       field: 'type'
     },
     title: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      type: DataTypes.STRING(255),
+      allowNull: true,
       field: 'title'
     },
     message: {
@@ -50,7 +40,7 @@ module.exports = (sequelize) => {
       field: 'message'
     },
     reference_type: {
-      type: DataTypes.ENUM('booking', 'pet', 'emergency', 'activity'),
+      type: DataTypes.STRING(50),
       allowNull: true,
       field: 'reference_type'
     },
