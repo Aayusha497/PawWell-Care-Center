@@ -1,9 +1,6 @@
 import heroImage from '../../assets/hero-dogs.png';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { MessageCircle, X } from 'lucide-react';
-import { useState } from 'react';
-import ChatbotWidget from './ChatbotWidget';
 
 interface LandingPageProps {
   onNavigateToLogin: () => void;
@@ -11,8 +8,6 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: LandingPageProps) {
-  const [chatbotOpen, setChatbotOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-[#FFF8E8]">
       {/* Navigation */}
@@ -128,21 +123,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: L
           </div>
         </div>
       </section>
-
-      {/* Chatbot Widget */}
-      {chatbotOpen && (
-        <div className="fixed bottom-24 right-8 z-50">
-          <ChatbotWidget onClose={() => setChatbotOpen(false)} />
-        </div>
-      )}
-      
-      {/* Chatbot Toggle Button */}
-      <button
-        onClick={() => setChatbotOpen(!chatbotOpen)}
-        className="fixed bottom-8 right-8 bg-[#EAB308] text-white p-4 rounded-full shadow-lg hover:bg-[#D4A017] transition-colors z-50"
-      >
-        {chatbotOpen ? <X size={24} /> : <MessageCircle size={24} />}
-      </button>
     </div>
   );
 }

@@ -237,6 +237,10 @@
 }
 
 @media (max-width: 768px) {
+  .view-pet-container {
+    padding: 1.5rem 1rem;
+  }
+
   .pet-details-card {
     grid-template-columns: 1fr;
   }
@@ -245,9 +249,17 @@
     height: 300px;
   }
 
+  .pet-info-section {
+    padding: 1.5rem;
+  }
+
   .pet-header {
     flex-direction: column;
     gap: 1rem;
+  }
+
+  .pet-header h1 {
+    font-size: 1.75rem;
   }
 
   .pet-actions {
@@ -256,9 +268,82 @@
 
   .pet-actions .btn {
     flex: 1;
+    font-size: 0.9rem;
   }
 
   .pet-details-grid {
     grid-template-columns: 1fr;
+  }
+
+  .detail-item {
+    padding: 1rem;
+  }
+
+  .wellness-timeline h2 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .view-pet-container {
+    padding: 1rem 15px;
+  }
+
+  .pet-photo-section {
+    height: 250px;
+  }
+
+  .pet-info-section {
+    padding: 1rem;
+  }
+
+  .pet-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .pet-actions {
+    flex-direction: column;
+  }
+
+  .pet-actions .btn {
+    width: 100%;
+  }
+
+  .back-button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .detail-item {
+    padding: 0.75rem;
+  }
+
+  .detail-label {
+    font-size: 0.85rem;
+  }
+
+  .detail-value {
+    font-size: 0.95rem;
+  }
+
+  .wellness-timeline h2 {
+    font-size: 1.25rem;
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+    margin: 10px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
   }
 }

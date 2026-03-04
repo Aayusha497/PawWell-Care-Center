@@ -274,3 +274,105 @@
     align-items: center;
   }
 }
+
+/* Enhanced Mobile Responsiveness */
+@media (max-width: 768px) {
+  .about-container {
+    padding: 20px 15px;
+  }
+
+  .about-hero {
+    padding: 60px 5vw;
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .about-hero h1 {
+    font-size: 2rem;
+  }
+
+  .about-hero p {
+    font-size: 1rem;
+  }
+
+  .about-mission,
+  .about-values,
+  .about-story,
+  .about-team,
+  .about-reviews {
+    padding: 50px 5vw;
+  }
+
+  .section-title h2 {
+    font-size: 1.75rem;
+  }
+
+  .values-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .value-card {
+    padding: 25px;
+  }
+
+  .value-icon {
+    font-size: 2.5rem;
+  }
+
+  .about-team-grid {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+
+  .team-card {
+    padding: 25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-hero {
+    padding: 40px 15px;
+  }
+
+  .about-hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .about-hero p {
+    font-size: 0.95rem;
+  }
+
+  .about-mission,
+  .about-values,
+  .about-story,
+  .about-team,
+  .about-reviews {
+    padding: 40px 15px;
+  }
+
+  .section-title h2 {
+    font-size: 1.5rem;
+  }
+
+  .value-card {
+    padding: 20px;
+  }
+
+  .value-icon {
+    font-size: 2rem;
+  }
+
+  .value-title {
+    font-size: 1.1rem;
+  }
+
+  .team-card {
+    padding: 20px;
+  }
+
+  .btn-view-all-reviews {
+    padding: 10px 25px;
+    font-size: 0.9rem;
+  }
+}

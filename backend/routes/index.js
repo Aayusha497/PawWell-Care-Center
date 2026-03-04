@@ -10,6 +10,7 @@ const emergencyRoutes = require('./emergency');
 const wellnessTimelineRoutes = require('./wellnessTimeline');
 const notificationRoutes = require('./notifications');
 const reviewRoutes = require('./reviews');
+const chatbotRoutes = require('./chatbot');
 
 // Mount auth routes
 router.use('/accounts', authRoutes);
@@ -40,6 +41,9 @@ router.use('/notifications', notificationRoutes);
 
 // Mount review routes
 router.use('/reviews', reviewRoutes);
+
+// Mount chatbot routes
+router.use('/chat', chatbotRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

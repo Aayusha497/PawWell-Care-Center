@@ -4,7 +4,7 @@
  * Responsive navigation bar with authentication and role-based menu items
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { logoutUser } from '../services/api';
@@ -16,6 +16,18 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Cleanup body overflow on unmount
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('menu-open');
+    };
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    closeMobileMenu();
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -29,14 +41,22 @@ const Navbar = () => {
       navigate('/');
     }
     setIsMobileMenuOpen(false);
+    document.body.classList.remove('menu-open');
   };
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+    // Prevent body scroll when menu is open
+    if (!isMobileMenuOpen) {
+      document.body.classList.add('menu-open');
+    } else {
+      document.body.classList.remove('menu-open');
+    }
   };
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
+    document.body.classList.remove('menu-open');
   };
 
   const isActive = (path) => {
@@ -57,7 +77,7 @@ const Navbar = () => {
           </Link>
 
           <button 
-            className="menu-icon" 
+            className={`menu-icon ${isMobileMenuOpen ? 'active' : ''}`}
             onClick={toggleMobileMenu}
             aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={isMobileMenuOpen}

@@ -176,6 +176,10 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .reviews-page-container {
+    padding: 0;
+  }
+
   .reviews-page-header {
     padding: 2rem 1rem;
   }
@@ -189,6 +193,7 @@
   }
 
   .trust-badges {
+    grid-template-columns: 1fr;
     gap: 1rem;
   }
 
@@ -198,6 +203,14 @@
 
   .badge-icon {
     font-size: 1.5rem;
+  }
+
+  .badge-label {
+    font-size: 0.85rem;
+  }
+
+  .badge-value {
+    font-size: 1.25rem;
   }
 
   .reviews-list-section {
@@ -221,5 +234,57 @@
   .btn-secondary-cta {
     width: 100%;
     max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .reviews-page-header {
+    padding: 1.5rem 15px;
+  }
+
+  .reviews-page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .header-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .badge {
+    padding: 0.6rem 0.8rem;
+  }
+
+  .badge-icon {
+    font-size: 1.25rem;
+  }
+
+  .badge-label {
+    font-size: 0.8rem;
+  }
+
+  .badge-value {
+    font-size: 1.1rem;
+  }
+
+  .reviews-list-section {
+    padding: 1.5rem 15px;
+  }
+
+  .reviews-cta {
+    padding: 2rem 15px;
+  }
+
+  .reviews-cta h2 {
+    font-size: 1.25rem;
+  }
+
+  .reviews-cta p {
+    font-size: 0.9rem;
+  }
+
+  .btn-primary-cta,
+  .btn-secondary-cta {
+    font-size: 0.9rem;
+    padding: 10px 20px;
   }
 }

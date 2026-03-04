@@ -35,6 +35,33 @@ router.get('/', getReviews);
 router.get('/stats', getReviewStats);
 
 /**
+ * @route   GET /api/reviews/debug/counts
+ * @desc    Get review counts for debugging (total, approved, featured)
+ * @access  Public
+ */
+router.get('/debug/counts', async (req, res) => {
+  try {
+    const { Review } = require('../models');
+    const total = await Review.count();
+    const approved = await Review.count({ where: { is_approved: true } });
+    const featured = await Review.count({ where: { is_approved: true, is_featured: true } });
+    const pending = await Review.count({ where: { is_approved: false } });
+    
+    res.json({
+      success: true,
+      counts: {
+        total,
+        approved,
+        featured,
+        pending
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * @route   GET /api/reviews/my-reviews
  * @desc    Get current user's reviews
  * @access  Private

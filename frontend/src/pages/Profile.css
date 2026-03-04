@@ -261,6 +261,10 @@
     gap: 16px;
   }
 
+  .profile-title {
+    font-size: 1.75rem;
+  }
+
   .form-row {
     grid-template-columns: 1fr;
   }
@@ -268,10 +272,17 @@
   .avatar-upload {
     flex-direction: column;
     align-items: flex-start;
+    gap: 15px;
+  }
+
+  .avatar-preview {
+    width: 100px;
+    height: 100px;
   }
 
   .form-actions {
     flex-direction: column;
+    gap: 10px;
   }
 
   .form-actions .btn {
@@ -285,5 +296,42 @@
 
   .info-label {
     width: 100%;
+  }
+
+  .profile-section-title {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-container {
+    padding: 12px;
+    margin: 15px auto;
+  }
+
+  .profile-card {
+    padding: 15px;
+  }
+
+  .profile-title {
+    font-size: 1.5rem;
+  }
+
+  .avatar-preview {
+    width: 80px;
+    height: 80px;
+  }
+
+  .form-control {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+  }
+
+  .profile-section-title {
+    font-size: 1.1rem;
   }
 }

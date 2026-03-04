@@ -219,6 +219,17 @@ const getReviews = async (req, res) => {
 
     console.log('📊 getReviews called with params:', { service_type, min_rating, page, limit, featured });
 
+    // First, let's check what reviews exist in the database
+    const totalReviews = await Review.count();
+    const approvedReviews = await Review.count({ where: { is_approved: true } });
+    const featuredReviews = await Review.count({ where: { is_approved: true, is_featured: true } });
+    
+    console.log('📊 Database stats:', {
+      total: totalReviews,
+      approved: approvedReviews,
+      featured: featuredReviews
+    });
+
     // Build where clause
     const whereClause = { is_approved: true };
     

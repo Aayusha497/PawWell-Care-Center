@@ -283,12 +283,25 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .review-card {
+    padding: 20px;
+    margin-bottom: 15px;
+  }
+
   .review-header {
     flex-direction: column;
+    gap: 15px;
   }
 
   .overall-rating {
     align-self: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .reviewer-info {
+    gap: 12px;
   }
 
   .reviewer-avatar {
@@ -296,11 +309,146 @@
     height: 50px;
   }
 
+  .avatar-placeholder {
+    font-size: 16px;
+  }
+
+  .reviewer-details h4 {
+    font-size: 1rem;
+  }
+
+  .review-date {
+    font-size: 0.8rem;
+  }
+
   .rating-number {
     font-size: 28px;
   }
 
+  .rating-stars .star {
+    font-size: 18px;
+  }
+
+  .review-service {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .service-tag,
+  .pet-tag {
+    font-size: 0.8rem;
+    padding: 4px 10px;
+  }
+
+  .review-text {
+    font-size: 0.95rem;
+  }
+
+  .detailed-ratings h5 {
+    font-size: 1rem;
+  }
+
   .rating-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .rating-item {
+    padding: 10px;
+  }
+
+  .rating-icon {
+    font-size: 20px;
+  }
+
+  .rating-label {
+    font-size: 0.85rem;
+  }
+
+  .rating-num {
+    font-size: 0.85rem;
+  }
+
+  .mini-stars .star {
+    font-size: 14px;
+  }
+
+  .admin-response {
+    padding: 15px;
+  }
+
+  .admin-response-header strong {
+    font-size: 0.9rem;
+  }
+
+  .response-date {
+    font-size: 0.75rem;
+  }
+
+  .helpful-count {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
+
+  .featured-badge {
+    font-size: 11px;
+    padding: 4px 12px;
+    top: -8px;
+    right: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .review-card {
+    padding: 15px;
+  }
+
+  .reviewer-avatar {
+    width: 45px;
+    height: 45px;
+  }
+
+  .avatar-placeholder {
+    font-size: 14px;
+  }
+
+  .reviewer-details h4 {
+    font-size: 0.95rem;
+  }
+
+  .rating-number {
+    font-size: 24px;
+  }
+
+  .rating-stars .star {
+    font-size: 16px;
+  }
+
+  .review-text {
+    font-size: 0.9rem;
+  }
+
+  .detailed-ratings h5 {
+    font-size: 0.95rem;
+  }
+
+  .rating-item {
+    padding: 8px;
+  }
+
+  .rating-icon {
+    font-size: 18px;
+  }
+
+  .rating-label {
+    font-size: 0.8rem;
+  }
+
+  .mini-stars .star {
+    font-size: 12px;
+  }
+
+  .admin-response {
+    padding: 12px;
   }
 }

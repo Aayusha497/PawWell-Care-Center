@@ -72,3 +72,58 @@
 .btn-secondary:hover {
   background-color: #5a6268;
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .edit-pet-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .back-button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .edit-pet-container {
+    padding: 1rem 15px;
+  }
+
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .back-button {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.85rem;
+  }
+
+  .loading {
+    padding: 2rem;
+    font-size: 1rem;
+  }
+
+  .alert {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}

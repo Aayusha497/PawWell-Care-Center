@@ -15,6 +15,8 @@ const ActivityLog = require('./ActivityLog')(sequelize);
 const Notification = require('./Notification')(sequelize);
 const ContactMessage = require('./ContactMessage')(sequelize);
 const Review = require('./Review')(sequelize);
+const ChatConversation = require('./ChatConversation')(sequelize);
+const ChatMessage = require('./ChatMessage')(sequelize);
 
 // Store all models
 const models = {
@@ -31,7 +33,9 @@ const models = {
   ActivityLog,
   Notification,
   ContactMessage,
-  Review
+  Review,
+  ChatConversation,
+  ChatMessage
 };
 
 // Set up associations
@@ -50,6 +54,27 @@ User.hasMany(PasswordReset, {
 PasswordReset.belongsTo(User, {
   foreignKey: 'userId',
   as: 'user'
+});
+
+// Chat model associations
+User.hasMany(ChatConversation, {
+  foreignKey: 'user_id',
+  as: 'chatConversations'
+});
+
+ChatConversation.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user'
+});
+
+ChatConversation.hasMany(ChatMessage, {
+  foreignKey: 'conversation_id',
+  as: 'messages'
+});
+
+ChatMessage.belongsTo(ChatConversation, {
+  foreignKey: 'conversation_id',
+  as: 'conversation'
 });
 
 // Export all models

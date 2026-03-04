@@ -1145,9 +1145,17 @@ export const getReviews = async (params: {
     if (params.limit) queryParams.append('limit', String(params.limit));
     if (params.featured) queryParams.append('featured', 'true');
 
-    const response = await api.get(`/reviews${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    const url = `/reviews${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    console.log('🔍 API: Fetching reviews from:', url);
+    console.log('🔍 API: Request params:', params);
+    
+    const response = await api.get(url);
+    console.log('✅ API: Reviews response received:', response.data);
+    console.log('✅ API: Reviews count:', response.data?.data?.length || 0);
+    
     return response.data;
   } catch (error) {
+    console.error('❌ API: Error fetching reviews:', error);
     throw (error as AxiosError).response?.data || { message: 'Failed to fetch reviews' };
   }
 };

@@ -52,7 +52,51 @@
 }
 
 @media (max-width: 600px) {
+  .booking-page {
+    padding: 2rem 1rem;
+  }
+
   .booking-card {
     padding: 2.25rem 1.5rem;
+    border-radius: 16px;
+  }
+
+  .booking-card h1 {
+    font-size: 1.75rem;
+  }
+
+  .booking-subtitle {
+    font-size: 1rem;
+  }
+
+  .booking-actions {
+    flex-direction: column;
+  }
+
+  .booking-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-page {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .booking-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .booking-pill {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.8rem;
+  }
+
+  .booking-card h1 {
+    font-size: 1.5rem;
+  }
+
+  .booking-subtitle {
+    font-size: 0.95rem;
   }
 }

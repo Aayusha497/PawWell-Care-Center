@@ -19,6 +19,8 @@ const ReviewList = ({ featured = false, limit = 10, serviceType = '' }) => {
   const [filterServiceType, setFilterServiceType] = useState(serviceType);
   const [filterRating, setFilterRating] = useState('');
 
+  console.log('🎯 ReviewList component mounted/updated with props:', { featured, limit, serviceType });
+
   const serviceTypes = [
     'All Services',
     'Grooming',
@@ -59,16 +61,31 @@ const ReviewList = ({ featured = false, limit = 10, serviceType = '' }) => {
         params.min_rating = parseInt(filterRating);
       }
 
-      console.log('📊 Fetching reviews with params:', params);
-      const response = await getReviews(params);
-      console.log('📊 Reviews response:', response);
-      console.log('📊 Reviews data:', response.data);
-      console.log('📊 Number of reviews:', response.data?.length || 0);
+      console.log('📊 ReviewList: Fetching reviews with params:', params);
+      console.log('📊 ReviewList: Featured mode:', featured);
       
-      setReviews(response.data || []);
+      const response = await getReviews(params);
+      
+      console.log('📊 ReviewList: Full response object:', response);
+      console.log('📊 ReviewList: Response.success:', response.success);
+      console.log('📊 ReviewList: Response.data type:', Array.isArray(response.data) ? 'Array' : typeof response.data);
+      console.log('📊 ReviewList: Response.data:', response.data);
+      console.log('📊 ReviewList: Number of reviews:', response.data?.length || 0);
+      console.log('📊 ReviewList: Total pages:', response.totalPages);
+      
+      if (Array.isArray(response.data)) {
+        setReviews(response.data);
+        console.log('✅ ReviewList: Successfully set', response.data.length, 'reviews');
+      } else {
+        console.warn('⚠️ ReviewList: response.data is not an array:', response.data);
+        setReviews([]);
+      }
+      
       setTotalPages(response.totalPages || 1);
     } catch (error) {
-      console.error('❌ Error fetching reviews:', error);
+      console.error('❌ ReviewList: Error fetching reviews:', error);
+      console.error('❌ ReviewList: Error details:', JSON.stringify(error));
+      setReviews([]);
       toast.error(error.message || 'Failed to load reviews');
     } finally {
       setLoading(false);
@@ -293,9 +310,19 @@ const ReviewList = ({ featured = false, limit = 10, serviceType = '' }) => {
             )}
           </div>
         ) : (
-          reviews.map(review => (
-            <ReviewCard key={review.review_id} review={review} />
-          ))
+          <>
+            {console.log('🎨 ReviewList: Rendering', reviews.length, 'ReviewCard components')}
+            {reviews.map((review, index) => {
+              console.log(`🎨 ReviewList: Rendering review ${index + 1}:`, {
+                id: review.review_id,
+                service: review.service_type,
+                rating: review.overall_rating,
+                approved: review.is_approved,
+                featured: review.is_featured
+              });
+              return <ReviewCard key={review.review_id} review={review} />;
+            })}
+          </>
         )}
       </div>
 

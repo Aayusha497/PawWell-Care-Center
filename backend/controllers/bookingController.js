@@ -17,12 +17,12 @@ const SERVICE_CONFIG = {
   },
   'Pet Boarding': {
     pricePerNight: 2000,
-    maxCapacityPerDay: 5,
+    maxCapacityPerDay: 10,
     requiresDateRange: true
   },
   'Grooming': {
     flatRate: 3500,
-    maxCapacityPerDay: 8,
+    maxCapacityPerDay: 10,
     requiresDateRange: false
   }
 };

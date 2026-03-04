@@ -54,9 +54,26 @@ const otpVerificationLimiter = rateLimit({
   }
 });
 
+/**
+ * Rate limiter for chatbot messages
+ * Allows 20 messages per minute to enable natural conversations
+ */
+const chatLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: process.env.CHAT_RATE_LIMIT || 20, // 20 messages per minute
+  message: {
+    success: false,
+    message: 'Too many messages, please slow down and try again in a moment.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 module.exports = {
   generalLimiter,
   authLimiter,
   passwordResetLimiter,
-  otpVerificationLimiter
+  otpVerificationLimiter,
+  chatLimiter,
+  apiLimiter: generalLimiter // Alias for backwards compatibility
 };
