@@ -43,7 +43,25 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E8] to-[#EAB308] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E8] to-[#EAB308]">
+      {/* Navigation */}
+      <nav className="flex items-center justify-between px-8 py-4">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🐾</span>
+          <span className="text-xl">PawWell</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <a href="#home" className="hover:underline">Home</a>
+          <Button onClick={onNavigateToLogin} className="bg-[#D4A017] hover:bg-[#C49016] text-white hover:text-white">
+            Login
+          </Button>
+          <Button variant="ghost" className="bg-white hover:bg-gray-50">
+            Sign Up
+          </Button>
+        </div>
+      </nav>
+
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
       <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2">
           {/* Left side - Branding */}
@@ -216,6 +234,7 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
 
         {/* Decorative bottom section */}
         <div className="h-12 bg-[#EAB308]"></div>
+      </div>
       </div>
     </div>
   );

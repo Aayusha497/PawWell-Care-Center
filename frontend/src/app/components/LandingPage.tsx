@@ -18,11 +18,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: L
         </div>
         <div className="flex items-center gap-6">
           <a href="#home" className="hover:underline">Home</a>
-          <a href="#booking" className="hover:underline">Booking</a>
-          <a href="#activity" className="hover:underline">Activity Log</a>
-          <a href="#about" className="hover:underline">About</a>
-          <a href="#contact" className="hover:underline">Contact</a>
-          <Button onClick={onNavigateToLogin} variant="ghost" className="bg-white hover:bg-gray-50">
+          <Button onClick={onNavigateToLogin} className="bg-[#D4A017] hover:bg-[#C49016] text-white hover:text-white">
             Login
           </Button>
           <Button onClick={onNavigateToSignup} className="bg-[#D4A017] hover:bg-[#C49016]">

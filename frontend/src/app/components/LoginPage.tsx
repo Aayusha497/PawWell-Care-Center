@@ -24,7 +24,25 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E8] to-[#EAB308] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E8] to-[#EAB308]">
+      {/* Navigation */}
+      <nav className="flex items-center justify-between px-8 py-4">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🐾</span>
+          <span className="text-xl">PawWell</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <button onClick={onNavigateToHome} className="hover:underline">Home</button>
+          <Button variant="ghost" className="bg-white hover:bg-gray-50">
+            Login
+          </Button>
+          <Button onClick={onNavigateToSignup} className="bg-[#D4A017] hover:bg-[#C49016]">
+            Sign Up
+          </Button>
+        </div>
+      </nav>
+
+      <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
         {/* Header with dog image */}
         <div className="relative h-32 bg-[#FFF8E8]">
@@ -141,14 +159,7 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
         {/* Decorative bottom section */}
         <div className="h-16 bg-[#EAB308]"></div>
       </div>
-
-      {/* Back to home button */}
-      <button
-        onClick={onNavigateToHome}
-        className="absolute top-8 left-8 text-gray-700 hover:text-gray-900 flex items-center gap-2"
-      >
-        ← Back to Home
-      </button>
+    </div>
     </div>
   );
 }
