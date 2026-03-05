@@ -1,5 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { Settings, User as UserIcon, LogOut } from 'lucide-react';
+import NotificationBell from '../../components/NotificationBell';
 import '../../pages/About.css';
+
+interface User {
+  id: string;
+  email: string;
+  fullName: string;
+  profilePicture?: string;
+}
 
 interface AboutPageProps {
   onBack?: () => void;
@@ -10,7 +19,11 @@ interface AboutPageProps {
   onTimeline?: () => void;
   onContact?: () => void;
   onEmergency?: () => void;
+  onSettings?: () => void;
+  onNavigate?: (page: any) => void;
+  user?: User | null;
   userFullName?: string;
+  hideNavbar?: boolean;
 }
 
 export default function AboutPage({
@@ -22,12 +35,28 @@ export default function AboutPage({
   onTimeline,
   onContact,
   onEmergency,
+  onSettings,
+  onNavigate,
+  user,
   userFullName,
+  hideNavbar,
 }: AboutPageProps) {
-  const userInitials = userFullName
-    ? userFullName.split(' ').map((name) => name[0]).join('').toUpperCase()
-    : null;
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    if (showProfileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProfileDropdown]);
   const whyItems = useMemo(
     () => ([
       'Pet profiles store allergies and medical needs for safer care.',
@@ -47,6 +76,124 @@ export default function AboutPage({
 
   return (
     <div className="about-page">
+      {!hideNavbar && user && (
+        <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-8 py-3 font-sans">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🐾</span>
+              </div>
+              <div className="flex items-center gap-6">
+                <button 
+                  onClick={onBack}
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                >
+                  Home
+                </button>
+                <button 
+                  onClick={onBook}
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                >
+                  Booking
+                </button>
+                <button
+                  onClick={onActivityLog}
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                >
+                  Activity Log
+                </button>
+                <button
+                  onClick={onTimeline}
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                >
+                  Timeline
+                </button>
+                <button
+                  className="px-4 py-2 rounded-full bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium"
+                >
+                  About
+                </button>
+                <button
+                  onClick={onContact}
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                >
+                  Contact
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <NotificationBell userId={parseInt(user.id)} />
+              <button
+                onClick={onEmergency}
+                className="px-4 py-2 bg-[#FF6B6B] dark:bg-red-700 text-white rounded-full text-sm flex items-center gap-2"
+              >
+                <span>📞</span> Emergency
+              </button>
+              <div className="relative" ref={profileDropdownRef}>
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-gray-200 dark:border-gray-600 overflow-hidden"
+                  title="Profile Menu"
+                >
+                  {user.profilePicture ? (
+                    <img 
+                      src={user.profilePicture} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
+                      <span className="text-sm font-bold text-white">
+                        {user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </button>
+
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{user.fullName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        onNavigate?.('profile');
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <UserIcon size={18} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium">Edit Profile</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        onSettings?.();
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <Settings size={18} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium">Settings</span>
+                    </button>
+                    <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        onLogout?.();
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/50 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
+                    >
+                      <LogOut size={18} className="text-red-500 dark:text-red-400" />
+                      <span className="text-sm font-medium">Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+      )}
       <div className="container mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="text-center mb-12">

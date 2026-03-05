@@ -24,28 +24,28 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E8] to-[#EAB308]">
+    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E8] to-[#EAB308] dark:from-gray-900 dark:to-gray-800">
       {/* Navigation */}
       <nav className="flex items-center justify-between px-8 py-4">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🐾</span>
-          <span className="text-xl">PawWell</span>
+          <span className="text-xl dark:text-gray-100">PawWell</span>
         </div>
         <div className="flex items-center gap-6">
-          <button onClick={onNavigateToHome} className="hover:underline">Home</button>
-          <Button variant="ghost" className="bg-white hover:bg-gray-50">
+          <button onClick={onNavigateToHome} className="hover:underline dark:text-gray-300 dark:hover:text-gray-100">Home</button>
+          <Button variant="ghost" className="bg-[#EAB308] text-black hover:bg-[#D4A017] dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white">
             Login
           </Button>
-          <Button onClick={onNavigateToSignup} className="bg-[#D4A017] hover:bg-[#C49016]">
+          <Button onClick={onNavigateToSignup} variant="outline" className="border-2 border-black/20 hover:bg-black/5 dark:border-gray-400 dark:text-gray-300 dark:hover:bg-gray-700">
             Sign Up
           </Button>
         </div>
       </nav>
 
       <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
         {/* Header with dog image */}
-        <div className="relative h-32 bg-[#FFF8E8]">
+        <div className="relative h-32 bg-[#FFF8E8] dark:bg-gray-700">
           <img 
             src={loginImage} 
             alt="Cute dog" 
@@ -57,10 +57,10 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
         <div className="px-8 pt-12 pb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <span className="text-xl">🐾</span>
-            <span className="text-xl">PawWell</span>
+            <span className="text-xl dark:text-gray-100">PawWell</span>
           </div>
-          <h1 className="text-center text-2xl mb-2">Welcome back to PawWell!</h1>
-          <p className="text-center text-gray-600 text-sm mb-8">
+          <h1 className="text-center text-2xl mb-2 dark:text-gray-100">Welcome back to PawWell!</h1>
+          <p className="text-center text-gray-600 dark:text-gray-400 text-sm mb-8">
             Login to your account to manage your pets services.
           </p>
 
@@ -79,7 +79,7 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="mt-2"
+                className="mt-2 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                 autoComplete="off"
                 required
               />
@@ -96,11 +96,12 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
                   placeholder="Enter your password"
                   autoComplete="new-password"
                   required
+                  className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
@@ -119,7 +120,7 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
                 <button 
                   type="button" 
                   onClick={onNavigateToForgotPassword}
-                  className="text-sm text-[#EAB308] hover:underline cursor-pointer"
+                  className="text-sm text-[#EAB308] dark:text-gray-400 hover:underline cursor-pointer"
                 >
                   Forgot Password?
                 </button>
@@ -128,17 +129,17 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
 
             <Button 
               type="submit" 
-              className="w-full bg-[#EAB308] hover:bg-[#D4A017] text-white"
+              className="w-full bg-[#EAB308] hover:bg-[#D4A017] text-white dark:bg-gray-700 dark:hover:bg-gray-600"
             >
               Sign In
             </Button>
 
-            <div className="text-center text-gray-500 text-sm">OR</div>
+            <div className="text-center text-gray-500 dark:text-gray-400 text-sm">OR</div>
 
             <Button 
               type="button"
               variant="outline"
-              className="w-full border-gray-300"
+              className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
             >
               Sign in with Google
             </Button>
@@ -148,7 +149,7 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
               <button
                 type="button"
                 onClick={onNavigateToSignup}
-                className="text-[#EAB308] hover:underline"
+                className="text-[#EAB308] dark:text-gray-400 hover:underline"
               >
                 Sign Up
               </button>
@@ -157,7 +158,7 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
         </div>
 
         {/* Decorative bottom section */}
-        <div className="h-16 bg-[#EAB308]"></div>
+        <div className="h-16 bg-[#EAB308] dark:bg-gray-700"></div>
       </div>
     </div>
     </div>

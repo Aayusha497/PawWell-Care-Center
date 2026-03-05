@@ -121,17 +121,17 @@ export default function ActivityLogViewer({ onBack, onLogout, userFullName, onBo
     <div className="-mt-4">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl">Activity Logs</h2>
+          <h2 className="text-2xl dark:text-gray-100">Activity Logs</h2>
         </div>
         <div className="flex items-center gap-4">
           <Select value={selectedPet} onValueChange={setSelectedPet}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-48 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Pets</SelectItem>
+              <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                <SelectItem value="all" className="dark:text-gray-100 dark:hover:bg-gray-700">All Pets</SelectItem>
                 {pets.map((pet) => (
-                  <SelectItem key={pet.pet_id} value={String(pet.pet_id)}>
+                  <SelectItem key={pet.pet_id} value={String(pet.pet_id)} className="dark:text-gray-100 dark:hover:bg-gray-700">
                     {pet.name}
                   </SelectItem>
                 ))}
@@ -140,59 +140,59 @@ export default function ActivityLogViewer({ onBack, onLogout, userFullName, onBo
           </div>
         </div>
 
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Recent Activities</CardTitle>
-          <p className="text-sm text-gray-600">
+          <CardTitle className="dark:text-gray-100">Recent Activities</CardTitle>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Daily updates about your pet's care, activities, and wellbeing
           </p>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[600px] pr-4">
             {loading ? (
-              <div className="py-10 text-center text-gray-500">Loading activity logs...</div>
+              <div className="py-10 text-center text-gray-500 dark:text-gray-400">Loading activity logs...</div>
             ) : error ? (
-              <div className="py-10 text-center text-red-600">{error}</div>
+              <div className="py-10 text-center text-red-600 dark:text-red-400">{error}</div>
             ) : Object.keys(groupedActivities).length === 0 ? (
-              <div className="py-10 text-center text-gray-500">
+              <div className="py-10 text-center text-gray-500 dark:text-gray-400">
                 No activity updates yet. Your pet's daily activities will appear here once our caretakers log them.
               </div>
             ) : (
               Object.entries(groupedActivities).map(([date, dayActivities]) => (
                 <div key={date} className="mb-6">
                   <div className="flex items-center gap-2 mb-3">
-                    <h3 className="text-lg">{format(new Date(date), 'EEEE, MMMM dd, yyyy')}</h3>
-                    <Badge variant="secondary">{dayActivities.length} activities</Badge>
+                    <h3 className="text-lg dark:text-gray-200">{format(new Date(date), 'EEEE, MMMM dd, yyyy')}</h3>
+                    <Badge variant="secondary" className="dark:bg-gray-700 dark:text-gray-200">{dayActivities.length} activities</Badge>
                   </div>
 
-                  <div className="space-y-3 ml-4 border-l-2 border-gray-200 pl-4">
+                  <div className="space-y-3 ml-4 border-l-2 border-gray-200 dark:border-gray-700 pl-4">
                     {dayActivities
                       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                       .map((activity) => (
                         <div key={activity.activity_id} className="relative">
                           <div className="absolute -left-[1.65rem] top-2 w-3 h-3 bg-[#EAB308] rounded-full"></div>
-                          <Card className="hover:shadow-md transition-shadow">
+                          <Card className="hover:shadow-md transition-shadow dark:bg-gray-700 dark:border-gray-600">
                             <CardContent className="p-4">
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-3">
                                   {getActivityIcon(activity.activity_type)}
                                   <div>
                                     <div className="flex items-center gap-2">
-                                      <h4>{activity.pet?.name || 'Unknown Pet'}</h4>
+                                      <h4 className="dark:text-gray-100">{activity.pet?.name || 'Unknown Pet'}</h4>
                                       <Badge className={getActivityColor(activity.activity_type)}>
                                         {activity.activity_type}
                                       </Badge>
                                     </div>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
                                       by {activity.user?.first_name || 'Caretaker'} {activity.user?.last_name || ''}
                                     </p>
                                   </div>
                                 </div>
-                                <span className="text-sm text-gray-500">
+                                <span className="text-sm text-gray-500 dark:text-gray-400">
                                   {format(new Date(activity.timestamp), 'h:mm a')}
                                 </span>
                               </div>
-                              {activity.detail && <p className="text-sm mb-2">{activity.detail}</p>}
+                              {activity.detail && <p className="text-sm mb-2 dark:text-gray-300">{activity.detail}</p>}
                               {activity.photo && (
                                 <img
                                   src={activity.photo}

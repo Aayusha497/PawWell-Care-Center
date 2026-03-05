@@ -200,6 +200,7 @@ model users {
   pets               pets[]
   public_forum       public_forum[]
   reviews            reviews[]
+  user_settings      user_settings?
 }
 
 model wellness_timeline {
@@ -303,6 +304,21 @@ model chat_messages {
 
   @@index([conversation_id], name: "idx_chat_messages_conversation")
   @@index([conversation_id, created_at], name: "idx_chat_messages_conversation_created")
+}
+
+model user_settings {
+  settings_id             Int      @id @default(autoincrement())
+  user_id                 Int      @unique
+  theme                   String   @default("light") @db.VarChar(20)
+  email_notifications     Boolean  @default(true)
+  sms_notifications       Boolean  @default(false)
+  activity_updates        Boolean  @default(true)
+  booking_reminders       Boolean  @default(true)
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @db.Timestamptz(6)
+  users                   users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id], name: "idx_user_settings_user")
 }
 
 enum enum_bookings_status {

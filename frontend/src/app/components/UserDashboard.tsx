@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 import { getUserPets, getUserBookings, getActivityLogs } from '../../services/api';
-import { LogOut, MessageCircle, X } from 'lucide-react';
+import { LogOut, MessageCircle, X, Settings, User as UserIcon } from 'lucide-react';
 import ChatbotWidget from './ChatbotWidget';
 import PetProfileForm from './PetProfileForm';
 import PetListingPage from './PetListingPage';
@@ -14,6 +14,7 @@ import AboutPage from './AboutPage';
 import ContactPage from './ContactPage';
 import NotificationBell from '../../components/NotificationBell';
 import ReviewPage from './ReviewPage';
+import SettingsPage from './SettingsPage';
 
 interface User {
   id: string;
@@ -27,7 +28,7 @@ interface UserDashboardProps {
   user: User;
   onLogout: () => void;
   onNavigate?: (page: string) => void;
-  dashboardTarget?: 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | null;
+  dashboardTarget?: 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | 'settings' | null;
   onClearDashboardTarget?: () => void;
 }
 
@@ -83,14 +84,34 @@ export default function UserDashboard({
   const [showAbout, setShowAbout] = useState(false);
   const [showContact, setShowContact] = useState(false);
   const [showReviewPage, setShowReviewPage] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<number | undefined>(undefined);
   const [selectedBookingId, setSelectedBookingId] = useState<number | undefined>(undefined);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchPets();
     fetchBookings();
     fetchActivities();
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    if (showProfileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileDropdown]);
 
   useEffect(() => {
     if (!dashboardTarget) {
@@ -105,6 +126,7 @@ export default function UserDashboard({
     setShowActivityLog(false);
     setShowWellnessTimeline(false);
     setShowReviewPage(false);
+    setShowSettings(false);
 
     if (dashboardTarget === 'booking') {
       setShowBookingPage(true);
@@ -121,6 +143,10 @@ export default function UserDashboard({
 
     if (dashboardTarget === 'wellness-timeline') {
       setShowWellnessTimeline(true);
+    }
+
+    if (dashboardTarget === 'settings') {
+      setShowSettings(true);
     }
 
     if (onClearDashboardTarget) {
@@ -240,6 +266,7 @@ const handleAddPet = () => {
     setShowAbout(false);
     setShowContact(false);
     setShowReviewPage(false);
+    setShowSettings(false);
     setSelectedPetId(undefined);
     setSelectedBookingId(undefined);
     fetchPets(); // Refresh pets list
@@ -370,8 +397,13 @@ const handleAddPet = () => {
           onActivityLog={handleViewActivityLog}
           onTimeline={handleViewWellnessTimeline}
           onContact={handleShowContact}
+          onEmergency={() => onNavigate?.('emergency')}
+          onSettings={() => setShowSettings(true)}
+          onNavigate={onNavigate}
           onLogout={onLogout}
+          user={user}
           userFullName={user.fullName}
+          hideNavbar={true}
         />
       );
     }
@@ -384,8 +416,48 @@ const handleAddPet = () => {
           onActivityLog={handleViewActivityLog}
           onTimeline={handleViewWellnessTimeline}
           onAbout={handleShowAbout}
+          onEmergency={() => onNavigate?.('emergency')}
+          onSettings={() => setShowSettings(true)}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+          user={user}
+          userFullName={user.fullName}
+          hideNavbar={true}
+        />
+      );
+    }
+
+    if (showSettings) {
+      return (
+        <SettingsPage
+          onBack={handleBackToDashboard}
           onLogout={onLogout}
           userFullName={user.fullName}
+          onNavigate={(page) => {
+            if (page === 'user-dashboard') {
+              handleBackToDashboard();
+            } else if (page === 'profile') {
+              onNavigate?.('profile');
+            } else if (page === 'about') {
+              setShowSettings(false);
+              handleShowAbout();
+            } else if (page === 'contact') {
+              setShowSettings(false);
+              handleShowContact();
+            } else if (page === 'emergency') {
+              onNavigate?.('emergency');
+            }
+          }}
+          onDashboardTarget={(target) => {
+            setShowSettings(false);
+            if (target === 'booking') {
+              handleBookService();
+            } else if (target === 'activity-log') {
+              handleViewActivityLog();
+            } else if (target === 'wellness-timeline') {
+              handleViewWellnessTimeline();
+            }
+          }}
         />
       );
     }
@@ -413,9 +485,9 @@ const handleAddPet = () => {
         {/* Top Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Welcome Card */}
-          <div className="bg-gradient-to-br from-[#FFE4A3] via-[#FFF9F5] to-[#FFE4A3] rounded-2xl p-8 shadow-md">
-            <h2 className="text-3xl font-bold text-[#FA9884] mb-3">Welcome, {firstName}!</h2>
-            <p className="text-gray-600 mb-6">Manage your pets and book services with ease.</p>
+          <div className="bg-gradient-to-br from-[#FFE4A3] via-[#FFF9F5] to-[#FFE4A3] dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl p-8 shadow-md">
+            <h2 className="text-3xl font-bold text-[#FA9884] dark:text-yellow-400 mb-3">Welcome, {firstName}!</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">Manage your pets and book services with ease.</p>
             <div className="flex flex-col gap-3">
               <button 
                 onClick={handleBookService}
@@ -425,7 +497,7 @@ const handleAddPet = () => {
               </button>
               <button 
                 onClick={handleAddPet}
-                className="bg-white text-[#FA9884] border-2 border-[#FA9884] px-6 py-3 rounded-lg font-semibold hover:bg-[#FFF9F5] transition"
+                className="bg-white dark:bg-gray-700 text-[#FA9884] dark:text-yellow-400 border-2 border-[#FA9884] dark:border-yellow-400 px-6 py-3 rounded-lg font-semibold hover:bg-[#FFF9F5] dark:hover:bg-gray-600 transition"
               >
                 + Add a New Pet
               </button>
@@ -433,9 +505,9 @@ const handleAddPet = () => {
           </div>
 
           {/* My Pets Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-md">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">My Pets</h3>
+              <h3 className="text-xl font-semibold dark:text-gray-100">My Pets</h3>
               {pets.length > 0 && (
                 <button 
                   onClick={handleViewAllPets}
@@ -452,7 +524,7 @@ const handleAddPet = () => {
               </div>
             ) : pets.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500 mb-4">You haven't added any pets yet.</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">You haven't added any pets yet.</p>
                 <button 
                   onClick={handleAddPet}
                   className="bg-[#FA9884] text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-[#E8876F] transition"
@@ -465,10 +537,10 @@ const handleAddPet = () => {
                 {pets.slice(0, 4).map((pet) => (
                   <div 
                     key={pet.pet_id} 
-                    className="bg-white border-2 border-transparent hover:border-[#FA9884] rounded-xl overflow-hidden cursor-pointer transition"
+                    className="bg-white dark:bg-gray-700 border-2 border-transparent hover:border-[#FA9884] dark:hover:border-yellow-400 rounded-xl overflow-hidden cursor-pointer transition"
                     onClick={() => handleEditPet(pet.pet_id)}
                   >
-                    <div className="h-36 bg-gray-100">
+                    <div className="h-36 bg-gray-100 dark:bg-gray-600">
                       <img 
                         src={pet.photo || placeholderImage} 
                         alt={pet.name}
@@ -479,8 +551,8 @@ const handleAddPet = () => {
                       />
                     </div>
                     <div className="p-3 text-center">
-                      <h4 className="font-semibold">{pet.name}</h4>
-                      <p className="text-sm text-gray-600">{pet.breed}</p>
+                      <h4 className="font-semibold dark:text-gray-100">{pet.name}</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{pet.breed}</p>
                     </div>
                   </div>
                 ))}
@@ -492,9 +564,9 @@ const handleAddPet = () => {
         {/* Bottom Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Upcoming Bookings */}
-          <div className="bg-white rounded-2xl p-6 shadow-md">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Upcoming Bookings</h3>
+              <h3 className="text-xl font-semibold dark:text-gray-100">Upcoming Bookings</h3>
               {bookings.length > 0 && (
                 <button 
                   onClick={handleManageBookings}
@@ -510,10 +582,10 @@ const handleAddPet = () => {
               </div>
             ) : bookings.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">No upcoming bookings.</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">No upcoming bookings.</p>
                 <button 
                   onClick={handleBookService}
-                  className="text-[#FA9884] font-medium hover:underline"
+                  className="text-[#FA9884] dark:text-yellow-400 font-medium hover:underline"
                 >
                   Book now
                 </button>
@@ -521,20 +593,20 @@ const handleAddPet = () => {
             ) : (
               <div className="space-y-4">
                 {bookings.slice(0, 3).map((booking) => (
-                  <div key={booking.booking_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={booking.booking_id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#FFE4A3] rounded-full flex items-center justify-center">
+                      <div className="w-10 h-10 bg-[#FFE4A3] dark:bg-yellow-600 rounded-full flex items-center justify-center">
                         <span className="text-xl">📅</span>
                       </div>
                       <div>
-                        <h4 className="font-medium">{booking.service_type}</h4>
-                        <p className="text-sm text-gray-500">{formatDate(booking.start_date)}</p>
+                        <h4 className="font-medium dark:text-gray-100">{booking.service_type}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(booking.start_date)}</p>
                       </div>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                      booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-gray-100 text-gray-700'
+                      booking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' :
+                      booking.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' :
+                      'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                     }`}>
                       {booking.status}
                     </span>
@@ -543,10 +615,10 @@ const handleAddPet = () => {
               </div>
             )}
             
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
               <button 
                 onClick={handleBookingHistory}
-                className="w-full text-center text-gray-500 text-sm hover:text-[#FA9884]"
+                className="w-full text-center text-gray-500 dark:text-gray-400 text-sm hover:text-[#FA9884] dark:hover:text-yellow-400"
               >
                 View Booking History
               </button>
@@ -554,9 +626,9 @@ const handleAddPet = () => {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-white rounded-2xl p-6 shadow-md">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Recent Activity</h3>
+              <h3 className="text-xl font-semibold dark:text-gray-100">Recent Activity</h3>
               <button 
                 onClick={handleViewActivityLog}
                 className="text-[#FA9884] text-sm font-semibold hover:underline"
@@ -570,23 +642,23 @@ const handleAddPet = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FA9884]"></div>
               </div>
             ) : activities.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 No recent activity logged.
               </div>
             ) : (
               <div className="space-y-4">
                 {activities.map((activity) => (
                   <div key={activity.activity_id} className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 mt-1">
+                    <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full flex items-center justify-center shrink-0 mt-1">
                       {activity.activity_type === 'feeding' ? '🥣' : 
                        activity.activity_type === 'walk' ? '🐕' : 
                        activity.activity_type === 'medication' ? '💊' : '📝'}
                     </div>
                     <div>
-                      <h4 className="font-medium text-sm">
+                      <h4 className="font-medium text-sm dark:text-gray-100">
                         {activity.pet?.name} - {activity.activity_type}
                       </h4>
-                      <p className="text-xs text-gray-500">{getTimeAgo(activity.timestamp)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{getTimeAgo(activity.timestamp)}</p>
                     </div>
                   </div>
                 ))}
@@ -599,9 +671,9 @@ const handleAddPet = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF9F5]">
+    <div className="min-h-screen bg-[#FFF9F5] dark:bg-gray-900">
       {/* Navigation Header */}
-      <nav className="bg-white border-b px-8 py-3">
+      <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-8 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2">
@@ -610,37 +682,37 @@ const handleAddPet = () => {
             <div className="flex items-center gap-6">
               <button 
                 onClick={handleBackToDashboard}
-                className={`px-4 py-2 rounded-full ${!showWellnessTimeline ? 'bg-[#FFE4A3] font-medium' : 'hover:bg-gray-100'}`}
+                className={`px-4 py-2 rounded-full ${!showWellnessTimeline ? 'bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200'}`}
               >
                 Home
               </button>
               <button 
                 onClick={handleBookService}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
               >
                 Booking
               </button>
               <button
                 onClick={handleViewActivityLog}
-                className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
               >
                 Activity Log
               </button>
               <button
                 onClick={handleViewWellnessTimeline}
-                className={`px-4 py-2 rounded-full ${showWellnessTimeline ? 'bg-[#FFE4A3] font-medium' : 'hover:bg-gray-100'}`}
+                className={`px-4 py-2 rounded-full ${showWellnessTimeline ? 'bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200'}`}
               >
                 Timeline
               </button>
               <button
                 onClick={handleShowAbout}
-                className={`px-4 py-2 rounded-full ${showAbout ? 'bg-[#FFE4A3] font-medium' : 'hover:bg-gray-100'}`}
+                className={`px-4 py-2 rounded-full ${showAbout ? 'bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200'}`}
               >
                 About
               </button>
               <button
                 onClick={handleShowContact}
-                className={`px-4 py-2 rounded-full ${showContact ? 'bg-[#FFE4A3] font-medium' : 'hover:bg-gray-100'}`}
+                className={`px-4 py-2 rounded-full ${showContact ? 'bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200'}`}
               >
                 Contact
               </button>
@@ -649,36 +721,74 @@ const handleAddPet = () => {
           <div className="flex items-center gap-4">
             <NotificationBell userId={parseInt(user.id)} />
             <button
-              onClick={() => onNavigate?.('profile')}
-              className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-white overflow-hidden"
-              title="View Profile"
-            >
-              {user.profilePicture ? (
-                <img 
-                  src={user.profilePicture} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
-                  <span className="text-sm font-bold text-white">
-                    {user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                  </span>
-                </div>
-              )}
-            </button>
-            <button
               onClick={() => onNavigate?.('emergency')}
-              className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
+              className="px-4 py-2 bg-[#FF6B6B] dark:bg-red-700 text-white rounded-full text-sm flex items-center gap-2"
             >
               <span>📞</span> Emergency
             </button>
-            <button
-              onClick={onLogout}
-              className="px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-medium hover:bg-red-100 transition-colors"
-            >
-              Logout
-            </button>
+            {/* Profile Dropdown */}
+            <div className="relative" ref={profileDropdownRef}>
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-gray-200 dark:border-gray-600 overflow-hidden"
+                title="Profile Menu"
+              >
+                {user.profilePicture ? (
+                  <img 
+                    src={user.profilePicture} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">
+                      {user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </button>
+
+              {/* Dropdown Menu */}
+              {showProfileDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{user.fullName}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      onNavigate?.('profile');
+                    }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                  >
+                    <UserIcon size={18} className="text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm font-medium">Edit Profile</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      setShowSettings(true);
+                    }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                  >
+                    <Settings size={18} className="text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm font-medium">Settings</span>
+                  </button>
+                  <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      onLogout();
+                    }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/50 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
+                  >
+                    <LogOut size={18} className="text-red-500 dark:text-red-400" />
+                    <span className="text-sm font-medium">Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </nav>

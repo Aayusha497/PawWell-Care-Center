@@ -40,7 +40,7 @@ export default function App() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
-  const [dashboardTarget, setDashboardTarget] = useState<'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | null>(null);
+  const [dashboardTarget, setDashboardTarget] = useState<'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | 'settings' | null>(null);
 
   useEffect(() => {
     if (isLoggedIn && user) {
@@ -175,7 +175,7 @@ export default function App() {
     setCurrentPage(page);
   };
 
-  const handleDashboardTarget = (target: 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline') => {
+  const handleDashboardTarget = (target: 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | 'settings') => {
     setDashboardTarget(target);
     setCurrentPage(isLoggedIn ? 'user-dashboard' : 'login');
   };
@@ -204,6 +204,7 @@ export default function App() {
         <SignupPage
           onSignup={handleSignup}
           onNavigateToLogin={() => setCurrentPage('login')}
+          onNavigateToHome={() => setCurrentPage('landing')}
           error={error}
           fieldErrors={fieldErrors}
         />
@@ -217,7 +218,10 @@ export default function App() {
           onTimeline={() => handleDashboardTarget('wellness-timeline')}
           onContact={() => handleNavigate('contact')}
           onEmergency={() => handleNavigate('emergency')}
+          onSettings={() => handleDashboardTarget('settings')}
+          onNavigate={handleNavigate}
           onLogout={isLoggedIn ? handleLogout : undefined}
+          user={user}
           userFullName={user?.fullName}
         />
       )}
@@ -229,7 +233,10 @@ export default function App() {
           onTimeline={() => handleDashboardTarget('wellness-timeline')}
           onAbout={() => handleNavigate('about')}
           onEmergency={() => handleNavigate('emergency')}
+          onSettings={() => handleDashboardTarget('settings')}
+          onNavigate={handleNavigate}
           onLogout={isLoggedIn ? handleLogout : undefined}
+          user={user}
           userFullName={user?.fullName}
         />
       )}
@@ -243,6 +250,7 @@ export default function App() {
           onContact={() => handleNavigate('contact')}
           onEmergency={() => handleNavigate('emergency')}
           onLogout={isLoggedIn ? handleLogout : undefined}
+          user={user}
         />
       )}
       {currentPage === 'profile' && user && (

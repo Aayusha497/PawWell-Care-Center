@@ -11,6 +11,7 @@ const wellnessTimelineRoutes = require('./wellnessTimeline');
 const notificationRoutes = require('./notifications');
 const reviewRoutes = require('./reviews');
 const chatbotRoutes = require('./chatbot');
+const settingsRoutes = require('./settings');
 
 // Mount auth routes
 router.use('/accounts', authRoutes);
@@ -44,6 +45,9 @@ router.use('/reviews', reviewRoutes);
 
 // Mount chatbot routes
 router.use('/chat', chatbotRoutes);
+
+// Mount settings routes
+router.use('/settings', settingsRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

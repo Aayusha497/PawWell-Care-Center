@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { updateProfile, deleteAccount } from '../../services/api';
 import { toast } from 'sonner';
+import { Settings, User as UserIcon, LogOut } from 'lucide-react';
+import SettingsPage from './SettingsPage';
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -19,6 +21,9 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -29,6 +34,23 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
     emergencyContactName: '',
     emergencyContactNumber: '',
   });
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    if (showProfileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileDropdown]);
 
   useEffect(() => {
     if (user) {
@@ -271,17 +293,35 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#FFF9F5] flex items-center justify-center">
-        <div className="text-center">Loading...</div>
+      <div className="min-h-screen bg-[#FFF9F5] dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center dark:text-gray-100">Loading...</div>
       </div>
     );
   }
 
+  // If showing settings page, render it instead
+  if (showSettings) {
+    return (
+      <SettingsPage
+        onBack={() => setShowSettings(false)}
+        onLogout={onLogout}
+        userFullName={userFullName}
+        onNavigate={(page) => {
+          if (page === 'user-dashboard') {
+            onNavigate?.('user-dashboard');
+          } else if (page === 'profile') {
+            setShowSettings(false);
+          }
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#FFF9F5]">
+    <div className="min-h-screen bg-[#FFF9F5] dark:bg-gray-900">
       {/* Navigation Header - Only show if profile is complete */}
       {user.isProfileComplete && (
-        <nav className="bg-white border-b px-8 py-3">
+        <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-8 py-3">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
@@ -290,37 +330,37 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
               <div className="flex items-center gap-6">
                 <button 
                   onClick={() => onNavigate?.('user-dashboard')}
-                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
                 >
                   Home
                 </button>
                 <button 
                   onClick={() => onDashboardTarget?.('booking')}
-                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
                 >
                   Booking
                 </button>
                 <button
                   onClick={() => onDashboardTarget?.('activity-log')}
-                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
                 >
                   Activity Log
                 </button>
                 <button
                   onClick={() => onDashboardTarget?.('wellness-timeline')}
-                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
                 >
                   Timeline
                 </button>
                 <button
                   onClick={() => onNavigate?.('about')}
-                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
                 >
                   About
                 </button>
                 <button
                   onClick={() => onNavigate?.('contact')}
-                  className="px-4 py-2 hover:bg-gray-100 rounded-full"
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
                 >
                   Contact
                 </button>
@@ -328,36 +368,74 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
             </div>
             <div className="flex items-center gap-4">
               <button
-                onClick={() => onNavigate?.('profile')}
-                className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-white overflow-hidden"
-                title="View Profile"
-              >
-                {user.profilePicture ? (
-                  <img 
-                    src={user.profilePicture} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
-                    <span className="text-sm font-bold text-white">
-                      {user.firstName?.charAt(0)?.toUpperCase() || 'U'}{user.lastName?.charAt(0)?.toUpperCase() || ''}
-                    </span>
-                  </div>
-                )}
-              </button>
-              <button
                 onClick={() => onNavigate?.('emergency')}
-                className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2"
+                className="px-4 py-2 bg-[#FF6B6B] dark:bg-red-700 text-white rounded-full text-sm flex items-center gap-2"
               >
                 <span>📞</span> Emergency
               </button>
-              <button
-                onClick={onLogout}
-                className="px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-medium hover:bg-red-100 transition-colors"
-              >
-                Logout
-              </button>
+              {/* Profile Dropdown */}
+              <div className="relative" ref={profileDropdownRef}>
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-gray-200 overflow-hidden"
+                  title="Profile Menu"
+                >
+                  {user.profilePicture ? (
+                    <img 
+                      src={user.profilePicture} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
+                      <span className="text-sm font-bold text-white">
+                        {user.firstName?.charAt(0)?.toUpperCase() || 'U'}{user.lastName?.charAt(0)?.toUpperCase() || ''}
+                      </span>
+                    </div>
+                  )}
+                </button>
+
+                {/* Dropdown Menu */}
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        // Already on profile page, just close dropdown
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <UserIcon size={18} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium">Edit Profile</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        setShowSettings(true);
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <Settings size={18} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium">Settings</span>
+                    </button>
+                    <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        onLogout();
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/50 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
+                    >
+                      <LogOut size={18} className="text-red-500 dark:text-red-400" />
+                      <span className="text-sm font-medium">Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </nav>
@@ -365,9 +443,9 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-md p-8">
-          <div className="flex justify-between items-center mb-6 pb-4 border-b">
-            <h2 className="text-2xl font-bold text-gray-800">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8">
+          <div className="flex justify-between items-center mb-6 pb-4 border-b dark:border-gray-700">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
               {editing ? 'Edit Profile' : 'My Profile'}
             </h2>
             {user.isProfileComplete && !editing && (
@@ -410,21 +488,21 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
                   >
                     Choose Photo
                   </label>
-                  <p className="text-sm text-gray-500 mt-2">Max size: 5MB</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Max size: 5MB</p>
                 </div>
               </div>
 
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">First Name *</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">First Name *</label>
                   <input
                     type="text"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
-                      fieldErrors.firstName ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition dark:bg-gray-700 dark:text-gray-100 ${
+                      fieldErrors.firstName ? 'border-red-500 focus:border-red-500' : 'border-gray-200 dark:border-gray-600 focus:border-[#FA9884]'
                     }`}
                   />
                   {fieldErrors.firstName && (
@@ -432,14 +510,14 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name *</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Last Name *</label>
                   <input
                     type="text"
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
-                      fieldErrors.lastName ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition dark:bg-gray-700 dark:text-gray-100 ${
+                      fieldErrors.lastName ? 'border-red-500 focus:border-red-500' : 'border-gray-200 dark:border-gray-600 focus:border-[#FA9884]'
                     }`}
                   />
                   {fieldErrors.lastName && (
@@ -450,14 +528,14 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
 
               {/* Contact Info */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Phone Number *</label>
                 <input
                   type="tel"
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
-                    fieldErrors.phoneNumber ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition dark:bg-gray-700 dark:text-gray-100 ${
+                    fieldErrors.phoneNumber ? 'border-red-500 focus:border-red-500' : 'border-gray-200 dark:border-gray-600 focus:border-[#FA9884]'
                   }`}
                 />
                 {fieldErrors.phoneNumber && (
@@ -466,24 +544,24 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email</label>
                 <input
                   type="email"
                   value={user.email}
                   disabled
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Address {!user.isProfileComplete && '*'}</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Address {!user.isProfileComplete && '*'}</label>
                 <input
                   type="text"
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
-                    fieldErrors.address ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition dark:bg-gray-700 dark:text-gray-100 ${
+                    fieldErrors.address ? 'border-red-500 focus:border-red-500' : 'border-gray-200 dark:border-gray-600 focus:border-[#FA9884]'
                   }`}
                 />
                 {fieldErrors.address && (
@@ -492,14 +570,14 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">City {!user.isProfileComplete && '*'}</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">City {!user.isProfileComplete && '*'}</label>
                 <input
                   type="text"
                   name="city"
                   value={formData.city}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
-                    fieldErrors.city ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition dark:bg-gray-700 dark:text-gray-100 ${
+                    fieldErrors.city ? 'border-red-500 focus:border-red-500' : 'border-gray-200 dark:border-gray-600 focus:border-[#FA9884]'
                   }`}
                 />
                 {fieldErrors.city && (
@@ -508,18 +586,18 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
               </div>
 
               {/* Emergency Contact */}
-              <div className="pt-6 border-t">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">Emergency Contact {!user.isProfileComplete && '(Required)'}</h3>
+              <div className="pt-6 border-t dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Emergency Contact {!user.isProfileComplete && '(Required)'}</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Emergency Contact Name {!user.isProfileComplete && '*'}</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Emergency Contact Name {!user.isProfileComplete && '*'}</label>
                     <input
                       type="text"
                       name="emergencyContactName"
                       value={formData.emergencyContactName}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
-                        fieldErrors.emergencyContactName ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition dark:bg-gray-700 dark:text-gray-100 ${
+                        fieldErrors.emergencyContactName ? 'border-red-500 focus:border-red-500' : 'border-gray-200 dark:border-gray-600 focus:border-[#FA9884]'
                       }`}
                     />
                     {fieldErrors.emergencyContactName && (
@@ -527,14 +605,14 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Emergency Contact Number {!user.isProfileComplete && '*'}</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Emergency Contact Number {!user.isProfileComplete && '*'}</label>
                     <input
                       type="tel"
                       name="emergencyContactNumber"
                       value={formData.emergencyContactNumber}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition ${
-                        fieldErrors.emergencyContactNumber ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-[#FA9884]'
+                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition dark:bg-gray-700 dark:text-gray-100 ${
+                        fieldErrors.emergencyContactNumber ? 'border-red-500 focus:border-red-500' : 'border-gray-200 dark:border-gray-600 focus:border-[#FA9884]'
                       }`}
                     />
                     {fieldErrors.emergencyContactNumber && (
@@ -545,7 +623,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
               </div>
 
               {/* Form Actions */}
-              <div className="flex gap-4 pt-6 border-t">
+              <div className="flex gap-4 pt-6 border-t dark:border-gray-700">
                 <button
                   type="submit"
                   disabled={loading}
@@ -557,7 +635,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
                   type="button"
                   onClick={handleCancel}
                   disabled={loading}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   Cancel
                 </button>
@@ -582,44 +660,44 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
 
               {/* Profile Info Display */}
               <div className="space-y-4">
-                <div className="flex py-3 border-b">
-                  <span className="font-semibold text-gray-700 w-48">Name:</span>
-                  <span className="text-gray-900">{user.firstName} {user.lastName}</span>
+                <div className="flex py-3 border-b dark:border-gray-700">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300 w-48">Name:</span>
+                  <span className="text-gray-900 dark:text-gray-100">{user.firstName} {user.lastName}</span>
                 </div>
-                <div className="flex py-3 border-b">
-                  <span className="font-semibold text-gray-700 w-48">Email:</span>
-                  <span className="text-gray-900">{user.email}</span>
+                <div className="flex py-3 border-b dark:border-gray-700">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300 w-48">Email:</span>
+                  <span className="text-gray-900 dark:text-gray-100">{user.email}</span>
                 </div>
-                <div className="flex py-3 border-b">
-                  <span className="font-semibold text-gray-700 w-48">Phone:</span>
-                  <span className="text-gray-900">{user.phoneNumber || 'Not provided'}</span>
+                <div className="flex py-3 border-b dark:border-gray-700">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300 w-48">Phone:</span>
+                  <span className="text-gray-900 dark:text-gray-100">{user.phoneNumber || 'Not provided'}</span>
                 </div>
-                <div className="flex py-3 border-b">
-                  <span className="font-semibold text-gray-700 w-48">Address:</span>
-                  <span className="text-gray-900">{user.address || 'Not provided'}</span>
+                <div className="flex py-3 border-b dark:border-gray-700">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300 w-48">Address:</span>
+                  <span className="text-gray-900 dark:text-gray-100">{user.address || 'Not provided'}</span>
                 </div>
-                <div className="flex py-3 border-b">
-                  <span className="font-semibold text-gray-700 w-48">City:</span>
-                  <span className="text-gray-900">{user.city || 'Not provided'}</span>
+                <div className="flex py-3 border-b dark:border-gray-700">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300 w-48">City:</span>
+                  <span className="text-gray-900 dark:text-gray-100">{user.city || 'Not provided'}</span>
                 </div>
 
                 {(user.emergencyContactName || user.emergencyContactNumber) && (
                   <>
-                    <h3 className="text-lg font-semibold text-gray-700 mt-6 mb-2">Emergency Contact</h3>
-                    <div className="flex py-3 border-b">
-                      <span className="font-semibold text-gray-700 w-48">Name:</span>
-                      <span className="text-gray-900">{user.emergencyContactName || 'Not provided'}</span>
+                    <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mt-6 mb-2">Emergency Contact</h3>
+                    <div className="flex py-3 border-b dark:border-gray-700">
+                      <span className="font-semibold text-gray-700 dark:text-gray-300 w-48">Name:</span>
+                      <span className="text-gray-900 dark:text-gray-100">{user.emergencyContactName || 'Not provided'}</span>
                     </div>
-                    <div className="flex py-3 border-b">
-                      <span className="font-semibold text-gray-700 w-48">Phone:</span>
-                      <span className="text-gray-900">{user.emergencyContactNumber || 'Not provided'}</span>
+                    <div className="flex py-3 border-b dark:border-gray-700">
+                      <span className="font-semibold text-gray-700 dark:text-gray-300 w-48">Phone:</span>
+                      <span className="text-gray-900 dark:text-gray-100">{user.emergencyContactNumber || 'Not provided'}</span>
                     </div>
                   </>
                 )}
               </div>
 
               {/* Delete Account Button */}
-              <div className="mt-8 pt-6 border-t">
+              <div className="mt-8 pt-6 border-t dark:border-gray-700">
                 <button
                   onClick={handleDeleteAccount}
                   disabled={deleting}
@@ -627,7 +705,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
                 >
                   {deleting ? 'Deleting...' : 'Delete Account'}
                 </button>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                   Warning: This action cannot be undone. All your data will be permanently deleted.
                 </p>
               </div>

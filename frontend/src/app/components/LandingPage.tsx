@@ -9,35 +9,35 @@ interface LandingPageProps {
 
 export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: LandingPageProps) {
   return (
-    <div className="min-h-screen bg-[#FFF8E8]">
+    <div className="min-h-screen bg-[#FFF8E8] dark:bg-gray-900">
       {/* Navigation */}
-      <nav className="flex items-center justify-between px-8 py-4 bg-[#EAB308]">
+      <nav className="flex items-center justify-between px-8 py-4 bg-[#EAB308] dark:bg-gray-800">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🐾</span>
-          <span className="text-xl">PawWell</span>
+          <span className="text-xl dark:text-gray-100">PawWell</span>
         </div>
         <div className="flex items-center gap-6">
-          <a href="#home" className="hover:underline">Home</a>
-          <Button onClick={onNavigateToLogin} className="bg-[#D4A017] hover:bg-[#C49016] text-white hover:text-white">
+          <a href="#home" className="hover:underline dark:text-gray-300 dark:hover:text-gray-100">Home</a>
+          <Button onClick={onNavigateToLogin} className="bg-[#D4A017] hover:bg-[#C49016] text-white hover:text-white dark:bg-gray-700 dark:hover:bg-gray-600">
             Login
           </Button>
-          <Button onClick={onNavigateToSignup} className="bg-[#D4A017] hover:bg-[#C49016]">
+          <Button onClick={onNavigateToSignup} className="bg-[#D4A017] hover:bg-[#C49016] dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white">
             Sign Up
           </Button>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative px-8 py-16 bg-[#EAB308] overflow-hidden">
+      <section className="relative px-8 py-16 bg-[#EAB308] dark:bg-gray-800 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           <div className="text-center lg:text-left z-10">
-            <h1 className="text-5xl mb-4">Care they Deserve</h1>
-            <p className="text-xl mb-6">
+            <h1 className="text-5xl mb-4 dark:text-gray-100">Care they Deserve</h1>
+            <p className="text-xl mb-6 dark:text-gray-300">
               Because every pet deserves thoughtful care, timely attention, and a happier routine.
             </p>
             <Button 
               onClick={onNavigateToSignup}
-              className="bg-white text-black hover:bg-gray-100 px-8 py-6 text-lg"
+              className="bg-white text-black hover:bg-gray-100 px-8 py-6 text-lg dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
             >
               Booking
             </Button>
@@ -61,35 +61,35 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: L
       {/* Services Section */}
       <section id="services" className="px-8 py-16">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl text-center mb-12">Our Services</h2>
+          <h2 className="text-4xl text-center mb-12 dark:text-gray-100">Our Services</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="bg-[#F4D878] p-8 border-0 h-64 flex flex-col items-center justify-center">
-              <h3 className="text-2xl mb-2">Day Care</h3>
-              <p className="text-center text-gray-700">Daily supervision and activities for your pets</p>
+            <Card className="bg-[#F4D878] dark:bg-gray-700 p-8 border-0 h-64 flex flex-col items-center justify-center dark:border-gray-600">
+              <h3 className="text-2xl mb-2 dark:text-gray-100">Day Care</h3>
+              <p className="text-center text-gray-700 dark:text-gray-300">Daily supervision and activities for your pets</p>
             </Card>
-            <Card className="bg-[#F4D878] p-8 border-0 h-64 flex flex-col items-center justify-center">
-              <h3 className="text-2xl mb-2">Cat Care</h3>
-              <p className="text-center text-gray-700">Specialized care for your feline friends</p>
+            <Card className="bg-[#F4D878] dark:bg-gray-700 p-8 border-0 h-64 flex flex-col items-center justify-center dark:border-gray-600">
+              <h3 className="text-2xl mb-2 dark:text-gray-100">Cat Care</h3>
+              <p className="text-center text-gray-700 dark:text-gray-300">Specialized care for your feline friends</p>
             </Card>
-            <Card className="bg-[#F4D878] p-8 border-0 h-64 flex flex-col items-center justify-center">
-              <h3 className="text-2xl mb-2">Pet Grooming</h3>
-              <p className="text-center text-gray-700">Professional grooming services</p>
+            <Card className="bg-[#F4D878] dark:bg-gray-700 p-8 border-0 h-64 flex flex-col items-center justify-center dark:border-gray-600">
+              <h3 className="text-2xl mb-2 dark:text-gray-100">Pet Grooming</h3>
+              <p className="text-center text-gray-700 dark:text-gray-300">Professional grooming services</p>
             </Card>
           </div>
         </div>
       </section>
 
       {/* About Section */}
-      <section id="about" className="px-8 py-16 bg-white">
+      <section id="about" className="px-8 py-16 bg-white dark:bg-gray-800">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl text-center mb-8">About Us</h2>
-          <Card className="bg-[#F4D878] p-12 border-0 min-h-[300px] flex items-center justify-center">
+          <h2 className="text-4xl text-center mb-8 dark:text-gray-100">About Us</h2>
+          <Card className="bg-[#F4D878] dark:bg-gray-700 p-12 border-0 min-h-[300px] flex items-center justify-center dark:border-gray-600">
             <div className="text-center max-w-3xl">
-              <p className="text-lg mb-4">
+              <p className="text-lg mb-4 dark:text-gray-300">
                 PawWell Care Center is a comprehensive digital management system for professional pet boarding. 
                 We serve as a bridge between pet owners and care providers, ensuring your pets receive the best care while you're away.
               </p>
-              <p className="text-lg">
+              <p className="text-lg dark:text-gray-300">
                 Our facility offers safe, loving environments that eliminate the need to rely on others, giving you peace of mind during travel or work.
               </p>
             </div>
@@ -98,21 +98,21 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: L
       </section>
 
       {/* CTA Section */}
-      <section className="px-8 py-16 bg-[#FFF8E8]">
+      <section className="px-8 py-16 bg-[#FFF8E8] dark:bg-gray-800">
         <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl mb-4">Ready to Give Your Pet the Best care?</h2>
-          <p className="text-xl mb-2">Trust Transparency and Comfort</p>
-          <p className="text-gray-600 mb-6">From planning to daily care, everything is handled with reliability and love.</p>
+          <h2 className="text-3xl mb-4 dark:text-gray-100">Ready to Give Your Pet the Best care?</h2>
+          <p className="text-xl mb-2 dark:text-gray-300">Trust Transparency and Comfort</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">From planning to daily care, everything is handled with reliability and love.</p>
           <div className="flex gap-4 justify-center">
             <Button 
               onClick={onNavigateToLogin}
-              className="bg-[#EAB308] hover:bg-[#D4A017] px-8"
+              className="bg-[#EAB308] hover:bg-[#D4A017] px-8 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
             >
               Login
             </Button>
             <Button 
               onClick={onNavigateToSignup}
-              className="bg-[#EAB308] hover:bg-[#D4A017] px-8"
+              className="bg-[#EAB308] hover:bg-[#D4A017] px-8 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
             >
               Sign Up Now
             </Button>

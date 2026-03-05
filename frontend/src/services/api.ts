@@ -1274,6 +1274,52 @@ export const approveReview = async (id: string | number, data: {
   }
 };
 
+/**
+ * Get user settings
+ * @returns {Promise<any>} User settings
+ */
+export const getSettings = async (): Promise<any> => {
+  try {
+    const response = await api.get('/settings');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch settings' };
+  }
+};
+
+/**
+ * Update user settings
+ * @param {object} settingsData - Settings data to update
+ * @returns {Promise<any>} Updated settings
+ */
+export const updateSettings = async (settingsData: {
+  theme?: string;
+  emailNotifications?: boolean;
+  smsNotifications?: boolean;
+  activityUpdates?: boolean;
+  bookingReminders?: boolean;
+}): Promise<any> => {
+  try {
+    const response = await api.put('/settings', settingsData);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to update settings' };
+  }
+};
+
+/**
+ * Reset settings to default
+ * @returns {Promise<any>} Default settings
+ */
+export const resetSettings = async (): Promise<any> => {
+  try {
+    const response = await api.post('/settings/reset');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to reset settings' };
+  }
+};
+
 export default api;
 
 

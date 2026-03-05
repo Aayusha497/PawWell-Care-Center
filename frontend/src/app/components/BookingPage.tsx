@@ -321,26 +321,26 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
     <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">Book Pet Care Service</h1>
-          <p className="text-gray-600">Follow the steps below to book the perfect care for your beloved pet.</p>
+          <h1 className="text-4xl font-bold mb-2 dark:text-gray-100">Book Pet Care Service</h1>
+          <p className="text-gray-600 dark:text-gray-400">Follow the steps below to book the perfect care for your beloved pet.</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           {/* Service Type and Date Selection */}
-          <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md mb-6">
             {/* Select Pet */}
             <div className="mb-6">
-              <label className="block text-lg font-semibold mb-2">Select Pet *</label>
+              <label className="block text-lg font-semibold mb-2 dark:text-gray-100">Select Pet *</label>
               {loading ? (
-                <div className="text-gray-500">Loading pets...</div>
+                <div className="text-gray-500 dark:text-gray-400">Loading pets...</div>
               ) : pets.length === 0 ? (
-                <div className="text-red-500">No pets found. Please add a pet first.</div>
+                <div className="text-red-500 dark:text-red-400">No pets found. Please add a pet first.</div>
               ) : (
                 <select
                   name="pet_id"
                   value={formData.pet_id}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 rounded-lg border ${errors.pet_id ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-[#FA9884]`}
+                  className={`w-full px-4 py-3 rounded-lg border ${errors.pet_id ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100`}
                 >
                   <option value="">Select your pet</option>
                   {pets.map(pet => (
@@ -355,12 +355,12 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
 
             {/* Select Service Type */}
             <div className="mb-6">
-              <label className="block text-lg font-semibold mb-2">Select Service Type *</label>
+              <label className="block text-lg font-semibold mb-2 dark:text-gray-100">Select Service Type *</label>
               <select
                 name="service_type"
                 value={formData.service_type}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 rounded-lg border ${errors.service_type ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-[#FA9884]`}
+                className={`w-full px-4 py-3 rounded-lg border ${errors.service_type ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100`}
               >
                 <option value="">Pet Sitting</option>
                 {SERVICE_TYPES.map(service => (
@@ -369,15 +369,15 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
               </select>
               {errors.service_type && <p className="text-red-500 text-sm mt-1">{errors.service_type}</p>}
               {formData.service_type && (
-                <p className="text-sm text-gray-600 mt-2">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                   Pricing: NPR {SERVICE_PRICING[formData.service_type as keyof typeof SERVICE_PRICING].price} {SERVICE_PRICING[formData.service_type as keyof typeof SERVICE_PRICING].unit}
                 </p>
               )}
             </div>
 
             {/* Select Date */}
-            <label className="block text-lg font-semibold mb-2">Select Date *</label>
-              <p className="text-sm text-gray-600 mb-3">
+            <label className="block text-lg font-semibold mb-2 dark:text-gray-100">Select Date *</label>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                 {formData.service_type === 'Pet Boarding'
                   ? 'Choose your preferred drop-off and pick-up date.'
                   : 'Choose your preferred service date.'}
@@ -385,7 +385,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
               
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium mb-1 dark:text-gray-200">
                     {formData.service_type === 'Pet Boarding' ? 'Start Date (Drop-off)' : 'Service Date'}
                   </label>
                   <input
@@ -394,21 +394,21 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
                     value={formData.start_date}
                     onChange={handleInputChange}
                     min={new Date().toISOString().split('T')[0]}
-                    className={`w-full px-4 py-3 rounded-lg border ${errors.start_date ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-[#FA9884]`}
+                    className={`w-full px-4 py-3 rounded-lg border ${errors.start_date ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100`}
                   />
                   {errors.start_date && <p className="text-red-500 text-sm mt-1">{errors.start_date}</p>}
                 </div>
 
                 {formData.service_type === 'Pet Boarding' && (
                   <div className="flex-1">
-                    <label className="block text-sm font-medium mb-1">End Date (Pick-up)</label>
+                    <label className="block text-sm font-medium mb-1 dark:text-gray-200">End Date (Pick-up)</label>
                     <input
                       type="date"
                       name="end_date"
                       value={formData.end_date}
                       onChange={handleInputChange}
                       min={formData.start_date || new Date().toISOString().split('T')[0]}
-                      className={`w-full px-4 py-3 rounded-lg border ${errors.end_date ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-[#FA9884]`}
+                      className={`w-full px-4 py-3 rounded-lg border ${errors.end_date ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100`}
                     />
                     {errors.end_date && <p className="text-red-500 text-sm mt-1">{errors.end_date}</p>}
                   </div>
@@ -433,13 +433,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
             </div>
 
           {/* Pickup & Drop-off Details */}
-          <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-            <h3 className="text-xl font-semibold mb-4">Pickup & Drop-off Service</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md mb-6">
+            <h3 className="text-xl font-semibold mb-4 dark:text-gray-100">Pickup & Drop-off Service</h3>
             
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-3">Do you require pickup and drop-off service?</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Do you require pickup and drop-off service?</p>
               <div className="flex gap-6">
-                <label className="flex items-center">
+                <label className="flex items-center dark:text-gray-200">
                   <input
                     type="radio"
                     name="requires_pickup"
@@ -450,7 +450,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
                   />
                   <span>Yes</span>
                 </label>
-                <label className="flex items-center">
+                <label className="flex items-center dark:text-gray-200">
                   <input
                     type="radio"
                     name="requires_pickup"
@@ -468,12 +468,12 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
               <>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Pickup Time *</label>
+                    <label className="block text-sm font-medium mb-1 dark:text-gray-200">Pickup Time *</label>
                     <select
                       name="pickup_time"
                       value={formData.pickup_time}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 rounded-lg border ${errors.pickup_time ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-[#FA9884]`}
+                      className={`w-full px-4 py-3 rounded-lg border ${errors.pickup_time ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100`}
                     >
                       <option value="">9:00 am</option>
                       {TIME_SLOTS.map(slot => (
@@ -484,12 +484,12 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">Drop-off Time *</label>
+                    <label className="block text-sm font-medium mb-1 dark:text-gray-200">Drop-off Time *</label>
                     <select
                       name="dropoff_time"
                       value={formData.dropoff_time}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 rounded-lg border ${errors.dropoff_time ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-[#FA9884]`}
+                      className={`w-full px-4 py-3 rounded-lg border ${errors.dropoff_time ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100`}
                     >
                       <option value="">3:00 pm</option>
                       {TIME_SLOTS.map(slot => (
@@ -501,22 +501,22 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-1">Pickup Address *</label>
+                  <label className="block text-sm font-medium mb-1 dark:text-gray-200">Pickup Address *</label>
                   <input
                     type="text"
                     name="pickup_address"
                     value={formData.pickup_address}
                     onChange={handleInputChange}
                     placeholder="eg: Kamalpokkari"
-                    className={`w-full px-4 py-3 rounded-lg border ${errors.pickup_address ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-[#FA9884]`}
+                    className={`w-full px-4 py-3 rounded-lg border ${errors.pickup_address ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400`}
                   />
                   {errors.pickup_address && <p className="text-red-500 text-sm mt-1">{errors.pickup_address}</p>}
                 </div>
 
                 <div className="mb-4">
-                  <p className="text-sm font-medium mb-2">Drop-off Address</p>
+                  <p className="text-sm font-medium mb-2 dark:text-gray-200">Drop-off Address</p>
                   <div className="flex gap-6 mb-3">
-                    <label className="flex items-center">
+                    <label className="flex items-center dark:text-gray-200">
                       <input
                         type="radio"
                         name="same_address"
@@ -527,7 +527,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
                       />
                       <span>Same as pickup</span>
                     </label>
-                    <label className="flex items-center">
+                    <label className="flex items-center dark:text-gray-200">
                       <input
                         type="radio"
                         name="same_address"
@@ -548,7 +548,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
                         value={formData.dropoff_address}
                         onChange={handleInputChange}
                         placeholder="Enter drop-off address"
-                        className={`w-full px-4 py-3 rounded-lg border ${errors.dropoff_address ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-[#FA9884]`}
+                        className={`w-full px-4 py-3 rounded-lg border ${errors.dropoff_address ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400`}
                       />
                       {errors.dropoff_address && <p className="text-red-500 text-sm mt-1">{errors.dropoff_address}</p>}
                     </>
@@ -559,45 +559,45 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
           </div>
 
           {/* Booking Summary */}
-          <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-            <h3 className="text-xl font-semibold mb-3">Booking Summary</h3>
-            <p className="text-sm text-gray-600 mb-4">Review your booking details before confirming.</p>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md mb-6">
+            <h3 className="text-xl font-semibold mb-3 dark:text-gray-100">Booking Summary</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Review your booking details before confirming.</p>
             
             <div className="space-y-3 mb-6">
-              <div className="flex justify-between py-2 border-b">
-                <span className="font-medium">Pet:</span>
-                <span className="text-gray-700">
+              <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                <span className="font-medium dark:text-gray-200">Pet:</span>
+                <span className="text-gray-700 dark:text-gray-300">
                   {formData.pet_id ? pets.find(p => p.pet_id === Number(formData.pet_id))?.name || '-' : '-'}
                 </span>
               </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="font-medium">Service:</span>
-                <span className="text-gray-700">{formData.service_type || '-'}</span>
+              <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                <span className="font-medium dark:text-gray-200">Service:</span>
+                <span className="text-gray-700 dark:text-gray-300">{formData.service_type || '-'}</span>
               </div>
-              <div className="flex justify-between py-2 border-b">
-                <span className="font-medium">Date:</span>
-                <span className="text-gray-700">
+              <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                <span className="font-medium dark:text-gray-200">Date:</span>
+                <span className="text-gray-700 dark:text-gray-300">
                   {formData.start_date && formData.service_type === 'Pet Boarding' && formData.end_date
                     ? `${formData.start_date} to ${formData.end_date} (${numberOfNights} night${numberOfNights !== 1 ? 's' : ''})`
                     : formData.start_date || '-'}
                 </span>
               </div>
               {formData.requires_pickup && formData.pickup_time && formData.dropoff_time && (
-                <div className="flex justify-between py-2 border-b">
-                  <span className="font-medium">Pickup/Drop-off:</span>
-                  <span className="text-gray-700">
+                <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                  <span className="font-medium dark:text-gray-200">Pickup/Drop-off:</span>
+                  <span className="text-gray-700 dark:text-gray-300">
                     {formData.pickup_time} / {formData.dropoff_time}
                   </span>
                 </div>
               )}
               {formData.requires_pickup && formData.pickup_address && (
-                <div className="flex justify-between py-2 border-b">
-                  <span className="font-medium">Address:</span>
-                  <span className="text-gray-700">{formData.pickup_address}</span>
+                <div className="flex justify-between py-2 border-b dark:border-gray-700">
+                  <span className="font-medium dark:text-gray-200">Address:</span>
+                  <span className="text-gray-700 dark:text-gray-300">{formData.pickup_address}</span>
                 </div>
               )}
-              <div className="flex justify-between py-3 bg-[#FFF9F5] -mx-6 px-6 rounded-lg mt-4">
-                <span className="font-semibold text-lg">Total Estimated Cost:</span>
+              <div className="flex justify-between py-3 bg-[#FFF9F5] dark:bg-gray-700 -mx-6 px-6 rounded-lg mt-4">
+                <span className="font-semibold text-lg dark:text-gray-100">Total Estimated Cost:</span>
                 <span className="font-bold text-lg text-[#FA9884]">NPR {estimatedCost.toLocaleString()}</span>
               </div>
             </div>
@@ -614,7 +614,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
                 type="button"
                 onClick={handleCancel}
                 disabled={submitting}
-                className="flex-1 bg-white border-2 border-gray-300 text-gray-700 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>

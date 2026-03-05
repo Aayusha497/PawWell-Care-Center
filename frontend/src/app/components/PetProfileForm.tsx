@@ -182,7 +182,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
 
   if (loading && petId) {
     return (
-      <div className="min-h-screen bg-[#FFF9F5] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FFF9F5] dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FA9884]"></div>
       </div>
     );
@@ -190,16 +190,16 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
 
 
   return (
-    <div className="bg-[#FFF9F5]">
+    <div className="bg-[#FFF9F5] dark:bg-gray-900 transition-colors">
       {/* Main Content */}
       <div className="max-w-5xl mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-8">{petId ? formData.name + "'s Profile" : "Add New Pet"}</h1>
+        <h1 className="text-3xl font-bold mb-8 dark:text-gray-100">{petId ? formData.name + "'s Profile" : "Add New Pet"}</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Side - Photo */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 shadow-md">
-              <div className="w-48 h-48 mx-auto mb-4 rounded-full overflow-hidden bg-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md transition-colors">
+              <div className="w-48 h-48 mx-auto mb-4 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
                 {photoPreview ? (
                   <img 
                     src={photoPreview} 
@@ -233,29 +233,29 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
           {/* Right Side - Form */}
           <div className="lg:col-span-2">
             <form onSubmit={handleSubmit}>
-              <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-                <h3 className="text-xl font-semibold mb-4">Information</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md mb-6 transition-colors">
+                <h3 className="text-xl font-semibold mb-4 dark:text-gray-100">Information</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Pet Name</label>
+                    <label className="block text-sm font-medium mb-2 dark:text-gray-300">Pet Name</label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="Kikyo"
                     />
                     {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">Breed</label>
+                    <label className="block text-sm font-medium mb-2 dark:text-gray-300">Breed</label>
                     <input
                       type="text"
                       value={formData.breed}
                       onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${errors.breed ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.breed ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="Golden Retriever"
                     />
                     {errors.breed && <p className="text-red-500 text-sm mt-1">{errors.breed}</p>}
@@ -264,25 +264,25 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Age</label>
+                    <label className="block text-sm font-medium mb-2 dark:text-gray-300">Age</label>
                     <input
                       type="number"
                       value={formData.age}
                       onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${errors.age ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.age ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="3"
                     />
                     {errors.age && <p className="text-red-500 text-sm mt-1">{errors.age}</p>}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">Weight</label>
+                    <label className="block text-sm font-medium mb-2 dark:text-gray-300">Weight</label>
                     <input
                       type="number"
                       step="0.1"
                       value={formData.weight}
                       onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${errors.weight ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.weight ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="20"
                     />
                     {errors.weight && <p className="text-red-500 text-sm mt-1">{errors.weight}</p>}
@@ -291,24 +291,24 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Height(cm)</label>
+                    <label className="block text-sm font-medium mb-2 dark:text-gray-300">Height(cm)</label>
                     <input
                       type="number"
                       step="0.1"
                       value={formData.height}
                       onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                      className={`w-full px-4 py-2 border rounded-lg ${errors.height ? 'border-red-500' : 'border-gray-300'}`}
+                      className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.height ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="60"
                     />
                     {errors.height && <p className="text-red-500 text-sm mt-1">{errors.height}</p>}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">Sex</label>
+                    <label className="block text-sm font-medium mb-2 dark:text-gray-300">Sex</label>
                     <select
                       value={formData.sex}
                       onChange={(e) => setFormData({ ...formData, sex: e.target.value as 'Male' | 'Female' })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
                     >
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
@@ -317,49 +317,49 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-                <h3 className="text-xl font-semibold mb-4">Medical Information</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md mb-6 transition-colors">
+                <h3 className="text-xl font-semibold mb-4 dark:text-gray-100">Medical Information</h3>
                 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Allergies</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Allergies</label>
                   <textarea
                     value={formData.allergies}
                     onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
                     rows={2}
                     placeholder="Dust mites, certain grass pollens. Develops itchy skin."
                   />
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Triggering Points</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Triggering Points</label>
                   <textarea
                     value={formData.triggering_point}
                     onChange={(e) => setFormData({ ...formData, triggering_point: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
                     rows={2}
                     placeholder="Dust mites, certain grass pollens."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Last Bet Visit Date</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Last Bet Visit Date</label>
                   <input
                     type="text"
                     value={formData.last_vet_visit}
                     onChange={(e) => setFormData({ ...formData, last_vet_visit: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
                     placeholder="Dec 28 2025 - Jan 01 2026"
                   />
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-                <h3 className="text-xl font-semibold mb-4">Special Care Needs</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-md mb-6 transition-colors">
+                <h3 className="text-xl font-semibold mb-4 dark:text-gray-100">Special Care Needs</h3>
                 <textarea
                   value={formData.medical_history}
                   onChange={(e) => setFormData({ ...formData, medical_history: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
                   rows={3}
                   placeholder="Administer allergy medication daily morning."
                 />
@@ -369,7 +369,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                 <button
                   type="button"
                   onClick={onBack}
-                  className="px-8 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition flex items-center gap-2"
+                  className="px-8 py-3 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-200 transition flex items-center gap-2"
                   disabled={loading}
                 >
                   ❌ Cancel

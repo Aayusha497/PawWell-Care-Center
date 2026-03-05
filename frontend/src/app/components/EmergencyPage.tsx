@@ -1,7 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { createEmergencyRequest, getMyEmergencyRequests, getUserPets, getProfile } from '../../services/api';
+import { Settings, User as UserIcon, LogOut } from 'lucide-react';
+import NotificationBell from '../../components/NotificationBell';
 import '../../pages/About.css';
+
+interface User {
+  id: string;
+  email: string;
+  fullName: string;
+  profilePicture?: string;
+}
 
 interface EmergencyPageProps {
   onBack?: () => void;
@@ -12,6 +21,7 @@ interface EmergencyPageProps {
   onContact?: () => void;
   onLogout?: () => void;
   onEmergency?: () => void;
+  user?: User | null;
 }
 
 interface Pet {
@@ -48,13 +58,17 @@ export default function EmergencyPage({
   onAbout,
   onContact,
   onLogout,
-  onEmergency
+  onEmergency,
+  user
 }: EmergencyPageProps) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [requests, setRequests] = useState<EmergencyRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showCallModal, setShowCallModal] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
   const [formValues, setFormValues] = useState({
     pet_id: '',
     emergency_type: '',
@@ -63,6 +77,23 @@ export default function EmergencyPage({
     location: ''
   });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    if (showProfileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileDropdown]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,11 +110,14 @@ export default function EmergencyPage({
         const requestList = requestResponse.data || [];
         setRequests(Array.isArray(requestList) ? requestList : []);
 
-        if (profileResponse?.user?.phoneNumber) {
-          setFormValues((prev) => ({
-            ...prev,
-            phone_number: profileResponse.user.phoneNumber ?? ''
-          }));
+        if (profileResponse?.user) {
+          setUserProfile(profileResponse.user);
+          if (profileResponse.user.phoneNumber) {
+            setFormValues((prev) => ({
+              ...prev,
+              phone_number: profileResponse.user.phoneNumber ?? ''
+            }));
+          }
         }
       } catch (error: any) {
         console.error('Error loading emergency data:', error);
@@ -173,8 +207,8 @@ export default function EmergencyPage({
   const statusSteps = ['pending', 'in_progress', 'resolved'];
 
   return (
-    <div className="min-h-screen bg-[#E85B5B]">
-      <nav className="bg-white/90 border-b px-8 py-3">
+    <div className="min-h-screen bg-[#E85B5B] dark:bg-gray-900">
+      <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-8 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-2">
@@ -184,73 +218,132 @@ export default function EmergencyPage({
               <button
                 type="button"
                 onClick={onBack}
-                className="px-4 py-2 rounded-full bg-[#FFE4A3] font-medium"
+                className="px-4 py-2 rounded-full bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium"
               >
                 Home
               </button>
-              <button type="button" onClick={onBook} className="px-4 py-2 hover:bg-gray-100 rounded-full">
+              <button type="button" onClick={onBook} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full">
                 Booking
               </button>
-              <button type="button" onClick={onActivityLog} className="px-4 py-2 hover:bg-gray-100 rounded-full">
+              <button type="button" onClick={onActivityLog} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full">
                 Activity Log
               </button>
-              <button type="button" onClick={onTimeline} className="px-4 py-2 hover:bg-gray-100 rounded-full">
+              <button type="button" onClick={onTimeline} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full">
                 Timeline
               </button>
-              <button type="button" onClick={onAbout} className="px-4 py-2 hover:bg-gray-100 rounded-full">
+              <button type="button" onClick={onAbout} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full">
                 About
               </button>
-              <button type="button" onClick={onContact} className="px-4 py-2 hover:bg-gray-100 rounded-full">
+              <button type="button" onClick={onContact} className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full">
                 Contact
               </button>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button className="px-4 py-2 bg-[#FF6B6B] text-white rounded-full text-sm flex items-center gap-2">
+            {user && <NotificationBell userId={parseInt(user.id)} />}
+            <button className="px-4 py-2 bg-[#FF6B6B] dark:bg-red-700 text-white rounded-full text-sm flex items-center gap-2">
               <span>📞</span> Emergency
             </button>
-            {onLogout && (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
-              >
-                Logout
-              </button>
+            {/* Profile Dropdown */}
+            {userProfile && (
+              <div className="relative" ref={profileDropdownRef}>
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-gray-200 dark:border-gray-600 overflow-hidden"
+                  title="Profile Menu"
+                >
+                  {userProfile.profilePicture ? (
+                    <img 
+                      src={userProfile.profilePicture} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
+                      <span className="text-sm font-bold text-white">
+                        {userProfile.firstName?.charAt(0)?.toUpperCase() || 'U'}{userProfile.lastName?.charAt(0)?.toUpperCase() || ''}
+                      </span>
+                    </div>
+                  )}
+                </button>
+
+                {/* Dropdown Menu */}
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{userProfile.firstName} {userProfile.lastName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{userProfile.email}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        onBack?.();
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <UserIcon size={18} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium">Profile</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        // Settings navigation can be added later
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <Settings size={18} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium">Settings</span>
+                    </button>
+                    <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                    {onLogout && (
+                      <button
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          onLogout();
+                        }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/50 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
+                      >
+                        <LogOut size={18} className="text-red-500 dark:text-red-400" />
+                        <span className="text-sm font-medium">Logout</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-6 py-12 text-white">
+      <main className="max-w-6xl mx-auto px-6 py-12 text-white dark:text-gray-200">
         <div className="flex flex-col items-center text-center">
           <div className="text-6xl mb-4">🚨</div>
           <h1 className="text-4xl font-bold mb-2">Emergency</h1>
-          <p className="text-lg text-white/90 mb-6">
+          <p className="text-lg text-white/90 dark:text-gray-300 mb-6">
             If your pet needs immediate medical attention, call us now.
           </p>
           <a
             href="tel:+9779703812594"
             onClick={handleCallClick}
-            className="bg-white text-gray-900 px-10 py-3 rounded-xl font-semibold flex items-center gap-3 shadow-lg"
+            className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-10 py-3 rounded-xl font-semibold flex items-center gap-3 shadow-lg"
           >
             <span>📞</span> Call Now
           </a>
         </div>
 
         <div className="grid lg:grid-cols-[1fr_1.2fr] gap-8 mt-12">
-          <div className="bg-white text-gray-900 rounded-3xl p-8 shadow-xl">
+          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl p-8 shadow-xl">
             <h2 className="text-xl font-bold mb-4">Emergency Guidance</h2>
-            <ul className="space-y-3 text-gray-700">
+            <ul className="space-y-3 text-gray-700 dark:text-gray-300">
               <li>Stay calm and assess your pet's condition.</li>
               <li>If bleeding, apply direct pressure with clean cloths.</li>
               <li>Do not attempt to move an injured animal unnecessarily.</li>
               <li>Keep your pet warm with a blanket.</li>
             </ul>
-            <div className="mt-6 text-2xl font-bold text-red-600">Emergency line: +977-9703712593</div>
+            <div className="mt-6 text-2xl font-bold text-red-600 dark:text-red-400">Emergency line: +977-9703712593</div>
           </div>
 
-          <div className="bg-white text-gray-900 rounded-3xl p-8 shadow-xl">
+          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl p-8 shadow-xl">
             <h2 className="text-xl font-bold mb-4">Submit Emergency Request</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -259,7 +352,7 @@ export default function EmergencyPage({
                   value={formValues.pet_id}
                   onChange={handleChange('pet_id')}
                   onBlur={handleBlur('pet_id')}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg"
                 >
                   <option value="">Select your pet</option>
                   {pets.map((pet) => (
@@ -269,7 +362,7 @@ export default function EmergencyPage({
                   ))}
                 </select>
                 {touched.pet_id && errors.pet_id && (
-                  <p className="text-sm text-red-600 mt-1">{errors.pet_id}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.pet_id}</p>
                 )}
               </div>
 
@@ -279,7 +372,7 @@ export default function EmergencyPage({
                   value={formValues.emergency_type}
                   onChange={handleChange('emergency_type')}
                   onBlur={handleBlur('emergency_type')}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg"
                 >
                   <option value="">Select type</option>
                   {EMERGENCY_TYPES.map((type) => (
@@ -287,7 +380,7 @@ export default function EmergencyPage({
                   ))}
                 </select>
                 {touched.emergency_type && errors.emergency_type && (
-                  <p className="text-sm text-red-600 mt-1">{errors.emergency_type}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.emergency_type}</p>
                 )}
               </div>
 
@@ -298,11 +391,11 @@ export default function EmergencyPage({
                   value={formValues.description}
                   onChange={handleChange('description')}
                   onBlur={handleBlur('description')}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg"
                   placeholder="Describe what happened"
                 />
                 {touched.description && errors.description && (
-                  <p className="text-sm text-red-600 mt-1">{errors.description}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.description}</p>
                 )}
               </div>
 
@@ -313,7 +406,7 @@ export default function EmergencyPage({
                     type="tel"
                     value={formValues.phone_number}
                     onChange={handleChange('phone_number')}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg"
+                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg"
                     placeholder="Optional"
                   />
                 </div>
@@ -323,7 +416,7 @@ export default function EmergencyPage({
                     type="text"
                     value={formValues.location}
                     onChange={handleChange('location')}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg"
+                    className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg"
                     placeholder="Optional"
                   />
                 </div>
@@ -332,7 +425,7 @@ export default function EmergencyPage({
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-[#111827] text-white py-3 rounded-xl font-semibold"
+                className="w-full bg-[#111827] dark:bg-gray-700 text-white py-3 rounded-xl font-semibold hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors"
               >
                 {submitting ? 'Submitting...' : 'Submit Emergency Request'}
               </button>
@@ -340,33 +433,33 @@ export default function EmergencyPage({
           </div>
         </div>
 
-        <div className="mt-12 bg-white text-gray-900 rounded-3xl p-8 shadow-xl">
+        <div className="mt-12 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-3xl p-8 shadow-xl">
           <h2 className="text-xl font-bold mb-4">Your Emergency Requests</h2>
           {loading ? (
-            <p className="text-gray-600">Loading...</p>
+            <p className="text-gray-600 dark:text-gray-400">Loading...</p>
           ) : requests.length === 0 ? (
-            <p className="text-gray-600">No emergency requests yet.</p>
+            <p className="text-gray-600 dark:text-gray-400">No emergency requests yet.</p>
           ) : (
             <div className="space-y-6">
               {requests.map((request) => (
-                <div key={request.emergency_id} className="border border-gray-200 rounded-2xl p-4">
+                <div key={request.emergency_id} className="border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-semibold">{request.pets?.name || 'Pet'}</p>
-                      <p className="text-sm text-gray-600">{request.emergency_type}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{request.emergency_type}</p>
                     </div>
-                    <span className="text-xs px-3 py-1 rounded-full bg-gray-100">
+                    <span className="text-xs px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700">
                       {request.status.replace('_', ' ')}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                     {new Date(request.created_at).toLocaleString()}
                   </p>
                   <div className="flex items-center gap-3">
                     {statusSteps.map((step) => {
                       const isActive = request.status === step || (request.status === 'resolved' && step !== 'pending');
                       return (
-                        <div key={step} className={`flex-1 h-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-200'}`} />
+                        <div key={step} className={`flex-1 h-2 rounded-full ${isActive ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
                       );
                     })}
                   </div>
@@ -378,21 +471,21 @@ export default function EmergencyPage({
       </main>
 
       {showCallModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm text-gray-900">
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm text-gray-900 dark:text-gray-100">
             <h3 className="text-lg font-semibold mb-2">Call Emergency Line</h3>
-            <p className="text-sm text-gray-600 mb-4">Ready to place the call?</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Ready to place the call?</p>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={() => setShowCallModal(false)}
-                className="flex-1 px-4 py-2 rounded-lg bg-gray-100 text-gray-700"
+                className="flex-1 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
               >
                 Cancel
               </button>
               <a
                 href="tel:+9779703812594"
-                className="flex-1 px-4 py-2 rounded-lg bg-[#E85B5B] text-white text-center"
+                className="flex-1 px-4 py-2 rounded-lg bg-[#E85B5B] dark:bg-red-700 text-white text-center"
                 onClick={() => setShowCallModal(false)}
               >
                 Call Now

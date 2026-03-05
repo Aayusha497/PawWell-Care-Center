@@ -17,6 +17,7 @@ const ContactMessage = require('./ContactMessage')(sequelize);
 const Review = require('./Review')(sequelize);
 const ChatConversation = require('./ChatConversation')(sequelize);
 const ChatMessage = require('./ChatMessage')(sequelize);
+const UserSettings = require('./UserSettings');
 
 // Store all models
 const models = {
@@ -35,7 +36,8 @@ const models = {
   ContactMessage,
   Review,
   ChatConversation,
-  ChatMessage
+  ChatMessage,
+  UserSettings
 };
 
 // Set up associations
@@ -75,6 +77,17 @@ ChatConversation.hasMany(ChatMessage, {
 ChatMessage.belongsTo(ChatConversation, {
   foreignKey: 'conversation_id',
   as: 'conversation'
+});
+
+// UserSettings associations
+User.hasOne(UserSettings, {
+  foreignKey: 'userId',
+  as: 'settings'
+});
+
+UserSettings.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
 });
 
 // Export all models

@@ -10,11 +10,12 @@ import { toast } from 'sonner';
 interface SignupPageProps {
   onSignup: (fullName: string, email: string, password: string, confirmPassword: string) => void;
   onNavigateToLogin: () => void;
+  onNavigateToHome?: () => void;
   error?: string | null;
   fieldErrors?: Record<string, string[]>;
 }
 
-export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldErrors }: SignupPageProps) {
+export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHome, error, fieldErrors }: SignupPageProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,36 +44,36 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E8] to-[#EAB308]">
+    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E8] to-[#EAB308] dark:from-gray-900 dark:to-gray-800">
       {/* Navigation */}
       <nav className="flex items-center justify-between px-8 py-4">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🐾</span>
-          <span className="text-xl">PawWell</span>
+          <span className="text-xl dark:text-gray-100">PawWell</span>
         </div>
         <div className="flex items-center gap-6">
-          <a href="#home" className="hover:underline">Home</a>
-          <Button onClick={onNavigateToLogin} className="bg-[#D4A017] hover:bg-[#C49016] text-white hover:text-white">
+          <button onClick={onNavigateToHome} className="hover:underline dark:text-gray-300 dark:hover:text-gray-100">Home</button>
+          <Button onClick={onNavigateToLogin} variant="outline" className="border-2 border-black/20 hover:bg-black/5 dark:border-gray-400 dark:text-gray-300 dark:hover:bg-gray-700">
             Login
           </Button>
-          <Button variant="ghost" className="bg-white hover:bg-gray-50">
+          <Button variant="ghost" className="bg-[#EAB308] text-black hover:bg-[#D4A017] dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white">
             Sign Up
           </Button>
         </div>
       </nav>
 
       <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden">
+      <div className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2">
           {/* Left side - Branding */}
-          <div className="bg-[#FFF8E8] p-8 flex flex-col justify-center items-center border-r">
+          <div className="bg-[#FFF8E8] dark:bg-gray-700 p-8 flex flex-col justify-center items-center border-r dark:border-gray-600">
             <div className="mb-4">
               <span className="text-2xl">🐾</span>
-              <span className="text-xl ml-2">PawWell</span>
+              <span className="text-xl ml-2 dark:text-gray-100">PawWell</span>
             </div>
             <div className="text-center mb-4">
-              <h2 className="text-2xl mb-2">Join the PawWell Family</h2>
-              <p className="text-sm text-gray-600">
+              <h2 className="text-2xl mb-2 dark:text-gray-100">Join the PawWell Family</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Create an account to provide the best care for your pet
               </p>
             </div>
@@ -104,7 +105,7 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Enter your full name"
-                  className="mt-1"
+                  className="mt-1 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   required
                 />
               </div>
@@ -117,7 +118,7 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
-                  className="mt-1"
+                  className="mt-1 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   required
                 />
                 {fieldErrors?.email && (
@@ -135,11 +136,12 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Create a password"
                     required
+                    className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? (
@@ -169,11 +171,12 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm your password"
                     required
+                    className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                   >
                     {showConfirmPassword ? (
@@ -203,17 +206,17 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
 
               <Button 
                 type="submit" 
-                className="w-full bg-[#EAB308] hover:bg-[#D4A017] text-white"
+                className="w-full bg-[#EAB308] hover:bg-[#D4A017] text-white dark:bg-gray-700 dark:hover:bg-gray-600"
               >
                 Register Account
               </Button>
 
-              <div className="text-center text-gray-500 text-sm">OR</div>
+              <div className="text-center text-gray-500 dark:text-gray-400 text-sm">OR</div>
 
               <Button 
                 type="button"
                 variant="outline"
-                className="w-full border-gray-300"
+                className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
               >
                 Sign in with Google
               </Button>
@@ -223,7 +226,7 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
                 <button
                   type="button"
                   onClick={onNavigateToLogin}
-                  className="text-[#EAB308] hover:underline"
+                  className="text-[#EAB308] dark:text-gray-400 hover:underline"
                 >
                   Log In
                 </button>
@@ -233,7 +236,7 @@ export default function SignupPage({ onSignup, onNavigateToLogin, error, fieldEr
         </div>
 
         {/* Decorative bottom section */}
-        <div className="h-12 bg-[#EAB308]"></div>
+        <div className="h-12 bg-[#EAB308] dark:bg-gray-700"></div>
       </div>
       </div>
     </div>
