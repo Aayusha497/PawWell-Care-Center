@@ -1,5 +1,6 @@
 const { UserSettings, User } = require('../models');
 const { Op } = require('sequelize');
+const bcrypt = require('bcrypt');
 
 /**
  * Get user settings
@@ -149,6 +150,168 @@ exports.resetSettings = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to reset settings',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Change user password
+ * @route PUT /api/settings/password
+ */
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
+    }
+
+    // Validate new password strength
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters long'
+      });
+    }
+
+    // Get user
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Check if new password is same as current
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be different from current password'
+      });
+    }
+
+    // Hash and update new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    console.log(`🔒 Password changed successfully for user ${user.email}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Change user email
+ * @route PUT /api/settings/email
+ */
+exports.changeEmail = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { newEmail, password } = req.body;
+
+    // Validate input
+    if (!newEmail || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'New email and password are required'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+
+    const normalizedEmail = newEmail.toLowerCase().trim();
+
+    // Get user
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Password is incorrect'
+      });
+    }
+
+    // Check if email is same as current
+    if (normalizedEmail === user.email.toLowerCase()) {
+      return res.status(400).json({
+        success: false,
+        message: 'New email must be different from current email'
+      });
+    }
+
+    // Check if new email is already in use
+    const existingUser = await User.findOne({
+      where: { email: normalizedEmail }
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'This email is already in use'
+      });
+    }
+
+    // Update email
+    user.email = normalizedEmail;
+    await user.save();
+
+    console.log(`📧 Email changed successfully for user ${userId}: ${user.email}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email changed successfully',
+      data: {
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('Error changing email:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to change email',
       error: error.message
     });
   }

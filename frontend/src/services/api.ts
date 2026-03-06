@@ -1320,6 +1320,97 @@ export const resetSettings = async (): Promise<any> => {
   }
 };
 
+/**
+ * Change user password
+ * @param {object} passwordData - Current and new password
+ * @returns {Promise<any>} Success confirmation
+ */
+export const changePassword = async (passwordData: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<any> => {
+  try {
+    const response = await api.put('/settings/password', passwordData);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to change password' };
+  }
+};
+
+/**
+ * Change user email
+ * @param {object} emailData - New email and password for verification
+ * @returns {Promise<any>} Success confirmation with new email
+ */
+export const changeEmail = async (emailData: {
+  newEmail: string;
+  password: string;
+}): Promise<any> => {
+  try {
+    const response = await api.put('/settings/email', emailData);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to change email' };
+  }
+};
+
+/**
+ * Get 2FA status
+ * @returns {Promise<any>} 2FA status
+ */
+export const get2FAStatus = async (): Promise<any> => {
+  try {
+    const response = await api.get('/settings/2fa/status');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to get 2FA status' };
+  }
+};
+
+/**
+ * Setup 2FA - Get QR code and secret
+ * @returns {Promise<any>} QR code and backup codes
+ */
+export const setup2FA = async (): Promise<any> => {
+  try {
+    const response = await api.post('/settings/2fa/setup');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to setup 2FA' };
+  }
+};
+
+/**
+ * Verify and enable 2FA
+ * @param {object} data - Verification token
+ * @returns {Promise<any>} Success confirmation
+ */
+export const verify2FA = async (data: { token: string }): Promise<any> => {
+  try {
+    const response = await api.post('/settings/2fa/verify', data);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to verify 2FA' };
+  }
+};
+
+/**
+ * Disable 2FA
+ * @param {object} data - Password and optional token
+ * @returns {Promise<any>} Success confirmation
+ */
+export const disable2FA = async (data: {
+  password: string;
+  token?: string;
+}): Promise<any> => {
+  try {
+    const response = await api.post('/settings/2fa/disable', data);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to disable 2FA' };
+  }
+};
+
 export default api;
 
 

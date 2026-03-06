@@ -103,6 +103,28 @@ const User = sequelize.define('User', {
     type: DataTypes.DATE,
     allowNull: true,
     field: 'last_login'
+  },
+  twoFactorEnabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    field: 'two_factor_enabled'
+  },
+  twoFactorSecret: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'two_factor_secret'
+  },
+  backupCodes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'backup_codes',
+    get() {
+      const rawValue = this.getDataValue('backupCodes');
+      return rawValue ? JSON.parse(rawValue) : null;
+    },
+    set(value) {
+      this.setDataValue('backupCodes', value ? JSON.stringify(value) : null);
+    }
   }
 }, {
   tableName: 'users',
@@ -141,6 +163,8 @@ User.prototype.getShortName = function() {
 User.prototype.toJSON = function() {
   const values = { ...this.get() };
   delete values.password;
+  delete values.twoFactorSecret; // Don't expose secret
+  delete values.backupCodes; // Don't expose backup codes
   // Add fullName as a virtual field for easier frontend access
   values.fullName = this.getFullName();
   return values;

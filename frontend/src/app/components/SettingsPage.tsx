@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { toast } from 'sonner';
-import { Settings, User as UserIcon, Moon, Sun } from 'lucide-react';
-import { getSettings, updateSettings } from '../../services/api';
+import { Settings, User as UserIcon, Moon, Sun, X, Shield, Copy, Check } from 'lucide-react';
+import { getSettings, updateSettings, changePassword, changeEmail, resetSettings, get2FAStatus, setup2FA, verify2FA, disable2FA } from '../../services/api';
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -14,7 +14,7 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ onBack, onLogout, userFullName, onNavigate, onDashboardTarget }: SettingsPageProps) {
-  const { user } = useAuth();
+  const { user, refreshUserProfile } = useAuth();
   const { theme, setTheme } = useTheme();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
@@ -22,6 +22,35 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
   const [bookingReminders, setBookingReminders] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Password modal state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  // Email modal state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [changingEmail, setChangingEmail] = useState(false);
+
+  // Privacy modals
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [showDataPrivacyModal, setShowDataPrivacyModal] = useState(false);
+
+  // 2FA state
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [twoFactorStep, setTwoFactorStep] = useState<'status' | 'setup' | 'verify' | 'disable'>('status');
+  const [qrCode, setQrCode] = useState('');
+  const [manualEntryCode, setManualEntryCode] = useState('');
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [verificationToken, setVerificationToken] = useState('');
+  const [disablePassword, setDisablePassword] = useState('');
+  const [disableToken, setDisableToken] = useState('');
+  const [processing2FA, setProcessing2FA] = useState(false);
+  const [copiedCodes, setCopiedCodes] = useState(false);
 
   // Fetch settings on component mount
   useEffect(() => {
@@ -45,7 +74,27 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
     };
 
     fetchSettings();
-  }, [setTheme]);
+  }, []); // Empty dependency array - only run on mount
+
+  // Fetch 2FA status when modal opens
+  useEffect(() => {
+    const fetch2FAStatus = async () => {
+      if (show2FAModal) {
+        try {
+          const response = await get2FAStatus();
+          if (response.success) {
+            setTwoFactorEnabled(response.data.enabled || false);
+            setTwoFactorStep('status');
+          }
+        } catch (error: any) {
+          console.error('Error fetching 2FA status:', error);
+          toast.error('Failed to load 2FA status');
+        }
+      }
+    };
+
+    fetch2FAStatus();
+  }, [show2FAModal]);
 
   const saveSettings = async () => {
     try {
@@ -69,8 +118,217 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
     }
   };
 
-  const handleThemeToggle = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+  const handleThemeToggle = async () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    
+    // Save theme immediately to backend
+    try {
+      await updateSettings({
+        theme: newTheme,
+        emailNotifications,
+        smsNotifications,
+        activityUpdates,
+        bookingReminders
+      });
+    } catch (error: any) {
+      console.error('Error saving theme:', error);
+      // Revert theme on error
+      setTheme(theme);
+      toast.error('Failed to save theme preference');
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      const response = await changePassword({
+        currentPassword,
+        newPassword
+      });
+
+      if (response.success) {
+        toast.success('Password changed successfully!');
+        setShowPasswordModal(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      toast.error(error.message || 'Failed to change password');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleEmailChange = async () => {
+    if (!newEmail || !emailPassword) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      setChangingEmail(true);
+      const response = await changeEmail({
+        newEmail,
+        password: emailPassword
+      });
+
+      if (response.success) {
+        toast.success('Email changed successfully!');
+        setShowEmailModal(false);
+        setNewEmail('');
+        setEmailPassword('');
+        // Refresh user profile to get updated email
+        await refreshUserProfile();
+      }
+    } catch (error: any) {
+      console.error('Error changing email:', error);
+      toast.error(error.message || 'Failed to change email');
+    } finally {
+      setChangingEmail(false);
+    }
+  };
+
+  const handleResetSettings = async () => {
+    if (!confirm('Are you sure you want to reset all settings to default values?')) {
+      return;
+    }
+
+    try {
+      const response = await resetSettings();
+      if (response.success && response.data) {
+        setTheme(response.data.theme || 'light');
+        setEmailNotifications(response.data.emailNotifications ?? true);
+        setSmsNotifications(response.data.smsNotifications ?? false);
+        setActivityUpdates(response.data.activityUpdates ?? true);
+        setBookingReminders(response.data.bookingReminders ?? true);
+        toast.success('Settings reset to defaults successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error resetting settings:', error);
+      toast.error(error.message || 'Failed to reset settings');
+    }
+  };
+
+  // 2FA Handlers
+  const handleSetup2FA = async () => {
+    try {
+      setProcessing2FA(true);
+      const response = await setup2FA();
+      
+      if (response.success) {
+        setQrCode(response.data.qrCode);
+        setManualEntryCode(response.data.manualEntry);
+        setBackupCodes(response.data.backupCodes);
+        setTwoFactorStep('setup');
+        toast.success('2FA setup initiated. Please scan the QR code.');
+      }
+    } catch (error: any) {
+      console.error('Error setting up 2FA:', error);
+      toast.error(error.message || 'Failed to setup 2FA');
+    } finally {
+      setProcessing2FA(false);
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    if (!verificationToken || verificationToken.length !== 6) {
+      toast.error('Please enter a valid 6-digit code');
+      return;
+    }
+
+    try {
+      setProcessing2FA(true);
+      const response = await verify2FA({ token: verificationToken });
+      
+      if (response.success) {
+        setTwoFactorEnabled(true);
+        setTwoFactorStep('verify');
+        toast.success('2FA enabled successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error verifying 2FA:', error);
+      toast.error(error.message || 'Invalid verification code');
+    } finally {
+      setProcessing2FA(false);
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (!disablePassword) {
+      toast.error('Please enter your password');
+      return;
+    }
+
+    if (!disableToken) {
+      toast.error('Please enter your authenticator code or a backup code');
+      return;
+    }
+
+    try {
+      setProcessing2FA(true);
+      const response = await disable2FA({
+        password: disablePassword,
+        token: disableToken
+      });
+      
+      if (response.success) {
+        setTwoFactorEnabled(false);
+        setTwoFactorStep('status');
+        setDisablePassword('');
+        setDisableToken('');
+        toast.success('2FA disabled successfully');
+        setShow2FAModal(false);
+      }
+    } catch (error: any) {
+      console.error('Error disabling 2FA:', error);
+      toast.error(error.message || 'Failed to disable 2FA');
+    } finally {
+      setProcessing2FA(false);
+    }
+  };
+
+  const handleCopyBackupCodes = () => {
+    const codesText = backupCodes.join('\n');
+    navigator.clipboard.writeText(codesText);
+    setCopiedCodes(true);
+    toast.success('Backup codes copied to clipboard!');
+    setTimeout(() => setCopiedCodes(false), 2000);
+  };
+
+  const handleClose2FAModal = () => {
+    setShow2FAModal(false);
+    setTwoFactorStep('status');
+    setQrCode('');
+    setManualEntryCode('');
+    setBackupCodes([]);
+    setVerificationToken('');
+    setDisablePassword('');
+    setDisableToken('');
+    setCopiedCodes(false);
   };
 
   if (loading) {
@@ -141,7 +399,10 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
                   <p className="font-medium text-gray-700 dark:text-gray-200">Email</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
                 </div>
-                <button className="text-[#FA9884] hover:underline text-sm font-medium">
+                <button 
+                  onClick={() => setShowEmailModal(true)}
+                  className="text-[#FA9884] hover:underline text-sm font-medium"
+                >
                   Change
                 </button>
               </div>
@@ -150,7 +411,10 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
                   <p className="font-medium text-gray-700 dark:text-gray-200">Password</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">••••••••</p>
                 </div>
-                <button className="text-[#FA9884] hover:underline text-sm font-medium">
+                <button 
+                  onClick={() => setShowPasswordModal(true)}
+                  className="text-[#FA9884] hover:underline text-sm font-medium"
+                >
                   Change
                 </button>
               </div>
@@ -233,7 +497,10 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
                   <p className="font-medium text-gray-700 dark:text-gray-200">Two-Factor Authentication</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Add an extra layer of security</p>
                 </div>
-                <button className="text-[#FA9884] hover:underline text-sm font-medium">
+                <button 
+                  onClick={() => setShow2FAModal(true)}
+                  className="text-[#FA9884] hover:underline text-sm font-medium"
+                >
                   Enable
                 </button>
               </div>
@@ -242,7 +509,10 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
                   <p className="font-medium text-gray-700 dark:text-gray-200">Data Privacy</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Manage your data preferences</p>
                 </div>
-                <button className="text-[#FA9884] hover:underline text-sm font-medium">
+                <button 
+                  onClick={() => setShowDataPrivacyModal(true)}
+                  className="text-[#FA9884] hover:underline text-sm font-medium"
+                >
                   View
                 </button>
               </div>
@@ -250,23 +520,536 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
           </section>
 
           {/* Save Button */}
-          <div className="flex justify-end gap-4 pt-6 border-t dark:border-gray-700">
+          <div className="flex justify-between gap-4 pt-6 border-t dark:border-gray-700">
             <button
-              onClick={onBack}
-              className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              onClick={handleResetSettings}
+              className="px-6 py-3 border-2 border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition"
             >
-              Cancel
+              Reset to Defaults
             </button>
-            <button
-              onClick={saveSettings}
-              disabled={saving}
-              className="px-6 py-3 bg-[#FA9884] text-white rounded-lg font-semibold hover:bg-[#E8876F] transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+            <div className="flex gap-4">
+              <button
+                onClick={onBack}
+                className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveSettings}
+                disabled={saving}
+                className="px-6 py-3 bg-[#FA9884] text-white rounded-lg font-semibold hover:bg-[#E8876F] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         </div>
       </main>
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-xl transition-colors">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Change Password</h3>
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FA9884] focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
+                  placeholder="Enter current password"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FA9884] focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
+                  placeholder="Enter new password (min 8 characters)"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FA9884] focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
+                  placeholder="Confirm new password"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setCurrentPassword('');
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePasswordChange}
+                disabled={changingPassword}
+                className="flex-1 px-6 py-3 bg-[#FA9884] text-white rounded-lg font-semibold hover:bg-[#E8876F] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {changingPassword ? 'Changing...' : 'Change Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Email Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-xl transition-colors">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Change Email</h3>
+              <button
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setNewEmail('');
+                  setEmailPassword('');
+                }}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Current Email
+                </label>
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  New Email
+                </label>
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FA9884] focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
+                  placeholder="Enter new email address"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={emailPassword}
+                  onChange={(e) => setEmailPassword(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FA9884] focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
+                  placeholder="Enter your password to confirm"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setNewEmail('');
+                  setEmailPassword('');
+                }}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEmailChange}
+                disabled={changingEmail}
+                className="flex-1 px-6 py-3 bg-[#FA9884] text-white rounded-lg font-semibold hover:bg-[#E8876F] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {changingEmail ? 'Changing...' : 'Change Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Two-Factor Authentication Modal */}
+      {show2FAModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-xl transition-colors max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                <Shield className="w-6 h-6 text-[#FA9884]" />
+                Two-Factor Authentication
+              </h3>
+              <button
+                onClick={handleClose2FAModal}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            {/* Status View */}
+            {twoFactorStep === 'status' && (
+              <div className="space-y-4">
+                <div className={`${twoFactorEnabled ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'} border rounded-lg p-4`}>
+                  <p className={`text-sm ${twoFactorEnabled ? 'text-green-800 dark:text-green-200' : 'text-blue-800 dark:text-blue-200'}`}>
+                    {twoFactorEnabled 
+                      ? 'Two-factor authentication is currently enabled on your account.' 
+                      : 'Add an extra layer of security by enabling two-factor authentication.'}
+                  </p>
+                </div>
+                
+                {!twoFactorEnabled && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-gray-800 dark:text-gray-100">How it works:</h4>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                      <li>Download an authenticator app (Google Authenticator, Authy, etc.)</li>
+                      <li>Scan the QR code we'll provide</li>
+                      <li>Enter the 6-digit code from your app to verify</li>
+                      <li>Save backup codes in a safe place</li>
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="flex gap-4 mt-6">
+                  <button
+                    onClick={handleClose2FAModal}
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  >
+                    Close
+                  </button>
+                  {twoFactorEnabled ? (
+                    <button
+                      onClick={() => setTwoFactorStep('disable')}
+                      className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition"
+                    >
+                      Disable 2FA
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSetup2FA}
+                      disabled={processing2FA}
+                      className="flex-1 px-6 py-3 bg-[#FA9884] text-white rounded-lg font-semibold hover:bg-[#E8876F] transition disabled:opacity-50"
+                    >
+                      {processing2FA ? 'Setting up...' : 'Enable 2FA'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Setup View - QR Code */}
+            {twoFactorStep === 'setup' && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>Step 1:</strong> Scan this QR code with your authenticator app
+                  </p>
+                </div>
+
+                {/* QR Code */}
+                <div className="flex justify-center bg-white p-4 rounded-lg">
+                  <img src={qrCode} alt="2FA QR Code" className="w-64 h-64" />
+                </div>
+
+                {/* Manual Entry */}
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                    Can't scan? Enter this code manually:
+                  </p>
+                  <code className="text-sm font-mono bg-white dark:bg-gray-800 px-3 py-2 rounded block break-all">
+                    {manualEntryCode}
+                  </code>
+                </div>
+
+                {/* Backup Codes */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-gray-800 dark:text-gray-100">Backup Codes</h4>
+                    <button
+                      onClick={handleCopyBackupCodes}
+                      className="flex items-center gap-1 text-sm text-[#FA9884] hover:text-[#E8876F]"
+                    >
+                      {copiedCodes ? <Check size={16} /> : <Copy size={16} />}
+                      {copiedCodes ? 'Copied!' : 'Copy All'}
+                    </button>
+                  </div>
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                    <p className="text-xs text-yellow-800 dark:text-yellow-200 mb-2">
+                      Save these codes in a safe place. Each can be used once if you lose access to your authenticator.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-sm font-mono">
+                      {backupCodes.map((code, index) => (
+                        <div key={index} className="bg-white dark:bg-gray-800 px-2 py-1 rounded text-center">
+                          {code}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Verification Input */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <strong>Step 2:</strong> Enter the 6-digit code from your app
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={verificationToken}
+                    onChange={(e) => setVerificationToken(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FA9884] focus:border-transparent dark:bg-gray-700 dark:text-white text-center text-2xl font-mono tracking-widest"
+                  />
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      setTwoFactorStep('status');
+                      setQrCode('');
+                      setBackupCodes([]);
+                      setVerificationToken('');
+                    }}
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleVerify2FA}
+                    disabled={processing2FA || verificationToken.length !== 6}
+                    className="flex-1 px-6 py-3 bg-[#FA9884] text-white rounded-lg font-semibold hover:bg-[#E8876F] transition disabled:opacity-50"
+                  >
+                    {processing2FA ? 'Verifying...' : 'Verify & Enable'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Verify Success View */}
+            {twoFactorStep === 'verify' && (
+              <div className="space-y-4">
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+                  <Check className="w-16 h-16 text-green-600 mx-auto mb-3" />
+                  <p className="text-lg font-semibold text-green-800 dark:text-green-200">
+                    Two-Factor Authentication Enabled!
+                  </p>
+                  <p className="text-sm text-green-700 dark:text-green-300 mt-2">
+                    Your account is now more secure. You'll need your authenticator app to log in.
+                  </p>
+                </div>
+
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>Important:</strong> Make sure you've saved your backup codes. You won't be able to see them again.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleClose2FAModal}
+                  className="w-full px-6 py-3 bg-[#FA9884] text-white rounded-lg font-semibold hover:bg-[#E8876F] transition"
+                >
+                  Done
+                </button>
+              </div>
+            )}
+
+            {/* Disable View */}
+            {twoFactorStep === 'disable' && (
+              <div className="space-y-4">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                  <p className="text-sm text-red-800 dark:text-red-200">
+                    <strong>Warning:</strong> Disabling 2FA will make your account less secure.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={disablePassword}
+                      onChange={(e) => setDisablePassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FA9884] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Authenticator Code or Backup Code
+                    </label>
+                    <input
+                      type="text"
+                      value={disableToken}
+                      onChange={(e) => setDisableToken(e.target.value)}
+                      placeholder="Enter 6-digit code or backup code"
+                      className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FA9884] focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      setTwoFactorStep('status');
+                      setDisablePassword('');
+                      setDisableToken('');
+                    }}
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDisable2FA}
+                    disabled={processing2FA || !disablePassword || !disableToken}
+                    className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                  >
+                    {processing2FA ? 'Disabling...' : 'Disable 2FA'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Data Privacy Modal */}
+      {showDataPrivacyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-xl transition-colors">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Data Privacy</h3>
+              <button
+                onClick={() => setShowDataPrivacyModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              <section>
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">What Data We Collect</h4>
+                <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-400">
+                  <li>Account information (name, email, phone number)</li>
+                  <li>Pet profiles and health records</li>
+                  <li>Booking and appointment history</li>
+                  <li>Communication preferences</li>
+                  <li>Emergency contact information</li>
+                </ul>
+              </section>
+
+              <section>
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">How We Use Your Data</h4>
+                <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-400">
+                  <li>Providing and improving our pet care services</li>
+                  <li>Sending appointment reminders and updates</li>
+                  <li>Maintaining your pet's health records</li>
+                  <li>Processing bookings and payments</li>
+                  <li>Communicating important service information</li>
+                </ul>
+              </section>
+
+              <section>
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Your Rights</h4>
+                <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-400">
+                  <li><strong>Access:</strong> Request a copy of your personal data</li>
+                  <li><strong>Correction:</strong> Update or correct inaccurate data</li>
+                  <li><strong>Deletion:</strong> Request deletion of your account and data</li>
+                  <li><strong>Export:</strong> Download your data in a portable format</li>
+                  <li><strong>Opt-out:</strong> Unsubscribe from marketing communications</li>
+                </ul>
+              </section>
+
+              <section>
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Data Security</h4>
+                <p className="text-gray-600 dark:text-gray-400">
+                  We use industry-standard encryption and security measures to protect your data. 
+                  Your information is stored securely and accessed only by authorized personnel 
+                  for legitimate business purposes.
+                </p>
+              </section>
+
+              <section>
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Data Retention</h4>
+                <p className="text-gray-600 dark:text-gray-400">
+                  We retain your data for as long as your account is active or as needed to provide 
+                  services. You can request deletion of your account at any time through your settings.
+                </p>
+              </section>
+
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mt-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  For more information, please read our full{' '}
+                  <a href="#" className="text-[#FA9884] hover:underline font-medium">Privacy Policy</a>
+                  {' '}and{' '}
+                  <a href="#" className="text-[#FA9884] hover:underline font-medium">Terms of Service</a>.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={() => setShowDataPrivacyModal(false)}
+                className="flex-1 px-6 py-3 bg-[#FA9884] text-white rounded-lg font-semibold hover:bg-[#E8876F] transition"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  toast.info('Data export feature coming soon!');
+                }}
+                className="flex-1 px-6 py-3 border-2 border-[#FA9884] text-[#FA9884] rounded-lg font-semibold hover:bg-[#FA9884]/10 transition"
+              >
+                Export My Data
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
