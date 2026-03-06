@@ -744,7 +744,7 @@ const getPendingBookings = async (req, res) => {
           }]
         }
       ],
-      order: [['created_at', 'ASC']]
+      order: [['created_at', 'DESC']]
     });
 
     res.status(200).json({

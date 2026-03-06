@@ -23,9 +23,10 @@ interface TimelineEntry {
 interface WellnessTimelineProps {
   onBack?: () => void;
   onLogout?: () => void;
+  onSettings?: () => void;
 }
 
-export default function WellnessTimeline({ onBack, onLogout }: WellnessTimelineProps) {
+export default function WellnessTimeline({ onBack, onLogout, onSettings }: WellnessTimelineProps) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [selectedPet, setSelectedPet] = useState<string>('');
   const [entries, setEntries] = useState<TimelineEntry[]>([]);

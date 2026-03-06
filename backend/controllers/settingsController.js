@@ -235,13 +235,13 @@ exports.changePassword = async (req, res) => {
 exports.changeEmail = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { newEmail, password } = req.body;
+    const { newEmail } = req.body;
 
     // Validate input
-    if (!newEmail || !password) {
+    if (!newEmail) {
       return res.status(400).json({
         success: false,
-        message: 'New email and password are required'
+        message: 'New email is required'
       });
     }
 
@@ -262,15 +262,6 @@ exports.changeEmail = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'User not found'
-      });
-    }
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Password is incorrect'
       });
     }
 

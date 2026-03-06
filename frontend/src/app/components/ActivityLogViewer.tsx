@@ -34,9 +34,10 @@ interface ActivityLogViewerProps {
   userFullName?: string;
   onBook?: () => void;
   onNavigate?: (page: string) => void;
+  onSettings?: () => void;
 }
 
-export default function ActivityLogViewer({ onBack, onLogout, userFullName, onBook, onNavigate }: ActivityLogViewerProps) {
+export default function ActivityLogViewer({ onBack, onLogout, userFullName, onBook, onNavigate, onSettings }: ActivityLogViewerProps) {
   const userInitials = userFullName
     ? userFullName.split(' ').map((name) => name[0]).join('').toUpperCase()
     : 'U';

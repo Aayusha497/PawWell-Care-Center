@@ -46,9 +46,10 @@ interface BookingPageProps {
   userFullName?: string;
   onActivityLog?: () => void;
   onNavigate?: (page: string) => void;
+  onSettings?: () => void;
 }
 
-const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullName, onActivityLog, onNavigate }) => {
+const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullName, onActivityLog, onNavigate, onSettings }) => {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);

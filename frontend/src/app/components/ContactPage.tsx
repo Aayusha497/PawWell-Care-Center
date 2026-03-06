@@ -114,9 +114,13 @@ export default function ContactPage({
         <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-8 py-3 font-sans">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
+              <button 
+                onClick={onBack}
+                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
+                title="Go to Dashboard"
+              >
                 <span className="text-2xl">🐾</span>
-              </div>
+              </button>
               <div className="flex items-center gap-6">
                 <button 
                   onClick={onBack}

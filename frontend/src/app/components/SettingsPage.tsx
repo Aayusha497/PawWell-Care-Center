@@ -33,7 +33,6 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
   // Email modal state
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [newEmail, setNewEmail] = useState('');
-  const [emailPassword, setEmailPassword] = useState('');
   const [changingEmail, setChangingEmail] = useState(false);
 
   // Privacy modals
@@ -178,8 +177,8 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
   };
 
   const handleEmailChange = async () => {
-    if (!newEmail || !emailPassword) {
-      toast.error('Please fill in all fields');
+    if (!newEmail) {
+      toast.error('Please enter a new email address');
       return;
     }
 
@@ -193,14 +192,13 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
       setChangingEmail(true);
       const response = await changeEmail({
         newEmail,
-        password: emailPassword
+        password: '' // Password no longer required
       });
 
       if (response.success) {
         toast.success('Email changed successfully!');
         setShowEmailModal(false);
         setNewEmail('');
-        setEmailPassword('');
         // Refresh user profile to get updated email
         await refreshUserProfile();
       }
@@ -640,7 +638,6 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
                 onClick={() => {
                   setShowEmailModal(false);
                   setNewEmail('');
-                  setEmailPassword('');
                 }}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
@@ -673,19 +670,6 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
                   placeholder="Enter new email address"
                 />
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  value={emailPassword}
-                  onChange={(e) => setEmailPassword(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FA9884] focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
-                  placeholder="Enter your password to confirm"
-                />
-              </div>
             </div>
             
             <div className="flex gap-4 mt-6">
@@ -693,7 +677,6 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
                 onClick={() => {
                   setShowEmailModal(false);
                   setNewEmail('');
-                  setEmailPassword('');
                 }}
                 className="flex-1 px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition"
               >

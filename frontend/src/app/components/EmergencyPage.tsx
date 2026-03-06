@@ -21,6 +21,7 @@ interface EmergencyPageProps {
   onContact?: () => void;
   onLogout?: () => void;
   onEmergency?: () => void;
+  onSettings?: () => void;
   user?: User | null;
 }
 
@@ -59,6 +60,7 @@ export default function EmergencyPage({
   onContact,
   onLogout,
   onEmergency,
+  onSettings,
   user
 }: EmergencyPageProps) {
   const [pets, setPets] = useState<Pet[]>([]);
@@ -211,9 +213,14 @@ export default function EmergencyPage({
       <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-8 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
+            <button 
+              type="button"
+              onClick={onBack}
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
+              title="Go to Dashboard"
+            >
               <span className="text-2xl">🐾</span>
-            </div>
+            </button>
             <div className="flex items-center gap-6">
               <button
                 type="button"
@@ -287,7 +294,7 @@ export default function EmergencyPage({
                     <button
                       onClick={() => {
                         setShowProfileDropdown(false);
-                        // Settings navigation can be added later
+                        onSettings?.();
                       }}
                       className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
                     >

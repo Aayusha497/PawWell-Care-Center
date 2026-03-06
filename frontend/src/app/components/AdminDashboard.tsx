@@ -386,10 +386,14 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition w-full"
+            title="Go to Dashboard"
+          >
             <span className="text-2xl">🐾</span>
             <span className="font-semibold text-gray-800">PawWell Admin</span>
-          </div>
+          </button>
         </div>
 
         <nav className="flex-1 p-4">

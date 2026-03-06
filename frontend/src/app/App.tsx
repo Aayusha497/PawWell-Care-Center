@@ -35,16 +35,26 @@ type Page =
 
 export default function App() {
   const { user, login, register, logout, loading, isLoggedIn } = useAuth();
-  const [currentPage, setCurrentPage] = useState<Page>('landing');
+  const [currentPage, setCurrentPage] = useState<Page>(() => {
+    // Restore page from sessionStorage on mount to persist across refreshes
+    const savedPage = sessionStorage.getItem('currentPage');
+    return (savedPage as Page) || 'landing';
+  });
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [dashboardTarget, setDashboardTarget] = useState<'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | 'settings' | null>(null);
 
+  // Persist current page to sessionStorage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem('currentPage', currentPage);
+  }, [currentPage]);
+
   useEffect(() => {
     if (isLoggedIn && user) {
-      const shouldRedirect = ['landing', 'login', 'signup', 'forgot-password', 'verify-otp', 'reset-password'].includes(currentPage);
+      const authPages = ['landing', 'login', 'signup', 'forgot-password', 'verify-otp', 'reset-password'];
+      const shouldRedirect = authPages.includes(currentPage);
 
       if (shouldRedirect) {
         if (user.userType === 'admin') {
@@ -58,8 +68,14 @@ export default function App() {
           }
         }
       }
+    } else if (!isLoggedIn && !loading) {
+      // If not logged in and on a protected page, redirect to landing
+      const protectedPages = ['user-dashboard', 'admin-dashboard', 'profile'];
+      if (protectedPages.includes(currentPage)) {
+        setCurrentPage('landing');
+      }
     }
-  }, [isLoggedIn, user, currentPage]);
+  }, [isLoggedIn, user, loading]);
 
   if (loading) {
     return (
@@ -249,6 +265,7 @@ export default function App() {
           onAbout={() => handleNavigate('about')}
           onContact={() => handleNavigate('contact')}
           onEmergency={() => handleNavigate('emergency')}
+          onSettings={() => handleDashboardTarget('settings')}
           onLogout={isLoggedIn ? handleLogout : undefined}
           user={user}
         />

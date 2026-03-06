@@ -125,6 +125,8 @@ export default function UserDashboard({
     setShowBookingHistory(false);
     setShowActivityLog(false);
     setShowWellnessTimeline(false);
+    setShowAbout(false);
+    setShowContact(false);
     setShowReviewPage(false);
     setShowSettings(false);
 
@@ -325,6 +327,20 @@ const handleAddPet = () => {
     setShowContact(true);
   };
 
+  const handleShowSettings = () => {
+    setShowBookingPage(false);
+    setShowManageBookings(false);
+    setShowBookingHistory(false);
+    setShowActivityLog(false);
+    setShowWellnessTimeline(false);
+    setShowAbout(false);
+    setShowContact(false);
+    setShowReviewPage(false);
+    setShowPetForm(false);
+    setShowPetListing(false);
+    setShowSettings(true);
+  };
+
   const handleLeaveReview = (bookingId: number) => {
     setSelectedBookingId(bookingId);
     setShowBookingPage(false);
@@ -352,6 +368,7 @@ const handleAddPet = () => {
           userFullName={user.fullName}
           onActivityLog={handleViewActivityLog}
           onNavigate={onNavigate}
+          onSettings={handleShowSettings}
         />
       );
     }
@@ -376,6 +393,7 @@ const handleAddPet = () => {
           userFullName={user.fullName}
           onBook={handleBookService}
           onNavigate={onNavigate}
+          onSettings={handleShowSettings}
         />
       );
     }
@@ -385,6 +403,7 @@ const handleAddPet = () => {
         <WellnessTimeline 
           onBack={() => setShowWellnessTimeline(false)}
           onLogout={onLogout}
+          onSettings={handleShowSettings}
         />
       );
     }
@@ -398,7 +417,7 @@ const handleAddPet = () => {
           onTimeline={handleViewWellnessTimeline}
           onContact={handleShowContact}
           onEmergency={() => onNavigate?.('emergency')}
-          onSettings={() => setShowSettings(true)}
+          onSettings={handleShowSettings}
           onNavigate={onNavigate}
           onLogout={onLogout}
           user={user}
@@ -417,7 +436,7 @@ const handleAddPet = () => {
           onTimeline={handleViewWellnessTimeline}
           onAbout={handleShowAbout}
           onEmergency={() => onNavigate?.('emergency')}
-          onSettings={() => setShowSettings(true)}
+          onSettings={handleShowSettings}
           onNavigate={onNavigate}
           onLogout={onLogout}
           user={user}
@@ -676,25 +695,29 @@ const handleAddPet = () => {
       <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-8 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
+            <button 
+              onClick={handleBackToDashboard}
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
+              title="Go to Dashboard"
+            >
               <span className="text-2xl">🐾</span>
-            </div>
+            </button>
             <div className="flex items-center gap-6">
               <button 
                 onClick={handleBackToDashboard}
-                className={`px-4 py-2 rounded-full ${!showWellnessTimeline ? 'bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200'}`}
+                className={`px-4 py-2 rounded-full ${!showWellnessTimeline && !showBookingPage && !showManageBookings && !showBookingHistory && !showActivityLog && !showAbout && !showContact && !showReviewPage && !showSettings ? 'bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200'}`}
               >
                 Home
               </button>
               <button 
                 onClick={handleBookService}
-                className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                className={`px-4 py-2 rounded-full ${(showBookingPage || showManageBookings || showBookingHistory) ? 'bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200'}`}
               >
                 Booking
               </button>
               <button
                 onClick={handleViewActivityLog}
-                className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                className={`px-4 py-2 rounded-full ${showActivityLog ? 'bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200'}`}
               >
                 Activity Log
               </button>
@@ -768,7 +791,7 @@ const handleAddPet = () => {
                   <button
                     onClick={() => {
                       setShowProfileDropdown(false);
-                      setShowSettings(true);
+                      handleShowSettings();
                     }}
                     className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
                   >
