@@ -537,6 +537,7 @@ const updateProfile = async (req, res) => {
     console.log('📝 Update profile request received');
     console.log('Request body:', req.body);
     console.log('Request file:', req.file);
+    console.log('Request user:', req.user);
     
     const { 
       firstName, 
@@ -548,14 +549,25 @@ const updateProfile = async (req, res) => {
       emergencyContactNumber 
     } = req.body;
     
-    const userId = req.user.id; // Corrected: retrieve ID from authenticated user
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      console.error('❌ No authenticated user found in request');
+      return res.status(401).json({
+        success: false,
+        message: 'You must be logged in to update your profile.'
+      });
+    }
+    
+    const userId = req.user.id;
+    console.log('👤 Updating profile for user ID:', userId);
 
     const user = await User.findByPk(userId);
 
     if (!user) {
+      console.error('❌ User not found in database:', userId);
       return res.status(404).json({
         success: false,
-        message: 'User not found.'
+        message: 'Your account could not be found. Please try logging in again.'
       });
     }
 
@@ -568,13 +580,34 @@ const updateProfile = async (req, res) => {
     }
 
     // Update fields if provided
-    if (firstName) user.firstName = firstName;
-    if (lastName) user.lastName = lastName;
-    if (phoneNumber) user.phoneNumber = phoneNumber;
-    if (address) user.address = address;
-    if (city) user.city = city;
-    if (emergencyContactName) user.emergencyContactName = emergencyContactName;
-    if (emergencyContactNumber) user.emergencyContactNumber = emergencyContactNumber;
+    if (firstName) {
+      user.firstName = firstName;
+      console.log('✅ Updated firstName:', firstName);
+    }
+    if (lastName) {
+      user.lastName = lastName;
+      console.log('✅ Updated lastName:', lastName);
+    }
+    if (phoneNumber) {
+      user.phoneNumber = phoneNumber;
+      console.log('✅ Updated phoneNumber:', phoneNumber);
+    }
+    if (address) {
+      user.address = address;
+      console.log('✅ Updated address:', address);
+    }
+    if (city) {
+      user.city = city;
+      console.log('✅ Updated city:', city);
+    }
+    if (emergencyContactName) {
+      user.emergencyContactName = emergencyContactName;
+      console.log('✅ Updated emergencyContactName:', emergencyContactName);
+    }
+    if (emergencyContactNumber) {
+      user.emergencyContactNumber = emergencyContactNumber;
+      console.log('✅ Updated emergencyContactNumber:', emergencyContactNumber);
+    }
 
     // Check if profile is complete
     // Required: firstName, lastName, phoneNumber, address, city, emergencyContactName, emergencyContactNumber, profilePicture
@@ -590,8 +623,10 @@ const updateProfile = async (req, res) => {
     );
     
     user.isProfileComplete = isComplete;
+    console.log('📊 Profile completion status:', isComplete);
 
     await user.save();
+    console.log('💾 Profile saved successfully');
 
     return res.status(200).json({
       success: true,
@@ -599,10 +634,23 @@ const updateProfile = async (req, res) => {
       user: user.toJSON()
     });
   } catch (error) {
-    console.error('Update profile error:', error);
+    console.error('❌ Update profile error:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Unable to update your profile. Please try again.';
+    
+    if (error.name === 'SequelizeValidationError') {
+      errorMessage = 'Please check your information and try again.';
+    } else if (error.name === 'SequelizeDatabaseError') {
+      errorMessage = 'A database error occurred. Please contact support if this continues.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     return res.status(500).json({
       success: false,
-      message: 'An error occurred while updating profile.',
+      message: errorMessage,
       error: error.message
     });
   }

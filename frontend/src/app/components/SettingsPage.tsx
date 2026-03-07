@@ -9,7 +9,7 @@ interface SettingsPageProps {
   onBack: () => void;
   onLogout: () => void;
   userFullName: string;
-  onNavigate?: (page: 'user-dashboard' | 'profile' | 'about' | 'contact' | 'emergency') => void;
+  onNavigate?: (page: 'user-dashboard' | 'admin-dashboard' | 'profile' | 'about' | 'contact' | 'emergency') => void;
   onDashboardTarget?: (target: 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline') => void;
 }
 

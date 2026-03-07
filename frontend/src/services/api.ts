@@ -309,7 +309,17 @@ export const updateProfile = async (userData: UpdateProfileData | FormData): Pro
     return response.data;
   } catch (error) {
     console.error('🌐 API: Update profile error:', (error as AxiosError).response?.data || error);
-    throw (error as AxiosError).response?.data || { message: 'Failed to update profile' };
+    
+    // Extract error message from response
+    const errorData = (error as AxiosError).response?.data as any;
+    const errorMessage = errorData?.message || 'Unable to update your profile. Please try again.';
+    
+    // Throw error with the message from backend
+    throw { 
+      message: errorMessage,
+      response: (error as AxiosError).response,
+      ...errorData 
+    };
   }
 };
 

@@ -169,7 +169,7 @@ const ReviewManagement: React.FC = () => {
         {[1, 2, 3, 4, 5].map((star) => (
           <span
             key={star}
-            className={`text-lg ${star <= rating ? 'text-yellow-500' : 'text-gray-300'}`}
+            className={`text-lg ${star <= rating ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`}
           >
             ★
           </span>
@@ -182,19 +182,19 @@ const ReviewManagement: React.FC = () => {
     <div className="space-y-6">
       {/* Header Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Total Reviews</p>
-          <p className="text-2xl font-bold text-gray-900">{reviews.length}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Reviews</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{reviews.length}</p>
         </div>
-        <div className="bg-yellow-50 rounded-xl p-4 shadow-sm border border-yellow-200">
-          <p className="text-sm text-yellow-800 mb-1">Pending Approval</p>
-          <p className="text-2xl font-bold text-yellow-900">
+        <div className="bg-yellow-50 dark:bg-yellow-900/30 rounded-xl p-4 shadow-sm border border-yellow-200 dark:border-yellow-800">
+          <p className="text-sm text-yellow-800 dark:text-yellow-400 mb-1">Pending Approval</p>
+          <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-300">
             {reviews.filter(r => !r.is_approved).length}
           </p>
         </div>
-        <div className="bg-green-50 rounded-xl p-4 shadow-sm border border-green-200">
-          <p className="text-sm text-green-800 mb-1">Approved</p>
-          <p className="text-2xl font-bold text-green-900">
+        <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-4 shadow-sm border border-green-200 dark:border-green-800">
+          <p className="text-sm text-green-800 dark:text-green-400 mb-1">Approved</p>
+          <p className="text-2xl font-bold text-green-900 dark:text-green-300">
             {reviews.filter(r => r.is_approved).length}
           </p>
         </div>
@@ -206,8 +206,8 @@ const ReviewManagement: React.FC = () => {
           onClick={() => setFilter('all')}
           className={`px-4 py-2 rounded-lg font-medium transition ${
             filter === 'all'
-              ? 'bg-gray-900 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              ? 'bg-gray-900 dark:bg-gray-700 text-white'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
           }`}
         >
           All Reviews
@@ -217,7 +217,7 @@ const ReviewManagement: React.FC = () => {
           className={`px-4 py-2 rounded-lg font-medium transition ${
             filter === 'pending'
               ? 'bg-yellow-500 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
           }`}
         >
           Pending Approval
@@ -227,7 +227,7 @@ const ReviewManagement: React.FC = () => {
           className={`px-4 py-2 rounded-lg font-medium transition ${
             filter === 'approved'
               ? 'bg-green-500 text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
           }`}
         >
           Approved
@@ -237,13 +237,13 @@ const ReviewManagement: React.FC = () => {
       {/* Reviews List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-gray-100"></div>
         </div>
       ) : error ? (
-        <div className="bg-red-50 rounded-xl p-8 text-center shadow-sm border-2 border-red-200">
-          <div className="text-red-600 text-4xl mb-3">⚠️</div>
-          <h3 className="text-red-800 font-semibold text-lg mb-2">Error Loading Reviews</h3>
-          <p className="text-red-600 mb-4">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-8 text-center shadow-sm border-2 border-red-200 dark:border-red-800">
+          <div className="text-red-600 dark:text-red-400 text-4xl mb-3">⚠️</div>
+          <h3 className="text-red-800 dark:text-red-300 font-semibold text-lg mb-2">Error Loading Reviews</h3>
+          <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
           <button
             onClick={fetchReviews}
             className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition"
@@ -252,8 +252,8 @@ const ReviewManagement: React.FC = () => {
           </button>
         </div>
       ) : reviews.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-          <p className="text-gray-500">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center shadow-sm">
+          <p className="text-gray-500 dark:text-gray-400">
             {filter === 'pending' ? 'No pending reviews' : 
              filter === 'approved' ? 'No approved reviews yet' : 
              'No reviews yet'}
@@ -264,10 +264,10 @@ const ReviewManagement: React.FC = () => {
           {reviews.map((review) => (
             <div
               key={review.review_id}
-              className={`bg-white rounded-xl p-6 shadow-sm border-2 transition ${
+              className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 transition ${
                 review.is_approved
-                  ? 'border-green-200'
-                  : 'border-yellow-200'
+                  ? 'border-green-200 dark:border-green-800'
+                  : 'border-yellow-200 dark:border-yellow-800'
               }`}
             >
               {/* Review Header */}
@@ -281,13 +281,13 @@ const ReviewManagement: React.FC = () => {
                     />
                   )}
                   <div>
-                    <h3 className="font-semibold text-lg text-gray-900">
+                    <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
                       {review.user?.first_name} {review.user?.last_name}
                     </h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       Pet: {review.pet?.name} • Service: {review.service_type}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                       {formatDate(review.created_at)}
                     </p>
                   </div>
@@ -317,29 +317,29 @@ const ReviewManagement: React.FC = () => {
               </div>
 
               {/* Detailed Ratings */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Service Quality</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Service Quality</p>
                   <StarDisplay rating={review.rating_service} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Staff</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Staff</p>
                   <StarDisplay rating={review.rating_staff} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Cleanliness</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Cleanliness</p>
                   <StarDisplay rating={review.rating_cleanliness} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Value</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Value</p>
                   <StarDisplay rating={review.rating_value} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Communication</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Communication</p>
                   <StarDisplay rating={review.rating_communication} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">Pet Condition</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Pet Condition</p>
                   <StarDisplay rating={review.rating_pet_condition} />
                 </div>
               </div>
@@ -347,7 +347,7 @@ const ReviewManagement: React.FC = () => {
               {/* Review Text */}
               {review.review_text && (
                 <div className="mb-4">
-                  <p className="text-gray-700 italic">"{review.review_text}"</p>
+                  <p className="text-gray-700 dark:text-gray-300 italic">"{review.review_text}"</p>
                 </div>
               )}
 
@@ -364,25 +364,25 @@ const ReviewManagement: React.FC = () => {
 
               {/* Action Buttons */}
               {!review.is_approved && (
-                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => handleApprove(review.review_id, false)}
                     disabled={processing === review.review_id}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:bg-gray-300"
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
                   >
                     {processing === review.review_id ? 'Processing...' : '✓ Approve'}
                   </button>
                   <button
                     onClick={() => handleApprove(review.review_id, true)}
                     disabled={processing === review.review_id}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition disabled:bg-gray-300"
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
                   >
                     {processing === review.review_id ? 'Processing...' : '⭐ Approve & Feature'}
                   </button>
                   <button
                     onClick={() => handleReject(review.review_id)}
                     disabled={processing === review.review_id}
-                    className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300"
+                    className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
                   >
                     ✗ Reject
                   </button>
@@ -390,18 +390,18 @@ const ReviewManagement: React.FC = () => {
               )}
 
               {review.is_approved && !review.is_featured && (
-                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => handleApprove(review.review_id, true)}
                     disabled={processing === review.review_id}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition disabled:bg-gray-300"
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
                   >
                     ⭐ Feature this Review
                   </button>
                   <button
                     onClick={() => handleReject(review.review_id)}
                     disabled={processing === review.review_id}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300"
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
                   >
                     Unapprove
                   </button>

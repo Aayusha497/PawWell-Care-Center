@@ -57,15 +57,13 @@ export default function App() {
       const shouldRedirect = authPages.includes(currentPage);
 
       if (shouldRedirect) {
-        if (user.userType === 'admin') {
+        // Check if profile is complete before redirecting to dashboard (for both admin and users)
+        if (!user.isProfileComplete) {
+          setCurrentPage('profile');
+        } else if (user.userType === 'admin') {
           setCurrentPage('admin-dashboard');
         } else {
-          // Check if profile is complete before redirecting to dashboard
-          if (!user.isProfileComplete) {
-            setCurrentPage('profile');
-          } else {
-            setCurrentPage('user-dashboard');
-          }
+          setCurrentPage('user-dashboard');
         }
       }
     } else if (!isLoggedIn && !loading) {
@@ -95,16 +93,14 @@ export default function App() {
       const credentials: LoginData = { email, password };
       const response = await login(credentials);
 
-      if (response.user.userType === 'admin') {
+      // Check if profile is complete for both admin and regular users
+      if (!response.user.isProfileComplete) {
+        // Redirect to profile setup page first
+        setCurrentPage('profile');
+      } else if (response.user.userType === 'admin') {
         setCurrentPage('admin-dashboard');
       } else {
-        // Check if profile is complete
-        if (!response.user.isProfileComplete) {
-          // Redirect to profile setup page first
-          setCurrentPage('profile');
-        } else {
-          setCurrentPage('user-dashboard');
-        }
+        setCurrentPage('user-dashboard');
       }
     } catch (err: any) {
       console.error('Login failed:', err);
@@ -272,7 +268,7 @@ export default function App() {
       )}
       {currentPage === 'profile' && user && (
         <ProfilePage
-          onBack={() => handleNavigate('user-dashboard')}
+          onBack={() => handleNavigate(isAdmin(user) ? 'admin-dashboard' : 'user-dashboard')}
           onLogout={handleLogout}
           userFullName={user.fullName}
           onNavigate={(page) => handleNavigate(page as Page)}
@@ -338,9 +334,11 @@ export default function App() {
               id: user.id,
               email: user.email,
               role: 'admin',
-              fullName: user.fullName
+              fullName: user.fullName,
+              profilePicture: user.profilePicture
             }}
             onLogout={handleLogout}
+            onNavigate={(page) => handleNavigate(page as Page)}
           />
         ) : (
           <PermissionDenied

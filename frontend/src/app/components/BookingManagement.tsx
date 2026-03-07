@@ -204,11 +204,11 @@ export default function BookingManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400';
+      case 'confirmed': return 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400';
+      case 'completed': return 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400';
+      case 'cancelled': return 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-400';
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
     }
   };
 
@@ -223,25 +223,25 @@ export default function BookingManagement() {
     <div className="space-y-8 p-6">
       
       {/* Section 1: Pending Bookings */}
-      <section className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+      <section className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Booking Requests</h2>
-            <p className="text-sm text-gray-500">Pending approvals requiring action</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Booking Requests</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Pending approvals requiring action</p>
           </div>
-          <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+          <span className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400 text-xs font-semibold px-2.5 py-0.5 rounded-full">
             {pendingBookings.length} Pending
           </span>
         </div>
 
         {loadingPending ? (
-          <div className="p-8 text-center text-gray-500">Loading requests...</div>
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading requests...</div>
         ) : pendingBookings.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No pending booking requests.</div>
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">No pending booking requests.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+              <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-6 py-3">Booking ID</th>
                   <th className="px-6 py-3">Owner / Pet</th>
@@ -253,14 +253,14 @@ export default function BookingManagement() {
               </thead>
               <tbody>
                 {pendingBookings.map((booking) => (
-                  <tr key={booking.booking_id} className="bg-white border-b hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">
+                  <tr key={booking.booking_id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
                       #{booking.booking_id}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{booking.pet.owner.first_name} {booking.pet.owner.last_name}</div>
-                      <div className="text-xs text-gray-500">{booking.pet.owner.email}</div>
-                      <div className="text-xs text-blue-600 mt-1">Pet: {booking.pet.name}</div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{booking.pet.owner.first_name} {booking.pet.owner.last_name}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{booking.pet.owner.email}</div>
+                      <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">Pet: {booking.pet.name}</div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="font-medium">{booking.service_type}</span>
@@ -268,16 +268,16 @@ export default function BookingManagement() {
                     <td className="px-6 py-4">
                       <div>{formatDate(booking.start_date)}</div>
                       {booking.end_date && (
-                        <div className="text-gray-500 text-xs">to {formatDate(booking.end_date)}</div>
+                        <div className="text-gray-500 dark:text-gray-400 text-xs">to {formatDate(booking.end_date)}</div>
                       )}
                     </td>
                     <td className="px-6 py-4">
                        {booking.pickup_time ? (
                           <div className="text-xs">
                              <span className="font-semibold">Pick:</span> {booking.pickup_time}
-                             {booking.pickup_address && <div className="text-gray-500 truncate max-w-[150px]" title={booking.pickup_address}>{booking.pickup_address}</div>}
+                             {booking.pickup_address && <div className="text-gray-500 dark:text-gray-400 truncate max-w-[150px]" title={booking.pickup_address}>{booking.pickup_address}</div>}
                           </div>
-                       ) : <span className="text-gray-400 text-xs">-</span>}
+                       ) : <span className="text-gray-400 dark:text-gray-500 text-xs">-</span>}
                        {booking.dropoff_time ? (
                           <div className="text-xs mt-1">
                              <span className="font-semibold">Drop:</span> {booking.dropoff_time}
@@ -311,12 +311,12 @@ export default function BookingManagement() {
       </section>
 
       {/* Section 2: Booking History */}
-      <section className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-6 border-b border-gray-100 bg-gray-50">
+      <section className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Booking History</h2>
-              <p className="text-sm text-gray-500">Manage all booking records</p>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Booking History</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Manage all booking records</p>
             </div>
             
             {/* Filters */}
@@ -325,7 +325,7 @@ export default function BookingManagement() {
                 <select
                   value={filters.status}
                   onChange={(e) => handleFilterChange('status', e.target.value)}
-                  className="pl-3 pr-8 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="pl-3 pr-8 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   <option value="">All Statuses</option>
                   <option value="confirmed">Confirmed</option>
@@ -339,7 +339,7 @@ export default function BookingManagement() {
                 <select
                   value={filters.service_type}
                   onChange={(e) => handleFilterChange('service_type', e.target.value)}
-                  className="pl-3 pr-8 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="pl-3 pr-8 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   <option value="">All Services</option>
                   <option value="Pet Boarding">Pet Boarding</option>
@@ -353,14 +353,14 @@ export default function BookingManagement() {
                   type="date"
                   value={filters.date_from}
                   onChange={(e) => handleFilterChange('date_from', e.target.value)}
-                  className="py-2 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
-                <span className="text-gray-400">-</span>
+                <span className="text-gray-400 dark:text-gray-500">-</span>
                 <input
                   type="date"
                   value={filters.date_to}
                   onChange={(e) => handleFilterChange('date_to', e.target.value)}
-                  className="py-2 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
@@ -368,13 +368,13 @@ export default function BookingManagement() {
         </div>
 
         {loadingHistory ? (
-          <div className="p-8 text-center text-gray-500">Loading history...</div>
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading history...</div>
         ) : historyBookings.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No bookings found matching filters.</div>
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">No bookings found matching filters.</div>
         ) : (
           <div className="overflow-x-auto">
              <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+              <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700">
                 <tr>
                    <th className="px-6 py-3">ID</th>
                    <th className="px-6 py-3">Status</th>
@@ -386,16 +386,16 @@ export default function BookingManagement() {
               </thead>
               <tbody>
                  {historyBookings.map((booking) => (
-                    <tr key={booking.booking_id} className="bg-white border-b hover:bg-gray-50">
-                       <td className="px-6 py-4 text-gray-500">#{booking.booking_id}</td>
+                    <tr key={booking.booking_id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">#{booking.booking_id}</td>
                        <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
                              {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                           </span>
                        </td>
                        <td className="px-6 py-4">
-                          <div className="font-medium text-gray-900">{booking.pet.owner.first_name} {booking.pet.owner.last_name}</div>
-                          <div className="text-xs text-gray-500">Pet: {booking.pet.name}</div>
+                          <div className="font-medium text-gray-900 dark:text-gray-100">{booking.pet.owner.first_name} {booking.pet.owner.last_name}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">Pet: {booking.pet.name}</div>
                        </td>
                        <td className="px-6 py-4">{booking.service_type}</td>
                        <td className="px-6 py-4">
@@ -405,7 +405,7 @@ export default function BookingManagement() {
                        <td className="px-6 py-4 text-right">
                           <button
                              onClick={() => setSelectedBooking(booking)}
-                             className="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                             className="inline-flex items-center px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                           >
                              <Eye className="h-3 w-3 mr-1" /> View
                           </button>
@@ -421,20 +421,20 @@ export default function BookingManagement() {
       {/* Booking Details Modal */}
       {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-100 flex justify-between items-start">
+           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start">
                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                        Booking Details #{selectedBooking.booking_id}
                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedBooking.status)}`}>
                           {selectedBooking.status.charAt(0).toUpperCase() + selectedBooking.status.slice(1)}
                        </span>
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                        Created on {formatDateTime(selectedBooking.created_at)}
                     </p>
                  </div>
-                 <button onClick={() => setSelectedBooking(null)} className="text-gray-400 hover:text-gray-500">
+                 <button onClick={() => setSelectedBooking(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400">
                     <X className="h-6 w-6" />
                  </button>
               </div>
@@ -442,29 +442,29 @@ export default function BookingManagement() {
               <div className="p-6 space-y-6">
                  {/* Owner & Pet Info */}
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                       <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                       <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
                           <User className="h-4 w-4 mr-2" /> Owner Information
                        </h4>
-                       <div className="space-y-1 text-sm text-gray-600">
+                       <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                           <p><span className="font-medium">Name:</span> {selectedBooking.pet.owner.first_name} {selectedBooking.pet.owner.last_name}</p>
                           <p><span className="font-medium">Email:</span> {selectedBooking.pet.owner.email}</p>
                           <p><span className="font-medium">Phone:</span> {selectedBooking.pet.owner.phone_number}</p>
                        </div>
                     </div>
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                       <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                       <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
                           <Dog className="h-4 w-4 mr-2" /> Pet Information
                        </h4>
                        <div className="flex items-start gap-4">
                           {selectedBooking.pet.photo ? (
                              <img src={selectedBooking.pet.photo} alt={selectedBooking.pet.name} className="w-12 h-12 rounded-full object-cover" />
                           ) : (
-                             <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                                <Dog className="h-6 w-6 text-gray-400" />
+                             <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                                <Dog className="h-6 w-6 text-gray-400 dark:text-gray-500" />
                              </div>
                           )}
-                          <div className="space-y-1 text-sm text-gray-600">
+                          <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                              <p><span className="font-medium">Name:</span> {selectedBooking.pet.name}</p>
                              <p><span className="font-medium">Breed:</span> {selectedBooking.pet.breed}</p>
                           </div>
@@ -474,26 +474,26 @@ export default function BookingManagement() {
 
                  {/* Service Details */}
                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
                        <FileText className="h-4 w-4 mr-2" /> Service Details
                     </h4>
-                    <div className="bg-white border rounded-lg p-4 space-y-4">
+                    <div className="bg-white dark:bg-gray-700 border dark:border-gray-600 rounded-lg p-4 space-y-4">
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                             <p className="text-xs text-gray-500">Service Type</p>
-                             <p className="font-medium">{selectedBooking.service_type}</p>
+                             <p className="text-xs text-gray-500 dark:text-gray-400">Service Type</p>
+                             <p className="font-medium text-gray-900 dark:text-gray-100">{selectedBooking.service_type}</p>
                           </div>
                           <div>
-                             <p className="text-xs text-gray-500">Total Price</p>
-                             <p className="font-medium text-green-600">Rs. {selectedBooking.price}</p>
+                             <p className="text-xs text-gray-500 dark:text-gray-400">Total Price</p>
+                             <p className="font-medium text-green-600 dark:text-green-400">Rs. {selectedBooking.price}</p>
                           </div>
                           <div>
-                             <p className="text-xs text-gray-500">Start Date</p>
-                             <p className="font-medium">{formatDate(selectedBooking.start_date)}</p>
+                             <p className="text-xs text-gray-500 dark:text-gray-400">Start Date</p>
+                             <p className="font-medium text-gray-900 dark:text-gray-100">{formatDate(selectedBooking.start_date)}</p>
                           </div>
                           <div>
-                             <p className="text-xs text-gray-500">End Date</p>
-                             <p className="font-medium">{selectedBooking.end_date ? formatDate(selectedBooking.end_date) : '-'}</p>
+                             <p className="text-xs text-gray-500 dark:text-gray-400">End Date</p>
+                             <p className="font-medium text-gray-900 dark:text-gray-100">{selectedBooking.end_date ? formatDate(selectedBooking.end_date) : '-'}</p>
                           </div>
                        </div>
                     </div>
@@ -502,22 +502,22 @@ export default function BookingManagement() {
                  {/* Pickup / Dropoff */}
                  {(selectedBooking.pickup_time || selectedBooking.dropoff_time) && (
                     <div>
-                       <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                       <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center">
                           <MapPin className="h-4 w-4 mr-2" /> Transport Details
                        </h4>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {selectedBooking.pickup_time && (
-                             <div className="p-3 border rounded border-l-4 border-l-blue-500">
-                                <p className="text-xs font-semibold text-gray-500 uppercase">Pickup</p>
-                                <p className="font-medium">{selectedBooking.pickup_time}</p>
-                                <p className="text-sm text-gray-600 mt-1">{selectedBooking.pickup_address}</p>
+                             <div className="p-3 border dark:border-gray-600 rounded border-l-4 border-l-blue-500 dark:border-l-blue-400">
+                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Pickup</p>
+                                <p className="font-medium text-gray-900 dark:text-gray-100">{selectedBooking.pickup_time}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{selectedBooking.pickup_address}</p>
                              </div>
                           )}
                           {selectedBooking.dropoff_time && (
-                             <div className="p-3 border rounded border-l-4 border-l-green-500">
-                                <p className="text-xs font-semibold text-gray-500 uppercase">Dropoff</p>
-                                <p className="font-medium">{selectedBooking.dropoff_time}</p>
-                                <p className="text-sm text-gray-600 mt-1">{selectedBooking.dropoff_address}</p>
+                             <div className="p-3 border dark:border-gray-600 rounded border-l-4 border-l-green-500 dark:border-l-green-400">
+                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Dropoff</p>
+                                <p className="font-medium text-gray-900 dark:text-gray-100">{selectedBooking.dropoff_time}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{selectedBooking.dropoff_address}</p>
                              </div>
                           )}
                        </div>
@@ -525,10 +525,10 @@ export default function BookingManagement() {
                  )}
               </div>
 
-              <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+              <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 flex justify-end gap-3">
                  <button
                     onClick={() => setSelectedBooking(null)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-white"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-600"
                  >
                     Close
                  </button>

@@ -1,5 +1,5 @@
-import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
-import { Bell } from 'lucide-react';
+import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
+import { Bell, Settings, User as UserIcon, LogOut } from 'lucide-react';
 import {
   createActivityLog,
   getPendingBookings,
@@ -17,17 +17,20 @@ import { toast } from 'sonner';
 import ActivityLogsManagement from './ActivityLogsManagement';
 import BookingManagement from './BookingManagement';
 import ReviewManagement from './ReviewManagement';
+import SettingsPage from './SettingsPage';
 
 interface User {
   id: string;
   email: string;
   role: 'user' | 'admin';
   fullName: string;
+  profilePicture?: string;
 }
 
 interface AdminDashboardProps {
   user: User;
   onLogout: () => void;
+  onNavigate?: (page: 'profile' | 'admin-dashboard') => void;
 }
 
 interface Booking {
@@ -75,7 +78,7 @@ interface EmergencyRequest {
   users?: { first_name?: string; last_name?: string; email?: string };
 }
 
-export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
+export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,6 +101,9 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
     pendingReviews: 0
   });
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
   const [contactLoading, setContactLoading] = useState(false);
   const [emergencyRequests, setEmergencyRequests] = useState<EmergencyRequest[]>([]);
   const [emergencyLoading, setEmergencyLoading] = useState(false);
@@ -137,6 +143,23 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
       fetchEmergencyRequests();
     }
   }, [activeTab]);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    if (showProfileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileDropdown]);
 
   const fetchPendingBookings = async () => {
     try {
@@ -381,18 +404,38 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
     'reviews': 'Review Management'
   };
 
+  // Show settings page if showSettings is true
+  if (showSettings) {
+    return (
+      <SettingsPage
+        onBack={() => setShowSettings(false)}
+        onLogout={onLogout}
+        userFullName={user.fullName}
+        onNavigate={(page) => {
+          if (page === 'admin-dashboard') {
+            setShowSettings(false);
+            onNavigate?.('admin-dashboard');
+          } else if (page === 'profile') {
+            setShowSettings(false);
+            onNavigate?.('profile');
+          }
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-6 border-b border-gray-200">
+      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <button 
             onClick={() => setActiveTab('dashboard')}
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition w-full"
             title="Go to Dashboard"
           >
             <span className="text-2xl">🐾</span>
-            <span className="font-semibold text-gray-800">PawWell Admin</span>
+            <span className="font-semibold text-gray-800 dark:text-gray-100">PawWell Admin</span>
           </button>
         </div>
 
@@ -402,8 +445,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               onClick={() => setActiveTab('dashboard')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors ${
                 activeTab === 'dashboard'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               Dashboard
@@ -412,8 +455,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               onClick={() => setActiveTab('booking-management')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors ${
                 activeTab === 'booking-management'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               Booking management
@@ -422,8 +465,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               onClick={() => setActiveTab('caretakers')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors ${
                 activeTab === 'caretakers'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               Caretakers
@@ -432,8 +475,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               onClick={() => setActiveTab('capacity')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors ${
                 activeTab === 'capacity'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               Capacity management
@@ -442,22 +485,22 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               onClick={() => setActiveTab('activity-logs')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors ${
                 activeTab === 'activity-logs'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               Activity logs
             </button>
           </div>
 
-          <div className="mt-8 pt-4 border-t border-gray-200">
-            <p className="px-4 text-xs font-semibold text-gray-400 uppercase mb-2">System</p>
+          <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-2">System</p>
             <button
               onClick={() => setActiveTab('contact-messages')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                 activeTab === 'contact-messages'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <span>✉️</span>
@@ -467,8 +510,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               onClick={() => setActiveTab('emergency-requests')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                 activeTab === 'emergency-requests'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <span>🚨</span>
@@ -478,8 +521,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               onClick={() => setActiveTab('reviews')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                 activeTab === 'reviews'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <span>⭐</span>
@@ -489,8 +532,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               onClick={() => setActiveTab('announcements')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
                 activeTab === 'announcements'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <span>📢</span>
@@ -498,55 +541,48 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
             </button>
           </div>
         </nav>
-
-        <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={onLogout}
-            className="w-full px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
-          >
-            Logout
-          </button>
-        </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <div className="p-8">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
               {titleMap[activeTab] || 'Admin Dashboard'}
             </h1>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setNotificationOpen((prev) => {
-                    if (!prev) {
-                      fetchNotificationSummary();
-                    }
-                    return !prev;
-                  });
-                }}
-                className="relative flex items-center justify-center w-11 h-11 rounded-full border border-gray-200 bg-white hover:bg-gray-50 transition"
-                aria-label="Notifications"
-              >
-                <Bell size={20} className="text-gray-700" />
-                {notificationTotal > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[20px] px-1 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                    {notificationTotal}
-                  </span>
-                )}
-              </button>
+            <div className="flex items-center gap-3">
+              {/* Notifications */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotificationOpen((prev) => {
+                      if (!prev) {
+                        fetchNotificationSummary();
+                      }
+                      return !prev;
+                    });
+                  }}
+                  className="relative flex items-center justify-center w-11 h-11 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
+                  aria-label="Notifications"
+                >
+                  <Bell size={20} className="text-gray-700 dark:text-gray-200" />
+                  {notificationTotal > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[20px] px-1 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                      {notificationTotal}
+                    </span>
+                  )}
+                </button>
 
-              {notificationOpen && (
-                <div className="absolute right-0 mt-3 w-72 rounded-xl border border-gray-200 bg-white shadow-lg z-20">
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-sm font-semibold text-gray-900">Notifications</p>
-                    <p className="text-xs text-gray-500">Unread summary</p>
-                  </div>
-                  <div className="py-2">
+                {notificationOpen && (
+                  <div className="absolute right-0 mt-3 w-72 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg z-20">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notifications</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Unread summary</p>
+                    </div>
+                    <div className="py-2">
                     {notificationLoading ? (
-                      <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
+                      <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">Loading...</div>
                     ) : (
                       <>
                         <button
@@ -555,7 +591,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                             setActiveTab('contact-messages');
                             setNotificationOpen(false);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
+                          className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           {notificationSummary.contactMessages} New Contact Messages
                         </button>
@@ -565,7 +601,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                             setActiveTab('booking-management');
                             setNotificationOpen(false);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
+                          className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           {notificationSummary.pendingBookings} Pending Booking Approvals
                         </button>
@@ -575,7 +611,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                             setActiveTab('emergency-requests');
                             setNotificationOpen(false);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
+                          className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           {notificationSummary.emergencyRequests} Emergency Requests
                         </button>
@@ -585,7 +621,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                             setActiveTab('reviews');
                             setNotificationOpen(false);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
+                          className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           {notificationSummary.pendingReviews} Pending Reviews
                         </button>
@@ -595,6 +631,71 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                 </div>
               )}
             </div>
+
+            {/* Profile Dropdown */}
+            <div className="relative" ref={profileDropdownRef}>
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="w-11 h-11 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-gray-200 dark:border-gray-600 overflow-hidden"
+                title="Profile Menu"
+              >
+                {user.profilePicture ? (
+                  <img 
+                    src={user.profilePicture} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">
+                      {user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </button>
+
+              {/* Dropdown Menu */}
+              {showProfileDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{user.fullName}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      onNavigate?.('profile');
+                    }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                  >
+                    <UserIcon size={18} className="text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm font-medium">Edit Profile</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      setShowSettings(true);
+                    }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                  >
+                    <Settings size={18} className="text-gray-500 dark:text-gray-400" />
+                    <span className="text-sm font-medium">Settings</span>
+                  </button>
+                  <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      onLogout();
+                    }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/50 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
+                  >
+                    <LogOut size={18} className="text-red-500 dark:text-red-400" />
+                    <span className="text-sm font-medium">Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
           </div>
 
           {activeTab === 'booking-management' && (
@@ -607,45 +708,45 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
             <>
               {/* Stats Cards */}
               <div className="grid grid-cols-2 gap-6 mb-8">
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-yellow-200">
-                  <h3 className="text-gray-600 text-sm font-medium mb-2">Active Bookings</h3>
-                  <p className="text-4xl font-bold text-gray-900">120</p>
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-yellow-200 dark:border-yellow-600">
+                  <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">Active Bookings</h3>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-gray-100">120</p>
                 </div>
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-yellow-200">
-                  <h3 className="text-gray-600 text-sm font-medium mb-2">Total registered Pets</h3>
-                  <p className="text-4xl font-bold text-gray-900">542</p>
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-yellow-200 dark:border-yellow-600">
+                  <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">Total registered Pets</h3>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-gray-100">542</p>
                 </div>
               </div>
 
               {/* Pending Booking Approvals */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Pending Booking Approvals</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Pending Booking Approvals</h2>
 
                 {loading ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">Loading bookings...</p>
+                    <p className="text-gray-500 dark:text-gray-400">Loading bookings...</p>
                   </div>
                 ) : bookings.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No pending bookings</p>
+                    <p className="text-gray-500 dark:text-gray-400">No pending bookings</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Pet Name</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Owner</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Service & Date</th>
-                          <th className="text-right py-3 px-4 font-semibold text-gray-700">Actions</th>
+                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Pet Name</th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Owner</th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Service & Date</th>
+                          <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {bookings.map((booking) => (
-                          <tr key={booking.id} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="py-4 px-4 font-medium text-gray-900">{booking.petName}</td>
-                            <td className="py-4 px-4 text-gray-600">{booking.ownerName}</td>
-                            <td className="py-4 px-4 text-gray-600">
+                          <tr key={booking.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="py-4 px-4 font-medium text-gray-900 dark:text-gray-100">{booking.petName}</td>
+                            <td className="py-4 px-4 text-gray-600 dark:text-gray-400">{booking.ownerName}</td>
+                            <td className="py-4 px-4 text-gray-600 dark:text-gray-400">
                               {booking.service_type} on {formatDate(booking.start_date)}
                             </td>
                             <td className="py-4 px-4 text-right">
@@ -653,14 +754,14 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                                 <button
                                   onClick={() => handleApproveBooking(booking.booking_id)}
                                   disabled={approving === booking.booking_id}
-                                  className="px-4 py-1.5 bg-yellow-300 hover:bg-yellow-400 text-gray-900 rounded font-medium transition-colors disabled:opacity-50"
+                                  className="px-4 py-1.5 bg-yellow-300 dark:bg-yellow-500 hover:bg-yellow-400 dark:hover:bg-yellow-600 text-gray-900 dark:text-gray-100 rounded font-medium transition-colors disabled:opacity-50"
                                 >
                                   {approving === booking.booking_id ? 'Approving...' : 'Approve'}
                                 </button>
                                 <button
                                   onClick={() => handleRejectBooking(booking.booking_id)}
                                   disabled={rejecting === booking.booking_id}
-                                  className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
+                                  className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 rounded font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
                                 >
                                   <span>✕</span>
                                   {rejecting === booking.booking_id ? 'Rejecting...' : 'Retry'}
@@ -676,13 +777,13 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               </div>
 
               {/* Caretaker Shift */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Caretaker Shift</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Caretaker Shift</h2>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Caretaker</label>
-                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Caretaker</label>
+                    <select className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400">
                       <option>Select caretaker</option>
                       <option>John Doe</option>
                       <option>Jane Smith</option>
@@ -690,15 +791,15 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Shift Details</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shift Details</label>
                     <input
                       type="text"
                       placeholder="8:00 am - 7:00 pm"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
                     />
                   </div>
 
-                  <button className="px-6 py-2 bg-yellow-300 hover:bg-yellow-400 text-gray-900 rounded-lg font-semibold transition-colors">
+                  <button className="px-6 py-2 bg-yellow-300 dark:bg-yellow-500 hover:bg-yellow-400 dark:hover:bg-yellow-600 text-gray-900 dark:text-gray-100 rounded-lg font-semibold transition-colors">
                     Assign Shifts
                   </button>
                 </div>
@@ -714,8 +815,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                     onClick={() => setViewingActivityLogs(false)}
                     className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
                       !viewingActivityLogs
-                        ? 'bg-yellow-300 text-gray-900 hover:bg-yellow-400'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? 'bg-yellow-300 dark:bg-yellow-500 text-gray-900 dark:text-gray-100 hover:bg-yellow-400 dark:hover:bg-yellow-600'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                   >
                     + Create New
@@ -724,8 +825,8 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                     onClick={() => setViewingActivityLogs(true)}
                     className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
                       viewingActivityLogs
-                        ? 'bg-yellow-300 text-gray-900 hover:bg-yellow-400'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? 'bg-yellow-300 dark:bg-yellow-500 text-gray-900 dark:text-gray-100 hover:bg-yellow-400 dark:hover:bg-yellow-600'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                   >
                     View Logs
@@ -734,7 +835,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               </div>
 
               {viewingActivityLogs ? (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <ActivityLogsManagement 
                     onRefreshLogs={() => {
                       // Refresh bookings if needed
@@ -743,16 +844,16 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                   />
                 </div>
               ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Activity</h2>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Add New Activity</h2>
 
                   <form onSubmit={handleCreateActivityLog} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Pet</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pet</label>
                       <select
                         value={selectedPet}
                         onChange={(event) => setSelectedPet(event.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
                         required
                       >
                         <option value="">Select pet</option>
@@ -766,11 +867,11 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Activity Type</label>
                       <select
                         value={activityType}
                         onChange={(event) => setActivityType(event.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
                         required
                       >
                         <option value="">Select activity type</option>
@@ -783,11 +884,11 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
                       <textarea
                         value={description}
                         onChange={(event) => setDescription(event.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
                         rows={4}
                         minLength={5}
                         placeholder="Describe the activity and any observations..."
@@ -796,16 +897,16 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Photo (optional)</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Photo (optional)</label>
                       <input
                         type="file"
                         accept="image/*"
                         onChange={handlePhotoChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
                       />
                     </div>
 
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                       <input
                         type="checkbox"
                         checked={notifyOwner}
@@ -829,13 +930,13 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
           )}
 
           {activeTab === 'contact-messages' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Recent Contact Messages</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Recent Contact Messages</h2>
                 <button
                   type="button"
                   onClick={handleMarkAllContactRead}
-                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                  className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
                 >
                   Mark all as read
                 </button>
@@ -843,41 +944,41 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
 
               {contactLoading ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Loading contact messages...</p>
+                  <p className="text-gray-500 dark:text-gray-400">Loading contact messages...</p>
                 </div>
               ) : contactMessages.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No contact messages yet</p>
+                  <p className="text-gray-500 dark:text-gray-400">No contact messages yet</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Subject</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Phone</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Location</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Received</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                        <th className="text-right py-3 px-4 font-semibold text-gray-700">Actions</th>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Name</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Email</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Subject</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Phone</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Location</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Received</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Status</th>
+                        <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {contactMessages.map((message) => (
-                        <tr key={message.contact_id} className="border-b border-gray-100">
-                          <td className="py-3 px-4 text-gray-900">{message.full_name}</td>
-                          <td className="py-3 px-4 text-gray-600">{message.email}</td>
-                          <td className="py-3 px-4 text-gray-600">{message.subject}</td>
-                          <td className="py-3 px-4 text-gray-600">{message.phone_number || '-'}</td>
-                          <td className="py-3 px-4 text-gray-600">{message.location || '-'}</td>
-                          <td className="py-3 px-4 text-gray-600">{formatDate(message.created_at)}</td>
+                        <tr key={message.contact_id} className="border-b border-gray-100 dark:border-gray-700">
+                          <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{message.full_name}</td>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{message.email}</td>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{message.subject}</td>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{message.phone_number || '-'}</td>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{message.location || '-'}</td>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{formatDate(message.created_at)}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                               message.status === 'unread'
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : 'bg-gray-100 text-gray-600'
+                                ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                             }`}>
                               {message.status}
                             </span>
@@ -887,7 +988,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                               <button
                                 type="button"
                                 onClick={() => handleOpenMessage(message)}
-                                className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                               >
                                 View
                               </button>
@@ -895,7 +996,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                                 type="button"
                                 onClick={() => handleMarkMessageRead(message.contact_id)}
                                 disabled={message.status === 'read' || markingMessageId === message.contact_id}
-                                className="px-3 py-1.5 text-sm rounded-lg bg-yellow-100 text-yellow-800 hover:bg-yellow-200 disabled:opacity-50"
+                                className="px-3 py-1.5 text-sm rounded-lg bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/60 disabled:opacity-50"
                               >
                                 {markingMessageId === message.contact_id ? 'Marking...' : 'Mark read'}
                               </button>
@@ -909,43 +1010,43 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
               )}
 
               {selectedMessage && (
-                <div className="fixed inset-0 bg-black/30 flex items-end justify-end z-30">
-                  <div className="bg-white w-full max-w-md h-full sm:h-auto sm:rounded-l-2xl p-6 shadow-xl overflow-y-auto">
+                <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-end justify-end z-30">
+                  <div className="bg-white dark:bg-gray-800 w-full max-w-md h-full sm:h-auto sm:rounded-l-2xl p-6 shadow-xl overflow-y-auto">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <p className="text-xs text-gray-500">Message Details</p>
-                        <h3 className="text-lg font-semibold text-gray-900">{selectedMessage.subject}</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Message Details</p>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{selectedMessage.subject}</h3>
                       </div>
                       <button
                         type="button"
                         onClick={() => setSelectedMessage(null)}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                       >
                         ✕
                       </button>
                     </div>
                     <div className="space-y-3 text-sm">
                       <div>
-                        <p className="text-gray-500">From</p>
-                        <p className="text-gray-900 font-medium">{selectedMessage.full_name}</p>
-                        <p className="text-gray-600">{selectedMessage.email}</p>
-                        <p className="text-gray-600">{selectedMessage.phone_number || 'No phone provided'}</p>
-                        <p className="text-gray-600">{selectedMessage.location || 'No location provided'}</p>
+                        <p className="text-gray-500 dark:text-gray-400">From</p>
+                        <p className="text-gray-900 dark:text-gray-100 font-medium">{selectedMessage.full_name}</p>
+                        <p className="text-gray-600 dark:text-gray-400">{selectedMessage.email}</p>
+                        <p className="text-gray-600 dark:text-gray-400">{selectedMessage.phone_number || 'No phone provided'}</p>
+                        <p className="text-gray-600 dark:text-gray-400">{selectedMessage.location || 'No location provided'}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Received</p>
-                        <p className="text-gray-900">{formatDate(selectedMessage.created_at)}</p>
+                        <p className="text-gray-500 dark:text-gray-400">Received</p>
+                        <p className="text-gray-900 dark:text-gray-100">{formatDate(selectedMessage.created_at)}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500">Message</p>
-                        <p className="text-gray-900 whitespace-pre-line">{selectedMessage.message}</p>
+                        <p className="text-gray-500 dark:text-gray-400">Message</p>
+                        <p className="text-gray-900 dark:text-gray-100 whitespace-pre-line">{selectedMessage.message}</p>
                       </div>
                     </div>
                     <div className="mt-6 flex gap-3">
                       <button
                         type="button"
                         onClick={() => setSelectedMessage(null)}
-                        className="flex-1 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        className="flex-1 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                       >
                         Close
                       </button>
@@ -953,7 +1054,7 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                         type="button"
                         onClick={() => handleMarkMessageRead(selectedMessage.contact_id)}
                         disabled={selectedMessage.status === 'read' || markingMessageId === selectedMessage.contact_id}
-                        className="flex-1 px-4 py-2 rounded-lg bg-yellow-300 text-gray-900 hover:bg-yellow-400 disabled:opacity-50"
+                        className="flex-1 px-4 py-2 rounded-lg bg-yellow-300 dark:bg-yellow-500 text-gray-900 dark:text-gray-100 hover:bg-yellow-400 dark:hover:bg-yellow-600 disabled:opacity-50"
                       >
                         {markingMessageId === selectedMessage.contact_id ? 'Marking...' : 'Mark read'}
                       </button>
@@ -965,53 +1066,53 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
           )}
 
           {activeTab === 'emergency-requests' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Emergency Requests</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Emergency Requests</h2>
 
               {emergencyLoading ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Loading emergency requests...</p>
+                  <p className="text-gray-500 dark:text-gray-400">Loading emergency requests...</p>
                 </div>
               ) : emergencyRequests.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No active emergency requests</p>
+                  <p className="text-gray-500 dark:text-gray-400">No active emergency requests</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Pet</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Description</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Contact</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Submitted</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                        <th className="text-right py-3 px-4 font-semibold text-gray-700">Actions</th>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Pet</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Type</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Description</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Contact</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Submitted</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Status</th>
+                        <th className="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {emergencyRequests.map((request) => (
-                        <tr key={request.emergency_id} className="border-b border-gray-100">
+                        <tr key={request.emergency_id} className="border-b border-gray-100 dark:border-gray-700">
                           <td className="py-3 px-4 flex items-center gap-3">
                             {request.pets?.photo ? (
                               <img src={request.pets.photo} alt={request.pets.name} className="w-8 h-8 rounded-full object-cover" />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                              <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400">
                                 <span className="text-xs">🐾</span>
                               </div>
                             )}
                             <div>
-                              <p className="font-medium text-gray-900">{request.pets?.name || 'Unknown'}</p>
-                              {request.users && <p className="text-xs text-gray-500">{request.users.first_name} {request.users.last_name}</p>}
+                              <p className="font-medium text-gray-900 dark:text-gray-100">{request.pets?.name || 'Unknown'}</p>
+                              {request.users && <p className="text-xs text-gray-500 dark:text-gray-400">{request.users.first_name} {request.users.last_name}</p>}
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-gray-600 font-medium">{request.emergency_type}</td>
-                          <td className="py-3 px-4 text-gray-600 max-w-xs truncate" title={request.description || ''}>{request.description || '-'}</td>
-                          <td className="py-3 px-4 text-gray-600 text-sm">{request.contact_info}</td>
-                          <td className="py-3 px-4 text-gray-600">{formatDate(request.created_at)}</td>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{request.emergency_type}</td>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400 max-w-xs truncate" title={request.description || ''}>{request.description || '-'}</td>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400 text-sm">{request.contact_info}</td>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{formatDate(request.created_at)}</td>
                           <td className="py-3 px-4">
-                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
                               {request.status.replace('_', ' ')}
                             </span>
                           </td>
@@ -1020,21 +1121,21 @@ export default function AdminDashboard({ user, onLogout }: AdminDashboardProps) 
                               <button
                                 type="button"
                                 onClick={() => handleUpdateEmergencyStatus(request.emergency_id, 'in_progress')}
-                                className="px-3 py-1.5 text-sm rounded-lg bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                                className="px-3 py-1.5 text-sm rounded-lg bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/60"
                               >
                                 In Progress
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleUpdateEmergencyStatus(request.emergency_id, 'resolved')}
-                                className="px-3 py-1.5 text-sm rounded-lg bg-green-100 text-green-800 hover:bg-green-200"
+                                className="px-3 py-1.5 text-sm rounded-lg bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60"
                               >
                                 Resolve
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleUpdateEmergencyStatus(request.emergency_id, 'cancelled')}
-                                className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                               >
                                 Cancel
                               </button>

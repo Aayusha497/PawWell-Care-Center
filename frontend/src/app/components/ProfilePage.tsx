@@ -4,12 +4,13 @@ import { updateProfile, deleteAccount } from '../../services/api';
 import { toast } from 'sonner';
 import { Settings, User as UserIcon, LogOut } from 'lucide-react';
 import SettingsPage from './SettingsPage';
+import { isAdmin } from '../../utils/rbac';
 
 interface ProfilePageProps {
   onBack: () => void;
   onLogout: () => void;
   userFullName: string;
-  onNavigate?: (page: 'booking' | 'activity-log' | 'about' | 'contact' | 'emergency' | 'user-dashboard' | 'profile') => void;
+  onNavigate?: (page: 'booking' | 'activity-log' | 'about' | 'contact' | 'emergency' | 'user-dashboard' | 'admin-dashboard' | 'profile') => void;
   onDashboardTarget?: (target: 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline') => void;
 }
 
@@ -210,7 +211,23 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
         response: error.response,
         data: error.response?.data
       });
-      toast.error('Failed to update profile: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+      
+      // Extract user-friendly error message
+      let errorMessage = 'Unable to update your profile. Please try again.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Your session has expired. Please log in again.';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Your account could not be found. Please log in again.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'A server error occurred. Please try again later.';
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
       console.log('✅ Profile update process completed');
@@ -301,14 +318,15 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
 
   // If showing settings page, render it instead
   if (showSettings) {
+    const dashboardPage = isAdmin(user) ? 'admin-dashboard' : 'user-dashboard';
     return (
       <SettingsPage
         onBack={() => setShowSettings(false)}
         onLogout={onLogout}
         userFullName={userFullName}
         onNavigate={(page) => {
-          if (page === 'user-dashboard') {
-            onNavigate?.('user-dashboard');
+          if (page === 'user-dashboard' || page === 'admin-dashboard') {
+            onNavigate?.(dashboardPage as any);
           } else if (page === 'profile') {
             setShowSettings(false);
           }
@@ -325,7 +343,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-8">
               <button 
-                onClick={() => onNavigate?.('user-dashboard')}
+                onClick={() => onNavigate?.(isAdmin(user) ? 'admin-dashboard' : 'user-dashboard')}
                 className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
                 title="Go to Dashboard"
               >
@@ -333,41 +351,45 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
               </button>
               <div className="flex items-center gap-6">
                 <button 
-                  onClick={() => onNavigate?.('user-dashboard')}
+                  onClick={() => onNavigate?.(isAdmin(user) ? 'admin-dashboard' : 'user-dashboard')}
                   className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
                 >
-                  Home
+                  {isAdmin(user) ? 'Admin Dashboard' : 'Home'}
                 </button>
-                <button 
-                  onClick={() => onDashboardTarget?.('booking')}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                >
-                  Booking
-                </button>
-                <button
-                  onClick={() => onDashboardTarget?.('activity-log')}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                >
-                  Activity Log
-                </button>
-                <button
-                  onClick={() => onDashboardTarget?.('wellness-timeline')}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                >
-                  Timeline
-                </button>
-                <button
-                  onClick={() => onNavigate?.('about')}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                >
-                  About
-                </button>
-                <button
-                  onClick={() => onNavigate?.('contact')}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                >
-                  Contact
-                </button>
+                {!isAdmin(user) && (
+                  <>
+                    <button 
+                      onClick={() => onDashboardTarget?.('booking')}
+                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                    >
+                      Booking
+                    </button>
+                    <button
+                      onClick={() => onDashboardTarget?.('activity-log')}
+                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                    >
+                      Activity Log
+                    </button>
+                    <button
+                      onClick={() => onDashboardTarget?.('wellness-timeline')}
+                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                    >
+                      Timeline
+                    </button>
+                    <button
+                      onClick={() => onNavigate?.('about')}
+                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                    >
+                      About
+                    </button>
+                    <button
+                      onClick={() => onNavigate?.('contact')}
+                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                    >
+                      Contact
+                    </button>
+                  </>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-4">
