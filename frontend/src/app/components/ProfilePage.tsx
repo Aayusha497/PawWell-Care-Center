@@ -337,8 +337,8 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
 
   return (
     <div className="min-h-screen bg-[#FFF9F5] dark:bg-gray-900">
-      {/* Navigation Header - Only show if profile is complete */}
-      {user.isProfileComplete && (
+      {/* Navigation Header - Show for admins or if profile is complete */}
+      {(user.isProfileComplete || isAdmin(user)) && (
         <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-8 py-3">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-8">
@@ -348,62 +348,63 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
                 title="Go to Dashboard"
               >
                 <span className="text-2xl">🐾</span>
+                {isAdmin(user) && <span className="font-semibold text-gray-800 dark:text-gray-100">PawWell Admin</span>}
               </button>
-              <div className="flex items-center gap-6">
-                <button 
-                  onClick={() => onNavigate?.(isAdmin(user) ? 'admin-dashboard' : 'user-dashboard')}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                >
-                  {isAdmin(user) ? 'Admin Dashboard' : 'Home'}
-                </button>
-                {!isAdmin(user) && (
-                  <>
-                    <button 
-                      onClick={() => onDashboardTarget?.('booking')}
-                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                    >
-                      Booking
-                    </button>
-                    <button
-                      onClick={() => onDashboardTarget?.('activity-log')}
-                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                    >
-                      Activity Log
-                    </button>
-                    <button
-                      onClick={() => onDashboardTarget?.('wellness-timeline')}
-                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                    >
-                      Timeline
-                    </button>
-                    <button
-                      onClick={() => onNavigate?.('about')}
-                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                    >
-                      About
-                    </button>
-                    <button
-                      onClick={() => onNavigate?.('contact')}
-                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
-                    >
-                      Contact
-                    </button>
-                  </>
-                )}
-              </div>
+              {!isAdmin(user) && (
+                <div className="flex items-center gap-6">
+                  <button 
+                    onClick={() => onNavigate?.('user-dashboard')}
+                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                  >
+                    Home
+                  </button>
+                  <button 
+                    onClick={() => onDashboardTarget?.('booking')}
+                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                  >
+                    Booking
+                  </button>
+                  <button
+                    onClick={() => onDashboardTarget?.('activity-log')}
+                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                  >
+                    Activity Log
+                  </button>
+                  <button
+                    onClick={() => onDashboardTarget?.('wellness-timeline')}
+                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                  >
+                    Timeline
+                  </button>
+                  <button
+                    onClick={() => onNavigate?.('about')}
+                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                  >
+                    About
+                  </button>
+                  <button
+                    onClick={() => onNavigate?.('contact')}
+                    className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                  >
+                    Contact
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => onNavigate?.('emergency')}
-                className="px-4 py-2 bg-[#FF6B6B] dark:bg-red-700 text-white rounded-full text-sm flex items-center gap-2"
-              >
-                <span>📞</span> Emergency
-              </button>
+              {!isAdmin(user) && (
+                <button
+                  onClick={() => onNavigate?.('emergency')}
+                  className="px-4 py-2 bg-[#FF6B6B] dark:bg-red-700 text-white rounded-full text-sm flex items-center gap-2"
+                >
+                  <span>📞</span> Emergency
+                </button>
+              )}
               {/* Profile Dropdown */}
               <div className="relative" ref={profileDropdownRef}>
                 <button
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-gray-200 overflow-hidden"
+                  className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-gray-200 dark:border-gray-600 overflow-hidden"
                   title="Profile Menu"
                 >
                   {user.profilePicture ? (

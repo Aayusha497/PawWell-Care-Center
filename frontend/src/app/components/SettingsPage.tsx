@@ -4,6 +4,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { toast } from 'sonner';
 import { Settings, User as UserIcon, Moon, Sun, X, Shield, Copy, Check } from 'lucide-react';
 import { getSettings, updateSettings, changePassword, changeEmail, resetSettings, get2FAStatus, setup2FA, verify2FA, disable2FA } from '../../services/api';
+import { isAdmin } from '../../utils/rbac';
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -22,6 +23,8 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
   const [bookingReminders, setBookingReminders] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   // Password modal state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -50,6 +53,23 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
   const [disableToken, setDisableToken] = useState('');
   const [processing2FA, setProcessing2FA] = useState(false);
   const [copiedCodes, setCopiedCodes] = useState(false);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    if (showProfileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileDropdown]);
 
   // Fetch settings on component mount
   useEffect(() => {
@@ -342,6 +362,83 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
 
   return (
     <div className="min-h-screen bg-[#FFF9F5] dark:bg-gray-900 transition-colors">
+      {/* Admin Navbar */}
+      {user && isAdmin(user) && (
+        <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-8 py-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <button 
+              onClick={() => onNavigate?.('admin-dashboard')}
+              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
+              title="Go to Admin Dashboard"
+            >
+              <span className="text-2xl">🐾</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-100">PawWell Admin</span>
+            </button>
+            <div className="flex items-center gap-3">
+              {/* Profile Dropdown */}
+              <div className="relative" ref={profileDropdownRef}>
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-gray-300 dark:border-gray-600 overflow-hidden"
+                  title="Profile Menu"
+                >
+                  {user.profilePicture ? (
+                    <img
+                      src={user.profilePicture}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#FA9884] flex items-center justify-center text-white font-semibold">
+                      {user.firstName?.[0]?.toUpperCase() || 'A'}
+                    </div>
+                  )}
+                </button>
+
+                {/* Dropdown Menu */}
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        onNavigate?.('profile');
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <UserIcon size={18} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium">Edit Profile</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        // Already on settings page, just close dropdown
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <Settings size={18} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium">Settings</span>
+                    </button>
+                    <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        onLogout();
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/50 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
+                    >
+                      <span className="text-sm font-medium">Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+      )}
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-8 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8 transition-colors">
