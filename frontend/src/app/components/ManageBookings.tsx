@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { getUserBookings, cancelBooking, updateBooking, checkAvailability } from '../../services/api';
+import { getUserBookings, cancelBooking, updateBooking, checkAvailability, initiateKhaltiPayment } from '../../services/api';
 
 interface Pet {
   pet_id: number;
@@ -18,6 +18,8 @@ interface Booking {
   number_of_days: number;
   price: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  booking_status?: 'pending' | 'approved' | 'confirmed' | 'completed' | 'rejected' | 'cancelled';
+  payment_status?: 'unpaid' | 'pending_payment' | 'paid' | 'failed';
   requires_pickup: boolean;
   pickup_address?: string;
   pickup_time?: string;
@@ -43,6 +45,7 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [editingBooking, setEditingBooking] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [payingBookingId, setPayingBookingId] = useState<number | null>(null);
 
   const [editFormData, setEditFormData] = useState({
     start_date: '',
@@ -57,6 +60,20 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
 
   useEffect(() => {
     fetchBookings();
+    
+    // Auto-refresh bookings every 10 seconds to detect admin approvals
+    const interval = setInterval(fetchBookings, 10000);
+    
+    // Also refresh when page comes into focus
+    const handleFocus = () => {
+      fetchBookings();
+    };
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const fetchBookings = async () => {
@@ -191,7 +208,7 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
     }
   };
 
-  const handleCancelBooking = async (bookingId: number, status: string) => {
+  const handleCancelBooking = async (bookingId: number) => {
     // Confirm cancellation
     if (!window.confirm('Are you sure you want to cancel this booking?')) {
       return;
@@ -207,16 +224,58 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
     }
   };
 
+  const getBookingStatus = (booking: Booking) => booking.booking_status || booking.status;
+  const getPaymentStatus = (booking: Booking) => booking.payment_status || 'unpaid';
+
+  const handlePayNow = async (bookingId: number) => {
+    try {
+      setPayingBookingId(bookingId);
+      const response = await initiateKhaltiPayment({
+        booking_id: bookingId,
+        return_url: `${window.location.origin}/payment-success`,
+        website_url: window.location.origin
+      });
+
+      const paymentUrl = response?.data?.payment_url;
+      if (!paymentUrl) {
+        throw new Error('Khalti payment URL was not returned by the server');
+      }
+
+      window.location.href = paymentUrl;
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to initiate Khalti payment');
+    } finally {
+      setPayingBookingId(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
+        return 'bg-indigo-100 text-indigo-800';
       case 'confirmed':
         return 'bg-green-100 text-green-800';
       case 'completed':
         return 'bg-blue-100 text-blue-800';
       case 'cancelled':
+      case 'rejected':
         return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'bg-green-100 text-green-800';
+      case 'pending_payment':
+        return 'bg-amber-100 text-amber-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      case 'unpaid':
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -237,11 +296,13 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
   };
 
   const canCancelBooking = (booking: Booking) => {
-    if (booking.status === 'completed' || booking.status === 'cancelled') {
+    const bookingStatus = getBookingStatus(booking);
+
+    if (bookingStatus === 'completed' || bookingStatus === 'cancelled' || bookingStatus === 'rejected') {
       return false;
     }
     
-    if (booking.status === 'confirmed') {
+    if (bookingStatus === 'confirmed') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const startDate = new Date(booking.start_date);
@@ -253,16 +314,27 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
   };
 
   const canRescheduleBooking = (booking: Booking) => {
-    return booking.status !== 'completed' && booking.status !== 'cancelled';
+    const bookingStatus = getBookingStatus(booking);
+    return bookingStatus !== 'completed' && bookingStatus !== 'cancelled' && bookingStatus !== 'rejected';
   };
 
   return (
     <div className="min-h-screen bg-[#FFF9F5] py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Manage Bookings</h1>
-          <p className="text-gray-600">View, reschedule, or cancel your upcoming bookings</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Manage Bookings</h1>
+            <p className="text-gray-600">View, reschedule, or cancel your upcoming bookings</p>
+          </div>
+          <button
+            onClick={fetchBookings}
+            disabled={loading}
+            className="bg-[#FA9884] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#E8876F] transition disabled:opacity-50"
+            title="Refresh to check for admin approvals"
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
         </div>
 
         {/* Bookings List */}
@@ -477,8 +549,8 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
                           <p className="text-sm text-gray-500">Booking #{booking.confirmation_code}</p>
                         </div>
                       </div>
-                      <span className={`px-4 py-1 rounded-full text-sm font-semibold ${getStatusColor(booking.status)}`}>
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                      <span className={`px-4 py-1 rounded-full text-sm font-semibold ${getStatusColor(getBookingStatus(booking))}`}>
+                        {getBookingStatus(booking).charAt(0).toUpperCase() + getBookingStatus(booking).slice(1)}
                       </span>
                     </div>
 
@@ -494,6 +566,12 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
                       <div>
                         <p className="text-gray-600">Price:</p>
                         <p className="font-medium">NPR {Number(booking.price).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Payment:</p>
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${getPaymentStatusColor(getPaymentStatus(booking))}`}>
+                          {getPaymentStatus(booking).replace('_', ' ')}
+                        </span>
                       </div>
 
                       {booking.requires_pickup && (
@@ -511,6 +589,15 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
                     </div>
 
                     <div className="flex gap-3 pt-4 border-t">
+                      {getBookingStatus(booking) === 'approved' && ['pending_payment', 'failed'].includes(getPaymentStatus(booking)) && (
+                        <button
+                          onClick={() => handlePayNow(booking.booking_id)}
+                          disabled={payingBookingId === booking.booking_id}
+                          className="flex-1 bg-[#FA9884] text-white py-2 rounded-lg font-semibold hover:bg-[#E8876F] transition disabled:opacity-50"
+                        >
+                          {payingBookingId === booking.booking_id ? 'Redirecting...' : 'Pay Now'}
+                        </button>
+                      )}
                       {canRescheduleBooking(booking) && (
                         <button
                           onClick={() => handleEditClick(booking)}
@@ -521,7 +608,7 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
                       )}
                       {canCancelBooking(booking) && (
                         <button
-                          onClick={() => handleCancelBooking(booking.booking_id, booking.status)}
+                          onClick={() => handleCancelBooking(booking.booking_id)}
                           className="flex-1 bg-red-100 text-red-700 py-2 rounded-lg font-semibold hover:bg-red-200 transition"
                         >
                           Cancel Booking

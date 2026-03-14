@@ -49,8 +49,6 @@ const EMERGENCY_TYPES = [
   'Other'
 ];
 
-const isDesktop = () => typeof window !== 'undefined' && window.innerWidth >= 768;
-
 export default function EmergencyPage({
   onBack,
   onBook,
@@ -67,7 +65,6 @@ export default function EmergencyPage({
   const [requests, setRequests] = useState<EmergencyRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [showCallModal, setShowCallModal] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -200,10 +197,9 @@ export default function EmergencyPage({
   };
 
   const handleCallClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    if (isDesktop()) {
-      event.preventDefault();
-      setShowCallModal(true);
-    }
+    // Open WhatsApp chat in a new tab
+    event.preventDefault();
+    window.open('https://wa.me/9779703712593', '_blank');
   };
 
   const statusSteps = ['pending', 'in_progress', 'resolved'];
@@ -330,7 +326,7 @@ export default function EmergencyPage({
             If your pet needs immediate medical attention, call us now.
           </p>
           <a
-            href="tel:+9779703812594"
+            href="https://wa.me/9779703812594"
             onClick={handleCallClick}
             className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-10 py-3 rounded-xl font-semibold flex items-center gap-3 shadow-lg"
           >
@@ -476,31 +472,6 @@ export default function EmergencyPage({
           )}
         </div>
       </main>
-
-      {showCallModal && (
-        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm text-gray-900 dark:text-gray-100">
-            <h3 className="text-lg font-semibold mb-2">Call Emergency Line</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Ready to place the call?</p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowCallModal(false)}
-                className="flex-1 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-              >
-                Cancel
-              </button>
-              <a
-                href="tel:+9779703812594"
-                className="flex-1 px-4 py-2 rounded-lg bg-[#E85B5B] dark:bg-red-700 text-white text-center"
-                onClick={() => setShowCallModal(false)}
-              >
-                Call Now
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

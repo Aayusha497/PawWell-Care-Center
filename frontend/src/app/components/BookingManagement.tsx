@@ -35,6 +35,8 @@ interface Booking {
   pickup_address?: string | null;
   dropoff_address?: string | null;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  booking_status?: 'pending' | 'approved' | 'confirmed' | 'completed' | 'rejected' | 'cancelled';
+  payment_status?: 'unpaid' | 'pending_payment' | 'paid' | 'failed';
   price?: number;
   notes?: string;
   created_at: string;
@@ -205,15 +207,30 @@ export default function BookingManagement() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400';
+      case 'approved': return 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-400';
       case 'confirmed': return 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400';
       case 'completed': return 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400';
+      case 'rejected': return 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-400';
       case 'cancelled': return 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-400';
       default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
     }
   };
 
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400';
+      case 'pending_payment': return 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400';
+      case 'failed': return 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-400';
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
+    }
+  };
+
+  const getBookingStatus = (booking: Booking) => booking.booking_status || booking.status;
+  const getPaymentStatus = (booking: Booking) => booking.payment_status || 'unpaid';
+
   const canComplete = (booking: Booking) => {
-    if (booking.status !== 'confirmed') return false;
+    if (getBookingStatus(booking) !== 'confirmed') return false;
+    if (getPaymentStatus(booking) !== 'paid') return false;
     const endDate = booking.end_date ? new Date(booking.end_date) : new Date(booking.start_date);
     const now = new Date();
     return now > endDate;
@@ -328,9 +345,11 @@ export default function BookingManagement() {
                   className="pl-3 pr-8 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   <option value="">All Statuses</option>
+                  <option value="approved">Approved</option>
                   <option value="confirmed">Confirmed</option>
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
+                  <option value="rejected">Rejected</option>
                   <option value="pending">Pending</option>
                 </select>
               </div>
@@ -389,9 +408,14 @@ export default function BookingManagement() {
                     <tr key={booking.booking_id} className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                        <td className="px-6 py-4 text-gray-500 dark:text-gray-400">#{booking.booking_id}</td>
                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                             {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(getBookingStatus(booking))}`}>
+                              {getBookingStatus(booking).charAt(0).toUpperCase() + getBookingStatus(booking).slice(1)}
                           </span>
+                            <div className="mt-1">
+                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${getPaymentStatusColor(getPaymentStatus(booking))}`}>
+                              {getPaymentStatus(booking).replace('_', ' ')}
+                             </span>
+                            </div>
                        </td>
                        <td className="px-6 py-4">
                           <div className="font-medium text-gray-900 dark:text-gray-100">{booking.pet.owner.first_name} {booking.pet.owner.last_name}</div>
@@ -426,8 +450,8 @@ export default function BookingManagement() {
                  <div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                        Booking Details #{selectedBooking.booking_id}
-                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedBooking.status)}`}>
-                          {selectedBooking.status.charAt(0).toUpperCase() + selectedBooking.status.slice(1)}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(getBookingStatus(selectedBooking))}`}>
+                          {getBookingStatus(selectedBooking).charAt(0).toUpperCase() + getBookingStatus(selectedBooking).slice(1)}
                        </span>
                     </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -487,6 +511,12 @@ export default function BookingManagement() {
                              <p className="text-xs text-gray-500 dark:text-gray-400">Total Price</p>
                              <p className="font-medium text-green-600 dark:text-green-400">Rs. {selectedBooking.price}</p>
                           </div>
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Payment</p>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${getPaymentStatusColor(getPaymentStatus(selectedBooking))}`}>
+                                {getPaymentStatus(selectedBooking).replace('_', ' ')}
+                              </span>
+                            </div>
                           <div>
                              <p className="text-xs text-gray-500 dark:text-gray-400">Start Date</p>
                              <p className="font-medium text-gray-900 dark:text-gray-100">{formatDate(selectedBooking.start_date)}</p>
@@ -534,7 +564,7 @@ export default function BookingManagement() {
                  </button>
                  
                  {/* Action buttons inside modal */}
-                 {selectedBooking.status === 'pending' && (
+                 {getBookingStatus(selectedBooking) === 'pending' && (
                     <>
                        <button
                           onClick={() => handleReject(selectedBooking.booking_id)}
@@ -551,7 +581,7 @@ export default function BookingManagement() {
                     </>
                  )}
 
-                 {selectedBooking.status === 'confirmed' && (
+                  {getBookingStatus(selectedBooking) === 'confirmed' && (
                     <button
                        onClick={() => handleComplete(selectedBooking.booking_id)}
                        disabled={!canComplete(selectedBooking)}

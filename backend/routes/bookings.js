@@ -17,6 +17,8 @@ const {
   getPendingBookings,
   approveBooking,
   rejectBooking,
+  initiateKhaltiPayment,
+  verifyKhaltiPayment,
   completeBooking,
   getAllBookings
 } = require('../controllers/bookingController');
@@ -24,6 +26,8 @@ const {
 // Public routes (require authentication)
 router.post('/check-availability', authenticate, checkAvailability);
 router.post('/', authenticate, createBooking);
+router.post('/payment/initiate', authenticate, initiateKhaltiPayment);
+router.post('/payment/verify', authenticate, verifyKhaltiPayment);
 router.get('/', authenticate, getUserBookings);
 router.get('/:bookingId', authenticate, getBookingById);
 router.put('/:bookingId', authenticate, updateBooking);

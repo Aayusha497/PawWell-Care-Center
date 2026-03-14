@@ -18,6 +18,8 @@ interface Booking {
   number_of_days: number;
   price: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  booking_status?: 'pending' | 'approved' | 'confirmed' | 'completed' | 'rejected' | 'cancelled';
+  payment_status?: 'unpaid' | 'pending_payment' | 'paid' | 'failed';
   requires_pickup: boolean;
   pickup_address?: string;
   pickup_time?: string;
@@ -58,14 +60,23 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack, onLeaveReview }
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'approved':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'confirmed':
+        return 'bg-green-100 text-green-800';
       case 'completed':
         return 'bg-blue-100 text-blue-800';
       case 'cancelled':
+      case 'rejected':
         return 'bg-red-100 text-red-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const getBookingStatus = (booking: Booking) => booking.booking_status || booking.status;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -83,7 +94,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack, onLeaveReview }
 
   const filteredBookings = bookings.filter(booking => {
     if (filter === 'all') return true;
-    return booking.status === filter;
+    return getBookingStatus(booking) === filter;
   });
 
   return (
@@ -115,7 +126,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack, onLeaveReview }
                 : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50'
             }`}
           >
-            Completed ({bookings.filter(b => b.status === 'completed').length})
+            Completed ({bookings.filter(b => getBookingStatus(b) === 'completed').length})
           </button>
           <button
             onClick={() => setFilter('cancelled')}
@@ -125,7 +136,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack, onLeaveReview }
                 : 'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50'
             }`}
           >
-            Cancelled ({bookings.filter(b => b.status === 'cancelled').length})
+            Cancelled ({bookings.filter(b => ['cancelled', 'rejected'].includes(getBookingStatus(b))).length})
           </button>
         </div>
 
@@ -167,8 +178,8 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack, onLeaveReview }
                       <p className="text-sm text-gray-500">Booking #{booking.confirmation_code}</p>
                     </div>
                   </div>
-                  <span className={`px-4 py-1 rounded-full text-sm font-semibold ${getStatusColor(booking.status)}`}>
-                    {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                  <span className={`px-4 py-1 rounded-full text-sm font-semibold ${getStatusColor(getBookingStatus(booking))}`}>
+                    {getBookingStatus(booking).charAt(0).toUpperCase() + getBookingStatus(booking).slice(1)}
                   </span>
                 </div>
 
@@ -190,6 +201,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack, onLeaveReview }
                   <div>
                     <p className="text-gray-600 mb-1">Price Paid:</p>
                     <p className="font-medium text-[#FA9884]">NPR {Number(booking.price).toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">Payment: {(booking.payment_status || 'unpaid').replace('_', ' ')}</p>
                   </div>
 
                   <div>
@@ -215,7 +227,7 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack, onLeaveReview }
                 </div>
 
                 {/* Additional Info for Completed Bookings */}
-                {booking.status === 'completed' && (
+                {getBookingStatus(booking) === 'completed' && (
                   <div className="mt-4 pt-4 border-t flex items-center justify-between">
                     <p className="text-sm text-green-600 font-medium">✓ Service completed successfully</p>
                     {onLeaveReview && (
@@ -229,9 +241,9 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack, onLeaveReview }
                   </div>
                 )}
 
-                {booking.status === 'cancelled' && (
+                {(getBookingStatus(booking) === 'cancelled' || getBookingStatus(booking) === 'rejected') && (
                   <div className="mt-4 pt-4 border-t">
-                    <p className="text-sm text-red-600 font-medium">✗ Booking was cancelled</p>
+                    <p className="text-sm text-red-600 font-medium">✗ Booking was not completed</p>
                   </div>
                 )}
               </div>
@@ -248,14 +260,14 @@ const BookingHistory: React.FC<BookingHistoryProps> = ({ onBack, onLeaveReview }
             </div>
             <div className="bg-white rounded-xl p-4 text-center shadow-md">
               <p className="text-2xl font-bold text-blue-600">
-                {bookings.filter(b => b.status === 'completed').length}
+                {bookings.filter(b => getBookingStatus(b) === 'completed').length}
               </p>
               <p className="text-sm text-gray-600">Completed</p>
             </div>
             <div className="bg-white rounded-xl p-4 text-center shadow-md">
               <p className="text-2xl font-bold text-green-600">
                 NPR {bookings
-                  .filter(b => b.status === 'completed')
+                  .filter(b => getBookingStatus(b) === 'completed')
                   .reduce((sum, b) => sum + Number(b.price), 0)
                   .toLocaleString()}
               </p>

@@ -47,6 +47,9 @@ interface Booking {
   start_date: string;
   end_date: string;
   status: string;
+  booking_status?: 'pending' | 'approved' | 'confirmed' | 'completed' | 'rejected' | 'cancelled';
+  payment_status?: 'unpaid' | 'pending_payment' | 'paid' | 'failed';
+  price?: number;
   pet?: { name: string };
 }
 
@@ -611,26 +614,48 @@ const handleAddPet = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {bookings.slice(0, 3).map((booking) => (
-                  <div key={booking.booking_id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#FFE4A3] dark:bg-yellow-600 rounded-full flex items-center justify-center">
-                        <span className="text-xl">📅</span>
+                {bookings.slice(0, 3).map((booking) => {
+                  const bookingStatus = booking.booking_status || booking.status;
+                  const paymentStatus = booking.payment_status || 'unpaid';
+                  const showPayNow = bookingStatus === 'approved' && ['pending_payment', 'failed'].includes(paymentStatus);
+                  
+                  return (
+                    <div 
+                      key={booking.booking_id} 
+                      onClick={() => {
+                        setSelectedBookingId(booking.booking_id);
+                        setShowManageBookings(true);
+                      }}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-10 h-10 bg-[#FFE4A3] dark:bg-yellow-600 rounded-full flex items-center justify-center">
+                          <span className="text-xl">📅</span>
+                        </div>
+                        <div>
+                          <h4 className="font-medium dark:text-gray-100">{booking.service_type}</h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(booking.start_date)}</p>
+                          {showPayNow && <p className="text-xs text-[#FA9884] font-semibold">Payment pending →</p>}
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium dark:text-gray-100">{booking.service_type}</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(booking.start_date)}</p>
+                      <div className="flex items-center gap-2">
+                        {showPayNow && (
+                          <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded font-medium">
+                            Pay Now
+                          </span>
+                        )}
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          bookingStatus === 'confirmed' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' :
+                          bookingStatus === 'approved' ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300' :
+                          bookingStatus === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' :
+                          'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                        }`}>
+                          {bookingStatus}
+                        </span>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      booking.status === 'confirmed' ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' :
-                      booking.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' :
-                      'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                    }`}>
-                      {booking.status}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             

@@ -14,6 +14,7 @@ import VerifyOTPPage from './components/VerifyOTPPage';
 import AboutPage from './components/AboutPage';
 import ContactPage from './components/ContactPage';
 import EmergencyPage from './components/EmergencyPage';
+import PaymentSuccessPage from './components/PaymentSuccessPage';
 import ProfilePage from './components/ProfilePage';
 import { Toaster } from './components/ui/sonner';
 import type { LoginData, RegisterData } from '../services/api';
@@ -31,11 +32,16 @@ type Page =
   | 'about'
   | 'contact'
   | 'emergency'
-  | 'profile';
+  | 'profile'
+  | 'payment-success';
 
 export default function App() {
   const { user, login, register, logout, loading, isLoggedIn } = useAuth();
   const [currentPage, setCurrentPage] = useState<Page>(() => {
+    if (window.location.pathname === '/payment-success') {
+      return 'payment-success';
+    }
+
     // Restore page from sessionStorage on mount to persist across refreshes
     const savedPage = sessionStorage.getItem('currentPage');
     return (savedPage as Page) || 'landing';
@@ -273,6 +279,19 @@ export default function App() {
           userFullName={user.fullName}
           onNavigate={(page) => handleNavigate(page as Page)}
           onDashboardTarget={handleDashboardTarget}
+        />
+      )}
+      {currentPage === 'payment-success' && (
+        <PaymentSuccessPage
+          onContinue={() => {
+            if (isLoggedIn) {
+              setCurrentPage('user-dashboard');
+              window.history.replaceState({}, document.title, '/');
+            } else {
+              setCurrentPage('login');
+              window.history.replaceState({}, document.title, '/login');
+            }
+          }}
         />
       )}
       {currentPage === 'forgot-password' && (

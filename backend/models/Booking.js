@@ -97,10 +97,32 @@ module.exports = (sequelize) => {
       allowNull: false,
       defaultValue: 'pending'
     },
+    booking_status: {
+      type: DataTypes.ENUM('pending', 'approved', 'confirmed', 'completed', 'rejected', 'cancelled'),
+      allowNull: false,
+      defaultValue: 'pending',
+      field: 'booking_status'
+    },
+    payment_status: {
+      type: DataTypes.ENUM('unpaid', 'pending_payment', 'paid', 'failed'),
+      allowNull: false,
+      defaultValue: 'unpaid',
+      field: 'payment_status'
+    },
     payment_method: {
       type: DataTypes.STRING(50),
       allowNull: true,
       field: 'payment_method'
+    },
+    transaction_id: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'transaction_id'
+    },
+    pidx: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: 'pidx'
     },
     confirmation_code: {
       type: DataTypes.STRING(50),

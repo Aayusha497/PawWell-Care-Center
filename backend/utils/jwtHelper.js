@@ -45,7 +45,8 @@ const verifyToken = (token) => {
 };
 
 /**
- * Calculate token expiry time
+ * Calculate token expiry time in milliseconds
+ * @returns {number|null} Milliseconds until expiry
  */
 const getTokenExpiry = (expiresIn) => {
   const match = expiresIn.match(/^(\d+)([mhd])$/);
@@ -54,15 +55,13 @@ const getTokenExpiry = (expiresIn) => {
   const value = parseInt(match[1]);
   const unit = match[2];
   
-  const now = new Date();
-  
   switch (unit) {
     case 'm':
-      return new Date(now.getTime() + value * 60 * 1000);
+      return value * 60 * 1000;
     case 'h':
-      return new Date(now.getTime() + value * 60 * 60 * 1000);
+      return value * 60 * 60 * 1000;
     case 'd':
-      return new Date(now.getTime() + value * 24 * 60 * 60 * 1000);
+      return value * 24 * 60 * 60 * 1000;
     default:
       return null;
   }

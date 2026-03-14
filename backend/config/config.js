@@ -44,6 +44,13 @@ module.exports = {
   // Frontend Configuration
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 
+  // Khalti ePayment configuration
+  khalti: {
+    secretKey: process.env.KHALTI_SECRET_KEY || '',
+    initiateUrl: process.env.KHALTI_INITIATE_URL || 'https://dev.khalti.com/api/v2/epayment/initiate/',
+    lookupUrl: process.env.KHALTI_LOOKUP_URL || 'https://dev.khalti.com/api/v2/epayment/lookup/'
+  },
+
   // Rate Limiting
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
@@ -58,6 +65,8 @@ module.exports = {
       'http://localhost:5174',
       process.env.FRONTEND_URL
     ].filter(Boolean),
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   }
 };

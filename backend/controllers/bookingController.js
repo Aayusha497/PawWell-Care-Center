@@ -4,9 +4,10 @@
  * Handles all booking operations including CRUD, availability checks, and admin actions
  */
 
-const { Booking, Pet } = require('../models');
+const { Booking, Pet, Payment, User } = require('../models');
 const { Op } = require('sequelize');
 const { createNotification } = require('./notificationController');
+const config = require('../config/config');
 
 // Service pricing and capacity configuration
 const SERVICE_CONFIG = {
@@ -24,6 +25,47 @@ const SERVICE_CONFIG = {
     flatRate: 3500,
     maxCapacityPerDay: 10,
     requiresDateRange: false
+  }
+};
+
+const BOOKING_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  CONFIRMED: 'confirmed',
+  COMPLETED: 'completed',
+  REJECTED: 'rejected',
+  CANCELLED: 'cancelled'
+};
+
+const PAYMENT_STATUS = {
+  UNPAID: 'unpaid',
+  PENDING_PAYMENT: 'pending_payment',
+  PAID: 'paid',
+  FAILED: 'failed'
+};
+
+const toLegacyStatus = (bookingStatus) => {
+  switch (bookingStatus) {
+    case BOOKING_STATUS.CONFIRMED:
+    case BOOKING_STATUS.APPROVED:
+      return 'confirmed';
+    case BOOKING_STATUS.COMPLETED:
+      return 'completed';
+    case BOOKING_STATUS.REJECTED:
+    case BOOKING_STATUS.CANCELLED:
+      return 'cancelled';
+    case BOOKING_STATUS.PENDING:
+    default:
+      return 'pending';
+  }
+};
+
+const parseKhaltiError = async (response) => {
+  try {
+    const payload = await response.json();
+    return payload?.detail || payload?.message || JSON.stringify(payload);
+  } catch (error) {
+    return `Khalti request failed with HTTP ${response.status}`;
   }
 };
 
@@ -114,6 +156,9 @@ const checkAvailability = async (req, res) => {
           },
           status: {
             [Op.in]: ['pending', 'confirmed']
+          },
+          booking_status: {
+            [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.APPROVED, BOOKING_STATUS.CONFIRMED]
           }
         }
       });
@@ -152,6 +197,9 @@ const checkAvailability = async (req, res) => {
           ],
           status: {
             [Op.in]: ['pending', 'confirmed']
+          },
+          booking_status: {
+            [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.APPROVED, BOOKING_STATUS.CONFIRMED]
           }
         }
       });
@@ -277,6 +325,8 @@ const createBooking = async (req, res) => {
       dropoff_address: requires_pickup ? (dropoff_address || pickup_address) : null,
       dropoff_time: requires_pickup ? dropoff_time : null,
       status: 'pending',
+      booking_status: BOOKING_STATUS.PENDING,
+      payment_status: PAYMENT_STATUS.UNPAID,
       confirmation_code: confirmationCode,
       created_at: new Date(),
       updated_at: new Date()
@@ -345,6 +395,9 @@ const checkAvailabilityInternal = async (service_type, start_date, end_date) => 
         },
         status: {
           [Op.in]: ['pending', 'confirmed']
+        },
+        booking_status: {
+          [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.APPROVED, BOOKING_STATUS.CONFIRMED]
         }
       }
     });
@@ -379,6 +432,9 @@ const checkAvailabilityInternal = async (service_type, start_date, end_date) => 
         ],
         status: {
           [Op.in]: ['pending', 'confirmed']
+        },
+        booking_status: {
+          [Op.in]: [BOOKING_STATUS.PENDING, BOOKING_STATUS.APPROVED, BOOKING_STATUS.CONFIRMED]
         }
       }
     });
@@ -414,7 +470,7 @@ const getUserBookings = async (req, res) => {
 
     // Filter by status if provided
     if (status) {
-      whereClause.status = status;
+      whereClause.booking_status = status;
     }
 
     // Filter upcoming bookings (start_date >= today)
@@ -437,8 +493,8 @@ const getUserBookings = async (req, res) => {
           }
         },
         {
-          status: {
-            [Op.in]: ['completed', 'cancelled']
+          booking_status: {
+            [Op.in]: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.REJECTED, BOOKING_STATUS.CANCELLED]
           }
         }
       ];
@@ -554,7 +610,7 @@ const updateBooking = async (req, res) => {
     }
 
     // Cannot reschedule cancelled bookings
-    if (booking.status === 'cancelled') {
+    if (booking.booking_status === BOOKING_STATUS.CANCELLED || booking.booking_status === BOOKING_STATUS.REJECTED) {
       return res.status(400).json({
         success: false,
         message: 'Cannot reschedule cancelled bookings'
@@ -562,7 +618,7 @@ const updateBooking = async (req, res) => {
     }
 
     // Cannot reschedule completed bookings
-    if (booking.status === 'completed') {
+    if (booking.booking_status === BOOKING_STATUS.COMPLETED) {
       return res.status(400).json({
         success: false,
         message: 'Cannot reschedule completed bookings'
@@ -597,8 +653,13 @@ const updateBooking = async (req, res) => {
       booking.price = price;
       booking.number_of_days = numberOfDays;
       
-      // Reset status to pending when rescheduling
-      booking.status = 'pending';
+      // Reset status to pending/unpaid when rescheduling
+      booking.status = toLegacyStatus(BOOKING_STATUS.PENDING);
+      booking.booking_status = BOOKING_STATUS.PENDING;
+      booking.payment_status = PAYMENT_STATUS.UNPAID;
+      booking.payment_method = null;
+      booking.pidx = null;
+      booking.transaction_id = null;
     }
 
     // Update pickup/dropoff details
@@ -672,14 +733,14 @@ const cancelBooking = async (req, res) => {
     }
 
     // Cannot cancel already cancelled or completed bookings
-    if (booking.status === 'cancelled') {
+    if (booking.booking_status === BOOKING_STATUS.CANCELLED || booking.booking_status === BOOKING_STATUS.REJECTED) {
       return res.status(400).json({
         success: false,
         message: 'Booking is already cancelled'
       });
     }
 
-    if (booking.status === 'completed') {
+    if (booking.booking_status === BOOKING_STATUS.COMPLETED) {
       return res.status(400).json({
         success: false,
         message: 'Cannot cancel completed bookings'
@@ -687,7 +748,7 @@ const cancelBooking = async (req, res) => {
     }
 
     // Confirmed bookings can only be cancelled before start date
-    if (booking.status === 'confirmed') {
+    if (booking.booking_status === BOOKING_STATUS.CONFIRMED) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const startDate = new Date(booking.start_date);
@@ -702,7 +763,8 @@ const cancelBooking = async (req, res) => {
     }
 
     // Update status to cancelled
-    booking.status = 'cancelled';
+    booking.status = toLegacyStatus(BOOKING_STATUS.CANCELLED);
+    booking.booking_status = BOOKING_STATUS.CANCELLED;
     booking.updated_at = new Date();
     await booking.save();
 
@@ -730,7 +792,7 @@ const getPendingBookings = async (req, res) => {
   try {
     const bookings = await Booking.findAll({
       where: {
-        status: 'pending'
+        booking_status: BOOKING_STATUS.PENDING
       },
       include: [
         {
@@ -738,7 +800,7 @@ const getPendingBookings = async (req, res) => {
           as: 'pet',
           attributes: ['pet_id', 'name', 'breed', 'photo'],
           include: [{
-            model: require('../models').User,
+            model: User,
             as: 'owner',
             attributes: ['id', 'first_name', 'last_name', 'email', 'phone_number']
           }]
@@ -780,14 +842,16 @@ const approveBooking = async (req, res) => {
       });
     }
 
-    if (booking.status !== 'pending') {
+    if (booking.booking_status !== BOOKING_STATUS.PENDING) {
       return res.status(400).json({
         success: false,
         message: 'Only pending bookings can be approved'
       });
     }
 
-    booking.status = 'confirmed';
+    booking.booking_status = BOOKING_STATUS.APPROVED;
+    booking.payment_status = PAYMENT_STATUS.PENDING_PAYMENT;
+    booking.status = toLegacyStatus(BOOKING_STATUS.APPROVED);
     booking.updated_at = new Date();
     await booking.save();
 
@@ -801,7 +865,7 @@ const approveBooking = async (req, res) => {
       booking.user_id,
       'booking_approved',
       'Booking Approved',
-      `Your booking has been approved! Service scheduled for ${serviceDate}.`,
+      `Your booking has been approved! Service scheduled for ${serviceDate}. Please complete payment to confirm.`,
       'booking',
       booking.booking_id
     );
@@ -839,14 +903,16 @@ const rejectBooking = async (req, res) => {
       });
     }
 
-    if (booking.status !== 'pending') {
+    if (booking.booking_status !== BOOKING_STATUS.PENDING) {
       return res.status(400).json({
         success: false,
         message: 'Only pending bookings can be rejected'
       });
     }
 
-    booking.status = 'cancelled';
+    booking.booking_status = BOOKING_STATUS.REJECTED;
+    booking.payment_status = PAYMENT_STATUS.UNPAID;
+    booking.status = toLegacyStatus(BOOKING_STATUS.REJECTED);
     booking.updated_at = new Date();
     await booking.save();
 
@@ -895,10 +961,10 @@ const completeBooking = async (req, res) => {
     }
 
     // Only confirmed bookings can be completed
-    if (booking.status !== 'confirmed') {
+    if (booking.booking_status !== BOOKING_STATUS.CONFIRMED || booking.payment_status !== PAYMENT_STATUS.PAID) {
       return res.status(400).json({
         success: false,
-        message: 'Only confirmed bookings can be marked as completed'
+        message: 'Only paid and confirmed bookings can be marked as completed'
       });
     }
 
@@ -922,7 +988,8 @@ const completeBooking = async (req, res) => {
        });
     }
 
-    booking.status = 'completed';
+    booking.booking_status = BOOKING_STATUS.COMPLETED;
+    booking.status = toLegacyStatus(BOOKING_STATUS.COMPLETED);
     booking.updated_at = new Date();
     await booking.save();
 
@@ -958,12 +1025,16 @@ const completeBooking = async (req, res) => {
  */
 const getAllBookings = async (req, res) => {
   try {
-    const { status, service_type, date_from, date_to } = req.query;
+    const { status, payment_status, service_type, date_from, date_to } = req.query;
 
     const whereClause = {};
 
     if (status) {
-      whereClause.status = status;
+      whereClause.booking_status = status;
+    }
+
+    if (payment_status) {
+      whereClause.payment_status = payment_status;
     }
 
     if (service_type) {
@@ -988,7 +1059,7 @@ const getAllBookings = async (req, res) => {
           as: 'pet',
           attributes: ['pet_id', 'name', 'breed', 'photo'],
           include: [{
-            model: require('../models').User,
+            model: User,
             as: 'owner',
             attributes: ['id', 'first_name', 'last_name', 'email', 'phone_number']
           }]
@@ -1013,6 +1084,295 @@ const getAllBookings = async (req, res) => {
   }
 };
 
+/**
+ * User: Initiate Khalti payment for approved booking
+ * POST /api/bookings/payment/initiate
+ */
+const initiateKhaltiPayment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const bookingId = parseInt(req.body.booking_id, 10);
+
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'booking_id is required'
+      });
+    }
+
+    if (!config.khalti.secretKey) {
+      return res.status(500).json({
+        success: false,
+        message: 'Khalti secret key is not configured on the server'
+      });
+    }
+
+    const booking = await Booking.findOne({
+      where: {
+        booking_id: bookingId,
+        user_id: userId
+      }
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    if (booking.booking_status !== BOOKING_STATUS.APPROVED) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only approved bookings can be paid'
+      });
+    }
+
+    if (booking.payment_status === PAYMENT_STATUS.PAID) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking is already paid'
+      });
+    }
+
+    const amountInPaisa = Math.round(Number(booking.price) * 100);
+    const returnUrl = req.body.return_url || `${config.frontendUrl}/payment-success`;
+    const websiteUrl = req.body.website_url || config.frontendUrl;
+
+    const khaltiPayload = {
+      return_url: returnUrl,
+      website_url: websiteUrl,
+      amount: amountInPaisa,
+      purchase_order_id: String(booking.booking_id),
+      purchase_order_name: 'Pet Care Booking'
+    };
+
+    const khaltiResponse = await fetch(config.khalti.initiateUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Key ${config.khalti.secretKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(khaltiPayload)
+    });
+
+    if (!khaltiResponse.ok) {
+      const khaltiError = await parseKhaltiError(khaltiResponse);
+      return res.status(400).json({
+        success: false,
+        message: khaltiError
+      });
+    }
+
+    const khaltiData = await khaltiResponse.json();
+
+    booking.payment_status = PAYMENT_STATUS.PENDING_PAYMENT;
+    booking.payment_method = 'khalti';
+    booking.pidx = khaltiData.pidx || booking.pidx;
+    booking.updated_at = new Date();
+    await booking.save();
+
+    const payment = await Payment.findOne({ where: { booking_id: booking.booking_id } });
+    if (!payment) {
+      await Payment.create({
+        booking_id: booking.booking_id,
+        amount: booking.price,
+        payment_method: 'khalti',
+        transaction_details: JSON.stringify({
+          stage: 'initiated',
+          response: khaltiData
+        })
+      });
+    } else {
+      payment.payment_method = 'khalti';
+      payment.transaction_details = JSON.stringify({
+        stage: 'initiated',
+        response: khaltiData
+      });
+      await payment.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Khalti payment initiated successfully',
+      data: {
+        booking_id: booking.booking_id,
+        pidx: khaltiData.pidx,
+        payment_url: khaltiData.payment_url,
+        expires_at: khaltiData.expires_at,
+        expires_in: khaltiData.expires_in
+      }
+    });
+  } catch (error) {
+    console.error('Error initiating Khalti payment:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to initiate Khalti payment',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * User: Verify Khalti payment after redirect
+ * POST /api/bookings/payment/verify
+ */
+const verifyKhaltiPayment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const isAdmin = req.user.user_type === 'admin';
+    const { pidx, booking_id } = req.body;
+
+    if (!pidx) {
+      return res.status(400).json({
+        success: false,
+        message: 'pidx is required'
+      });
+    }
+
+    if (!config.khalti.secretKey) {
+      return res.status(500).json({
+        success: false,
+        message: 'Khalti secret key is not configured on the server'
+      });
+    }
+
+    const lookupResponse = await fetch(config.khalti.lookupUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Key ${config.khalti.secretKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ pidx })
+    });
+
+    if (!lookupResponse.ok) {
+      const khaltiError = await parseKhaltiError(lookupResponse);
+      return res.status(400).json({
+        success: false,
+        message: khaltiError
+      });
+    }
+
+    const lookupData = await lookupResponse.json();
+
+    const bookingWhere = booking_id
+      ? { booking_id: parseInt(booking_id, 10) }
+      : { pidx };
+
+    const booking = await Booking.findOne({ where: bookingWhere });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found for provided payment reference'
+      });
+    }
+
+    if (!isAdmin && booking.user_id !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to verify this payment'
+      });
+    }
+
+    const payment = await Payment.findOne({ where: { booking_id: booking.booking_id } });
+
+    if (lookupData.status === 'Completed') {
+      booking.payment_status = PAYMENT_STATUS.PAID;
+      booking.booking_status = BOOKING_STATUS.CONFIRMED;
+      booking.status = toLegacyStatus(BOOKING_STATUS.CONFIRMED);
+      booking.payment_method = 'khalti';
+      booking.pidx = pidx;
+      booking.transaction_id = lookupData.transaction_id || lookupData.transactionId || booking.transaction_id;
+      booking.updated_at = new Date();
+      await booking.save();
+
+      if (!payment) {
+        await Payment.create({
+          booking_id: booking.booking_id,
+          amount: booking.price,
+          payment_method: 'khalti',
+          transaction_details: JSON.stringify({
+            stage: 'verified',
+            response: lookupData
+          }),
+          payment_date: new Date()
+        });
+      } else {
+        payment.payment_method = 'khalti';
+        payment.transaction_details = JSON.stringify({
+          stage: 'verified',
+          response: lookupData
+        });
+        payment.payment_date = new Date();
+        await payment.save();
+      }
+
+      await createNotification(
+        booking.user_id,
+        'payment_completed',
+        'Payment Completed',
+        'Payment received successfully. Your booking is now confirmed.',
+        'booking',
+        booking.booking_id
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Payment verified and booking confirmed',
+        data: {
+          booking,
+          khalti: lookupData
+        }
+      });
+    }
+
+    booking.payment_status = PAYMENT_STATUS.FAILED;
+    booking.booking_status = BOOKING_STATUS.APPROVED;
+    booking.status = toLegacyStatus(BOOKING_STATUS.APPROVED);
+    booking.payment_method = 'khalti';
+    booking.pidx = pidx;
+    booking.updated_at = new Date();
+    await booking.save();
+
+    if (!payment) {
+      await Payment.create({
+        booking_id: booking.booking_id,
+        amount: booking.price,
+        payment_method: 'khalti',
+        transaction_details: JSON.stringify({
+          stage: 'failed',
+          response: lookupData
+        })
+      });
+    } else {
+      payment.payment_method = 'khalti';
+      payment.transaction_details = JSON.stringify({
+        stage: 'failed',
+        response: lookupData
+      });
+      await payment.save();
+    }
+
+    return res.status(200).json({
+      success: false,
+      message: 'Payment not completed',
+      data: {
+        booking,
+        khalti: lookupData
+      }
+    });
+  } catch (error) {
+    console.error('Error verifying Khalti payment:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to verify Khalti payment',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   checkAvailability,
   createBooking,
@@ -1023,7 +1383,11 @@ module.exports = {
   getPendingBookings,
   approveBooking,
   rejectBooking,
+  initiateKhaltiPayment,
+  verifyKhaltiPayment,
   completeBooking,
   getAllBookings,
-  SERVICE_CONFIG
+  SERVICE_CONFIG,
+  BOOKING_STATUS,
+  PAYMENT_STATUS
 };

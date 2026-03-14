@@ -703,6 +703,41 @@ export const rejectBooking = async (bookingId: number): Promise<any> => {
 };
 
 /**
+ * Initiate Khalti payment for an approved booking
+ * @param {object} payload - Payment initiation payload
+ * @returns {Promise<any>} Khalti payment URL and metadata
+ */
+export const initiateKhaltiPayment = async (payload: {
+  booking_id: number;
+  return_url?: string;
+  website_url?: string;
+}): Promise<any> => {
+  try {
+    const response = await api.post('/bookings/payment/initiate', payload);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to initiate Khalti payment' };
+  }
+};
+
+/**
+ * Verify Khalti payment using pidx after redirect
+ * @param {object} payload - Verify payload
+ * @returns {Promise<any>} Verification result
+ */
+export const verifyKhaltiPayment = async (payload: {
+  pidx: string;
+  booking_id?: number;
+}): Promise<any> => {
+  try {
+    const response = await api.post('/bookings/payment/verify', payload);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to verify Khalti payment' };
+  }
+};
+
+/**
  * Admin: Get all bookings with filters
  * @param {object} filters - Optional filters
  * @returns {Promise<any>} List of all bookings

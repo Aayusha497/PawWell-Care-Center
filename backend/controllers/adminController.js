@@ -291,7 +291,7 @@ const getNotificationSummary = async (req, res) => {
     const { Review } = require('../models');
     
     const [pendingBookings, unreadMessages, openEmergency, pendingReviews] = await Promise.all([
-      Booking.count({ where: { status: 'pending' } }),
+      Booking.count({ where: { booking_status: 'pending' } }),
       ContactMessage.count({ where: { status: 'unread' } }),
       EmergencyRequest.count({ where: { status: { [Op.in]: ['pending', 'in_progress'] } } }),
       Review.count({ where: { is_approved: false } })
