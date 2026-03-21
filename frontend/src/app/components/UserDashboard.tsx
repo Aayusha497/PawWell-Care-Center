@@ -97,6 +97,28 @@ export default function UserDashboard({
     fetchPets();
     fetchBookings();
     fetchActivities();
+    
+    // Check if we just completed a payment - if so, refetch more aggressively
+    const justPaidBookingId = sessionStorage.getItem('just_paid_booking_id');
+    if (justPaidBookingId) {
+      console.log('💳 Payment just completed! Aggressively refetching bookings...');
+      sessionStorage.removeItem('just_paid_booking_id');
+      // Refetch immediately and multiple times to ensure we get latest data
+      setTimeout(() => fetchBookings(), 300);
+      setTimeout(() => fetchBookings(), 800);
+      setTimeout(() => fetchBookings(), 1500);
+    }
+    
+    // Only refresh when page comes into focus (to avoid flickering)
+    const handleFocus = () => {
+      console.log('👁️ Page focused - refetching bookings');
+      fetchBookings();
+    };
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   // Close dropdown when clicking outside
@@ -186,11 +208,22 @@ export default function UserDashboard({
   const fetchBookings = async () => {
     try {
       setBookingsLoading(true);
+      console.log('🔄 Fetching bookings...');
       const response = await getUserBookings({ upcoming: true });
       const bookingData = response.data || response.bookings || response || [];
+      
+      console.log('📚 Bookings fetched:', {
+        count: Array.isArray(bookingData) ? bookingData.length : 0,
+        statuses: Array.isArray(bookingData) ? bookingData.map((b: any) => ({
+          id: b.booking_id,
+          booking_status: b.booking_status,
+          payment_status: b.payment_status
+        })) : []
+      });
+      
       setBookings(Array.isArray(bookingData) ? bookingData : []);
     } catch (error: any) {
-      console.error('Error fetching bookings:', error);
+      console.error('❌ Error fetching bookings:', error);
     } finally {
       setBookingsLoading(false);
     }

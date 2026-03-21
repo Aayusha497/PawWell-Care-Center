@@ -234,7 +234,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     console.log('🔵 Cancel button clicked');
     
     // If profile is incomplete (initial setup), log out the user
@@ -245,7 +245,8 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
       
       if (confirmLogout) {
         console.log('🚪 Logging out user from profile setup');
-        onLogout();
+        await onLogout();
+        return;
       }
       return;
     }

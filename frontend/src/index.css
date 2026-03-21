@@ -1552,87 +1552,80 @@ a {
 /* ==================== CLEAN SUCCESS MODAL ==================== */
 .clean-success-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(5px);
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  animation: cleanFadeIn 0.2s ease-out;
   padding: 20px;
+  backdrop-filter: blur(4px);
 }
 
 .clean-success-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 0;
-  max-width: 380px;
+  max-width: 420px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  animation: cleanSlideIn 0.3s ease-out;
-  position: relative;
-  overflow: visible;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
 }
 
-/* Success Icon Circle - positioned at top edge */
+/* Success Icon Circle - positioned at top */
 .clean-success-icon {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: -40px auto 0;
-  position: relative;
-  box-shadow: 0 4px 20px rgba(76, 175, 80, 0.4);
-  animation: cleanIconBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.1s both;
+  margin: 40px auto 0;
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.35);
+  animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .clean-checkmark {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
 }
 
 .clean-checkmark-circle {
-  stroke-width: 3;
-  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 2;
+  stroke: rgba(255, 255, 255, 0.2);
   fill: none;
 }
 
 .clean-checkmark-path {
   stroke: white;
-  stroke-width: 3.5;
+  stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-dasharray: 48;
   stroke-dashoffset: 48;
-  animation: cleanCheckDraw 0.5s ease-out 0.3s forwards;
+  animation: checkmarkDraw 0.6s ease-out 0.3s forwards;
 }
 
 /* Title */
 .clean-success-title {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: #333;
-  margin: 30px 0 12px;
-  padding: 0 30px;
-  animation: cleanFadeInUp 0.4s ease-out 0.4s both;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 24px 0 12px;
+  padding: 0 32px;
+  letter-spacing: -0.5px;
 }
 
 /* Message */
 .clean-success-message {
-  font-size: 0.9375rem;
+  font-size: 0.95rem;
   color: #666;
-  line-height: 1.5;
-  margin: 0 0 30px;
-  padding: 0 30px;
-  animation: cleanFadeInUp 0.4s ease-out 0.5s both;
+  line-height: 1.6;
+  margin: 0 0 32px;
+  padding: 0 32px;
 }
 
 /* OK Button */
@@ -1640,64 +1633,59 @@ a {
   background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
   color: white;
   border: none;
-  border-radius: 0 0 12px 12px;
-  padding: 16px 30px;
-  font-size: 1rem;
+  border-radius: 0 0 16px 16px;
+  padding: 14px 24px;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
   width: 100%;
-  animation: cleanFadeInUp 0.4s ease-out 0.6s both;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 .clean-success-button:hover {
-  background: linear-gradient(135deg, #4caf50 0%, #43a047 100%);
-  box-shadow: inset 0 -2px 10px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #5eaa5f 0%, #43a047 100%);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
 }
 
 .clean-success-button:active {
-  transform: scale(0.98);
+  transform: translateY(0);
 }
 
 .clean-success-button:focus {
-  outline: 3px solid rgba(76, 175, 80, 0.3);
-  outline-offset: -3px;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
 }
 
 /* Animations */
-@keyframes cleanFadeIn {
+@keyframes slideUp {
   from {
     opacity: 0;
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@keyframes cleanSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes cleanIconBounce {
+@keyframes scaleIn {
   0% {
-    opacity: 0;
     transform: scale(0);
-  }
-  50% {
-    transform: scale(1.1);
+    opacity: 0;
   }
   100% {
-    opacity: 1;
     transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes checkmarkDraw {
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
@@ -1722,34 +1710,35 @@ a {
 @media (max-width: 480px) {
   .clean-success-card {
     max-width: 90%;
+    margin: 20px;
   }
 
   .clean-success-icon {
-    width: 70px;
-    height: 70px;
-    margin: -35px auto 0;
+    width: 80px;
+    height: 80px;
+    margin: 30px auto 0;
   }
 
   .clean-checkmark {
-    width: 45px;
-    height: 45px;
+    width: 50px;
+    height: 50px;
   }
 
   .clean-success-title {
-    font-size: 1.5rem;
-    margin: 25px 0 10px;
+    font-size: 1.3rem;
+    margin: 20px 0 10px;
     padding: 0 20px;
   }
 
   .clean-success-message {
     font-size: 0.875rem;
     padding: 0 20px;
-    margin-bottom: 25px;
+    margin-bottom: 24px;
   }
 
   .clean-success-button {
-    padding: 14px 20px;
-    font-size: 0.9375rem;
+    padding: 12px 20px;
+    font-size: 0.875rem;
   }
 }
 

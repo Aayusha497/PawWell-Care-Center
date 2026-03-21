@@ -6,6 +6,7 @@ import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { Alert, AlertDescription } from './ui/alert';
 import { toast } from 'sonner';
+import SuccessModal from './ui/SuccessModal';
 
 interface SignupPageProps {
   onSignup: (fullName: string, email: string, password: string, confirmPassword: string) => void;
@@ -13,9 +14,11 @@ interface SignupPageProps {
   onNavigateToHome?: () => void;
   error?: string | null;
   fieldErrors?: Record<string, string[]>;
+  showSignupSuccess?: boolean;
+  onSignupSuccessClose?: () => void;
 }
 
-export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHome, error, fieldErrors }: SignupPageProps) {
+export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHome, error, fieldErrors, showSignupSuccess, onSignupSuccessClose }: SignupPageProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,9 +26,42 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: Record<string, string> = {};
+
+    // Validate all fields
+    if (!fullName.trim()) {
+      errors.fullName = 'Please fill this field';
+    }
+    
+    if (!email.trim()) {
+      errors.email = 'Please fill this field';
+    }
+    
+    if (!password.trim()) {
+      errors.password = 'Please fill this field';
+    }
+    
+    if (!confirmPassword.trim()) {
+      errors.confirmPassword = 'Please fill this field';
+    }
+
+    // If there are validation errors, show them and return
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      toast.error('Please fill in all fields', {
+        description: 'All fields are required to create an account.',
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Clear validation errors if all fields are filled
+    setValidationErrors({});
+
     if (password !== confirmPassword) {
       toast.error('Passwords do not match', {
         description: 'Please make sure both password fields match.',
@@ -106,8 +142,10 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Enter your full name"
                   className="mt-1 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
-                  required
                 />
+                {validationErrors.fullName && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.fullName}</p>
+                )}
               </div>
 
               <div>
@@ -119,8 +157,10 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   className="mt-1 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
-                  required
                 />
+                {validationErrors.email && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
+                )}
                 {fieldErrors?.email && (
                   <p className="text-sm text-red-500 mt-1">{fieldErrors.email[0]}</p>
                 )}
@@ -135,7 +175,6 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Create a password"
-                    required
                     className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   />
                   <button
@@ -156,6 +195,9 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                     )}
                   </button>
                 </div>
+                {validationErrors.password && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.password}</p>
+                )}
                 {fieldErrors?.password && (
                   <p className="text-sm text-red-500 mt-1">{fieldErrors.password[0]}</p>
                 )}
@@ -170,7 +212,6 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm your password"
-                    required
                     className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   />
                   <button
@@ -191,6 +232,9 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                     )}
                   </button>
                 </div>
+                {validationErrors.confirmPassword && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.confirmPassword}</p>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -213,13 +257,13 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
 
               <div className="text-center text-gray-500 dark:text-gray-400 text-sm">OR</div>
 
-              <Button 
+              {/* <Button 
                 type="button"
                 variant="outline"
                 className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
               >
                 Sign in with Google
-              </Button>
+              </Button> */}
 
               <p className="text-center text-sm">
                 Already have an account?{' '}
@@ -239,6 +283,15 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
         <div className="h-12 bg-[#EAB308] dark:bg-gray-700"></div>
       </div>
       </div>
+
+      <SuccessModal
+        isOpen={showSignupSuccess || false}
+        onClose={onSignupSuccessClose || (() => {})}
+        title="Account Created Successfully"
+        message="Your account has been created successfully. Redirecting to login..."
+        actionText="Continue"
+        autoRedirectSeconds={5}
+      />
     </div>
   );
 }

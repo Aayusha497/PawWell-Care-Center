@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
+import { toast } from 'sonner';
 
 interface LoginPageProps {
   onLogin: (email: string, password: string) => void;
@@ -11,15 +12,40 @@ interface LoginPageProps {
   onNavigateToHome: () => void;
   onNavigateToForgotPassword: () => void;
   error?: string | null;
+  onClearError?: () => void;
 }
 
-export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHome, onNavigateToForgotPassword, error }: LoginPageProps) {
+export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHome, onNavigateToForgotPassword, error, onClearError }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: Record<string, string> = {};
+
+    // Validate all fields
+    if (!email.trim()) {
+      errors.email = 'Please fill this field';
+    }
+    
+    if (!password.trim()) {
+      errors.password = 'Please fill this field';
+    }
+
+    // If there are validation errors, show them and return
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      toast.error('Please fill in all fields', {
+        description: 'Email and password are required to login.',
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Clear validation errors if all fields are filled
+    setValidationErrors({});
     onLogin(email, password);
   };
 
@@ -77,12 +103,24 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  // Clear server error when user starts typing
+                  if (error && onClearError) {
+                    onClearError();
+                  }
+                  // Clear email validation error when user starts typing
+                  if (validationErrors.email) {
+                    setValidationErrors(prev => ({ ...prev, email: '' }));
+                  }
+                }}
                 placeholder="Enter your email"
                 className="mt-2 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                 autoComplete="off"
-                required
               />
+              {validationErrors.email && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
+              )}
             </div>
 
             <div>
@@ -92,10 +130,19 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    // Clear server error when user starts typing
+                    if (error && onClearError) {
+                      onClearError();
+                    }
+                    // Clear password validation error when user starts typing
+                    if (validationErrors.password) {
+                      setValidationErrors(prev => ({ ...prev, password: '' }));
+                    }
+                  }}
                   placeholder="Enter your password"
                   autoComplete="new-password"
-                  required
                   className="dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                 />
                 <button
@@ -116,6 +163,9 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
                   )}
                 </button>
               </div>
+              {validationErrors.password && (
+                <p className="text-sm text-red-500 mt-1">{validationErrors.password}</p>
+              )}
               <div className="text-right mt-2">
                 <button 
                   type="button" 
@@ -136,13 +186,13 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
 
             <div className="text-center text-gray-500 dark:text-gray-400 text-sm">OR</div>
 
-            <Button 
+            {/* <Button 
               type="button"
               variant="outline"
               className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
             >
               Sign in with Google
-            </Button>
+            </Button> */}
 
             <p className="text-center text-sm">
               Don't have an account?{' '}

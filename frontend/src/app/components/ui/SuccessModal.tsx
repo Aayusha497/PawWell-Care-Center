@@ -14,8 +14,8 @@ export default function SuccessModal({
   onClose, 
   title = 'Success',
   message = 'Your registration was successful. Please login to continue.',
-  actionText = 'OK',
-  autoRedirectSeconds = 3
+  actionText = 'Continue',
+  autoRedirectSeconds = 2
 }: SuccessModalProps) {
   const [countdown, setCountdown] = React.useState(autoRedirectSeconds);
 
@@ -45,10 +45,10 @@ export default function SuccessModal({
     }
   }, [isOpen, autoRedirectSeconds, onClose]);
 
-  // Handle keyboard events
+  // Handle keyboard events and prevent closing on escape
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if ((e.key === 'Escape' || e.key === 'Enter') && isOpen) {
+      if (e.key === 'Enter' && isOpen) {
         onClose();
       }
     };
@@ -66,8 +66,7 @@ export default function SuccessModal({
 
   return (
     <div 
-      className="clean-success-overlay" 
-      onClick={onClose}
+      className="clean-success-overlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby="success-title"

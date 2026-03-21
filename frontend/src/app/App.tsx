@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext.tsx';
 import { isAdmin } from '../utils/rbac';
 import AdminDashboard from './components/AdminDashboard';
@@ -37,20 +38,68 @@ type Page =
 
 export default function App() {
   const { user, login, register, logout, loading, isLoggedIn } = useAuth();
+  
+  // Check if we're on payment-success page (with query params from Khalti OR stored in localStorage)
+  const isPaymentSuccessPath = () => {
+    const pathname = window.location.pathname;
+    const hasPaymentParams = window.location.search.includes('pidx') || window.location.search.includes('idx');
+    const hasStoredPidx = localStorage.getItem('khalti_pidx') !== null;
+    
+    console.log('🔍 [App.tsx] isPaymentSuccessPath check:', {
+      pathname,
+      hasPaymentParams,
+      hasStoredPidx,
+      khalti_pidx: localStorage.getItem('khalti_pidx'),
+      khalti_booking_id: localStorage.getItem('khalti_booking_id')
+    });
+    
+    // Payment success if: correct path, OR has URL params, OR we detect localStorage pidx
+    return pathname === '/payment-success' || (hasPaymentParams && pathname === '/') || hasStoredPidx;
+  };
+  
   const [currentPage, setCurrentPage] = useState<Page>(() => {
-    if (window.location.pathname === '/payment-success') {
+    const isPaymentSuccess = isPaymentSuccessPath();
+    console.log('🚀 [App.tsx] Initial page detection:', {
+      isPaymentSuccess,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      localStorage_pidx: localStorage.getItem('khalti_pidx'),
+      localStorage_booking_id: localStorage.getItem('khalti_booking_id')
+    });
+    
+    if (isPaymentSuccess) {
+      console.log('🎯 [App.tsx] DETECTED PAYMENT SUCCESS PATH - Setting currentPage to payment-success');
       return 'payment-success';
     }
 
     // Restore page from sessionStorage on mount to persist across refreshes
     const savedPage = sessionStorage.getItem('currentPage');
-    return (savedPage as Page) || 'landing';
+    const initialPage = (savedPage as Page) || 'landing';
+    console.log('📄 [App.tsx] Restoring page from storage:', initialPage);
+    return initialPage;
   });
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [dashboardTarget, setDashboardTarget] = useState<'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | 'settings' | null>(null);
+  const [showSignupSuccess, setShowSignupSuccess] = useState(false);
+
+  // Detect URL changes and switch to payment-success page if needed
+  useEffect(() => {
+    const handleUrlChange = () => {
+      if (isPaymentSuccessPath() && currentPage !== 'payment-success') {
+        console.log('🎯 [App.tsx] URL changed to payment-success, switching page');
+        setCurrentPage('payment-success');
+      }
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    // Also check on mount in case URL was set before React initialized
+    handleUrlChange();
+    
+    return () => window.removeEventListener('popstate', handleUrlChange);
+  }, [currentPage]);
 
   // Persist current page to sessionStorage whenever it changes
   useEffect(() => {
@@ -62,7 +111,17 @@ export default function App() {
       const authPages = ['landing', 'login', 'signup', 'forgot-password', 'verify-otp', 'reset-password'];
       const shouldRedirect = authPages.includes(currentPage);
 
-      if (shouldRedirect) {
+      // CRITICAL: Never redirect away from payment-success page!
+      // Payment verification must complete before redirecting
+      // ALSO: If URL has payment parameters, force payment-success page
+      const hasPaymentParams = window.location.search.includes('pidx') || window.location.search.includes('idx');
+      if (hasPaymentParams && currentPage !== 'payment-success') {
+        console.log('🚨 [App.tsx] Payment parameters detected - forcing payment-success page');
+        setCurrentPage('payment-success');
+        return;
+      }
+
+      if (shouldRedirect && currentPage !== 'payment-success') {
         // Check if profile is complete before redirecting to dashboard (for both admin and users)
         if (!user.isProfileComplete) {
           setCurrentPage('profile');
@@ -74,12 +133,15 @@ export default function App() {
       }
     } else if (!isLoggedIn && !loading) {
       // If not logged in and on a protected page, redirect to landing
+      // BUT: Don't redirect if we're on the login page with an error (user is trying to fix their credentials)
+      // AND: Don't redirect from payment-success (user needs to verify payment even if session expired)
       const protectedPages = ['user-dashboard', 'admin-dashboard', 'profile'];
-      if (protectedPages.includes(currentPage)) {
+      const hasPaymentParams = window.location.search.includes('pidx') || window.location.search.includes('idx');
+      if (protectedPages.includes(currentPage) && currentPage !== 'payment-success' && !hasPaymentParams) {
         setCurrentPage('landing');
       }
     }
-  }, [isLoggedIn, user, loading]);
+  }, [isLoggedIn, user, loading, currentPage]);
 
   if (loading) {
     return (
@@ -98,6 +160,19 @@ export default function App() {
       setFieldErrors({});
       const credentials: LoginData = { email, password };
       const response = await login(credentials);
+
+      // Show beautiful SweetAlert2 popup
+      await Swal.fire({
+        title: 'Logged In Successfully!',
+        text: 'Welcome back! Please setup your profile to get started.',
+        icon: 'success',
+        confirmButtonText: 'Continue',
+        confirmButtonColor: '#EAB308',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        timer: 4000,
+        timerProgressBar: true,
+      });
 
       // Check if profile is complete for both admin and regular users
       if (!response.user.isProfileComplete) {
@@ -119,7 +194,12 @@ export default function App() {
         errorMessage = 'Please correct the errors below.';
       }
 
+      // Set error and show it
       setError(errorMessage);
+      toast.error('Login Failed', {
+        description: errorMessage,
+        duration: 4000,
+      });
     }
   };
 
@@ -150,15 +230,12 @@ export default function App() {
       const response = await register(userData);
 
       if (response) {
-        toast.success('Registration successful! Redirecting to login...');
+        toast.success('Account created successfully!');
+        setShowSignupSuccess(true);
       }
 
       setError(null);
       setFieldErrors({});
-
-      setTimeout(() => {
-        setCurrentPage('login');
-      }, 2000);
     } catch (err: any) {
       console.error('Registration failed - Full error:', err);
 
@@ -189,6 +266,16 @@ export default function App() {
     }
   };
 
+  const handleSignupSuccessClose = () => {
+    setShowSignupSuccess(false);
+    setCurrentPage('login');
+  };
+
+  const handleClearLoginError = () => {
+    setError(null);
+    setFieldErrors({});
+  };
+
   const handleNavigate = (page: Page) => {
     setCurrentPage(page);
   };
@@ -216,6 +303,7 @@ export default function App() {
           onNavigateToHome={() => setCurrentPage('landing')}
           onNavigateToForgotPassword={() => setCurrentPage('forgot-password')}
           error={error}
+          onClearError={handleClearLoginError}
         />
       )}
       {currentPage === 'signup' && (
@@ -225,6 +313,8 @@ export default function App() {
           onNavigateToHome={() => setCurrentPage('landing')}
           error={error}
           fieldErrors={fieldErrors}
+          showSignupSuccess={showSignupSuccess}
+          onSignupSuccessClose={handleSignupSuccessClose}
         />
       )}
       {currentPage === 'about' && (

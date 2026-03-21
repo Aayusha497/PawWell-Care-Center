@@ -11,6 +11,8 @@ import * as Yup from 'yup';
 import { registerUser } from '../services/api';
 import { toast } from 'react-toastify';
 import { getPasswordStrength } from '../utils/auth';
+import Swal from "sweetalert2";
+
 
 // Validation schema
 const SignupSchema = Yup.object().shape({
@@ -45,10 +47,17 @@ const SignupSchema = Yup.object().shape({
 });
 
 const Signup = () => {
+
   const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: 'None', color: '#ccc' });
+
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    label: 'None',
+    color: '#ccc'
+  });
 
   const initialValues = {
     first_name: '',
@@ -66,14 +75,15 @@ const Signup = () => {
     setPasswordStrength(strength);
   };
 
+
   const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+
     console.log('🚀 Form submitted!', values);
-    console.log('🔍 Validation state:', { isSubmitting: false, values });
-    
+
     try {
+
       const { terms, first_name, last_name, phone_number, confirm_password, user_type, ...rest } = values;
-      
-      // Transform field names to camelCase for backend
+
       const userData = {
         ...rest,
         firstName: first_name,
@@ -82,87 +92,134 @@ const Signup = () => {
         confirmPassword: confirm_password,
         userType: user_type
       };
-      
+
       console.log('📤 Sending registration data:', userData);
-      
+
       const response = await registerUser(userData);
+
       console.log('✅ Registration response:', response);
 
       if (response.success) {
+
         console.log('🎉 Registration successful!');
-        toast.success('Registration successful!');
-        setTimeout(() => {
-          navigate('/login', { state: { email: userData.email, registered: true } });
-        }, 2000);
+
+        // SweetAlert Success Popup
+        Swal.fire({
+          icon: "success",
+          title: "Registration Successful!",
+          text: "Your PawWell account has been created successfully.",
+          confirmButtonText: "Go to Login",
+          confirmButtonColor: "#3085d6"
+        }).then((result) => {
+          if (result.isConfirmed) {
+            navigate('/login', {
+              state: {
+                email: userData.email,
+                registered: true
+              }
+            });
+          }
+        });
+
       } else {
+
         console.warn('⚠️ Registration response success=false:', response);
+
         toast.error(response.message || 'Registration failed. Please try again.');
       }
+
     } catch (error) {
+
       console.error('❌ Registration error:', error);
-      
+
       if (error.errors) {
-        // Transform backend errors back to snake_case for form fields
+
         const formErrors = {};
+
         Object.keys(error.errors).forEach(key => {
+
           const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+
           formErrors[snakeKey] = error.errors[key];
+
         });
-        console.log('📝 Setting form errors:', formErrors);
+
         setErrors(formErrors);
+
       }
-      
+
       toast.error(error.message || 'Registration failed. Please try again.');
+
     } finally {
+
       setSubmitting(false);
-      console.log('✅ Form submission complete');
+
     }
+
   };
 
+
   return (
+
     <div className="auth-page">
+
       <div className="signup-container">
-        {/* Left Side - Image and Text */}
+
+        {/* Left Side */}
+
         <div className="signup-left">
+
           <div className="signup-brand">
+
             <div className="auth-logo">
               <span className="paw-icon">🐾</span>
               <span className="logo-text">PawWell</span>
             </div>
+
           </div>
-          
+
           <h1 className="signup-heading">Join the PawWell<br />Family!</h1>
+
           <p className="signup-description">
-            Create an account to manage your pets,<br />book services, and get expert advice.
+            Create an account to manage your pets,<br />
+            book services, and get expert advice.
           </p>
-          
+
           <div className="signup-image">
+
             <div className="pet-image-circle">
               🐕
             </div>
+
           </div>
+
         </div>
 
-        {/* Right Side - Form */}
+
+        {/* Right Side */}
+
         <div className="signup-right">
+
           <div className="signup-form-container">
-            
+
             <Formik
               initialValues={initialValues}
               validationSchema={SignupSchema}
               onSubmit={handleSubmit}
             >
-              {({ values, isSubmitting, setFieldValue, errors, touched }) => {
-                console.log('🎨 Formik render - isSubmitting:', isSubmitting, 'errors:', errors);
-                return (
-              <Form className="auth-form" onSubmit={(e) => {
-                console.log('📝 Form onSubmit event triggered');
-              }}>
-                <div className="form-group">
-                  <label htmlFor="first_name">Full Name</label>
-                  <div className="name-fields">
+
+              {({ values, isSubmitting, setFieldValue, errors, touched }) => (
+
+                <Form className="auth-form">
+
+                  <div className="form-group">
+
+                    <label htmlFor="first_name">Full Name</label>
+
                     <Field name="first_name">
+
                       {({ field, meta }) => (
+
                         <input
                           {...field}
                           type="text"
@@ -170,192 +227,199 @@ const Signup = () => {
                           placeholder="John Doe"
                           className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
                           onChange={(e) => {
+
                             const fullName = e.target.value;
+
                             setFieldValue('first_name', fullName);
-                            // Auto-populate last_name from full name
+
                             const nameParts = fullName.trim().split(' ');
+
                             if (nameParts.length > 1) {
+
                               setFieldValue('last_name', nameParts.slice(1).join(' '));
+
                             } else {
+
                               setFieldValue('last_name', 'User');
+
                             }
+
                           }}
                         />
+
                       )}
+
                     </Field>
+
+                    <ErrorMessage name="first_name" component="div" className="error-message" />
+
                   </div>
-                  <ErrorMessage name="first_name" component="div" className="error-message" />
-                </div>
 
-                <div className="form-group" style={{ display: 'none' }}>
-                  <Field
-                    type="text"
-                    name="last_name"
-                    id="last_name"
-                  />
-                </div>
 
-                <div className="form-group">
-                  <label htmlFor="email">Email Address</label>
-                  <Field name="email">
-                    {({ field, meta }) => (
-                      <input
-                        {...field}
-                        type="email"
-                        id="email"
-                        placeholder="john.doe@example.com"
-                        className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
-                      />
-                    )}
-                  </Field>
-                  <ErrorMessage name="email" component="div" className="error-message" />
-                </div>
+                  <div className="form-group" style={{ display: 'none' }}>
 
-                <div className="form-group">
-                  <label htmlFor="phone_number">Phone Number</label>
-                  <Field name="phone_number">
-                    {({ field, meta }) => (
-                      <input
-                        {...field}
-                        type="tel"
-                        id="phone_number"
-                        placeholder="(123) 456-7890"
-                        className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
-                      />
-                    )}
-                  </Field>
-                  <ErrorMessage name="phone_number" component="div" className="error-message" />
-                </div>
+                    <Field type="text" name="last_name" id="last_name" />
 
-                <div className="form-group" style={{ display: 'none' }}>
-                  <Field as="select" name="user_type" id="user_type">
-                    <option value="pet_owner">Pet Owner</option>
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
-                  </Field>
-                  <ErrorMessage name="user_type" component="div" className="error-message" />
-                </div>
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="password">Password</label>
-                  <div className="input-with-icon">
-                    <Field name="password">
-                      {({ field }) => (
+
+                  <div className="form-group">
+
+                    <label htmlFor="email">Email Address</label>
+
+                    <Field name="email">
+
+                      {({ field, meta }) => (
+
                         <input
                           {...field}
-                          type={showPassword ? 'text' : 'password'}
-                          id="password"
-                          placeholder="••••••••"
-                          className="auth-input"
-                          onChange={(e) => {
-                            setFieldValue('password', e.target.value);
-                            handlePasswordChange(e.target.value);
-                          }}
+                          type="email"
+                          id="email"
+                          placeholder="john.doe@example.com"
+                          className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
                         />
-                      )}
-                    </Field>
-                    <button
-                      type="button"
-                      className="toggle-password-icon"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {/* {showPassword ? '👁️' : '👁️'} */}
-                    </button>
-                  </div>
-                  {values.password && (
-                    <div className="password-strength">
-                      <div className="strength-bar">
-                        <div
-                          className="strength-fill"
-                          style={{
-                            width: `${(passwordStrength.score / 6) * 100}%`,
-                            backgroundColor: passwordStrength.color
-                          }}
-                        ></div>
-                      </div>
-                      <span className="strength-label" style={{ color: passwordStrength.color }}>
-                        {passwordStrength.label}
-                      </span>
-                    </div>
-                  )}
-                  <ErrorMessage name="password" component="div" className="error-message" />
-                </div>
 
-                <div className="form-group">
-                  <label htmlFor="confirm_password">Confirm Password</label>
-                  <div className="input-with-icon">
-                    <Field name="confirm_password">
+                      )}
+
+                    </Field>
+
+                    <ErrorMessage name="email" component="div" className="error-message" />
+
+                  </div>
+
+
+                  <div className="form-group">
+
+                    <label htmlFor="phone_number">Phone Number</label>
+
+                    <Field name="phone_number">
+
                       {({ field, meta }) => (
+
+                        <input
+                          {...field}
+                          type="tel"
+                          id="phone_number"
+                          placeholder="(123) 456-7890"
+                          className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
+                        />
+
+                      )}
+
+                    </Field>
+
+                    <ErrorMessage name="phone_number" component="div" className="error-message" />
+
+                  </div>
+
+
+                  <div className="form-group">
+
+                    <label htmlFor="password">Password</label>
+
+                    <div className="input-with-icon">
+
+                      <Field name="password">
+
+                        {({ field }) => (
+
+                          <input
+                            {...field}
+                            type={showPassword ? 'text' : 'password'}
+                            id="password"
+                            placeholder="••••••••"
+                            className="auth-input"
+                            onChange={(e) => {
+
+                              setFieldValue('password', e.target.value);
+
+                              handlePasswordChange(e.target.value);
+
+                            }}
+                          />
+
+                        )}
+
+                      </Field>
+
+                    </div>
+
+                    <ErrorMessage name="password" component="div" className="error-message" />
+
+                  </div>
+
+
+                  <div className="form-group">
+
+                    <label htmlFor="confirm_password">Confirm Password</label>
+
+                    <Field name="confirm_password">
+
+                      {({ field }) => (
+
                         <input
                           {...field}
                           type={showConfirmPassword ? 'text' : 'password'}
                           id="confirm_password"
                           placeholder="••••••••"
-                          className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
+                          className="auth-input"
                         />
+
                       )}
+
                     </Field>
-                    <button
-                      type="button"
-                      className="toggle-password-icon"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {/* {showConfirmPassword ? '👁️' : '👁️'} */}
-                    </button>
+
+                    <ErrorMessage name="confirm_password" component="div" className="error-message" />
+
                   </div>
-                  <ErrorMessage name="confirm_password" component="div" className="error-message" />
-                </div>
 
-                <div className="form-group checkbox-group">
-                  <label className="checkbox-label">
-                    <Field name="terms">
-                      {({ field }) => (
-                        <input
-                          type="checkbox"
-                          {...field}
-                          checked={field.value}
-                          onChange={(e) => {
-                            setFieldValue('terms', e.target.checked);
-                          }}
-                        />
-                      )}
-                    </Field>
-                    <span>
-                      I agree to the{' '}
-                      <Link to="/terms" target="_blank" className="link-highlight">
-                        Terms & Conditions
-                      </Link>
-                    </span>
-                  </label>
-                  <ErrorMessage name="terms" component="div" className="error-message" />
-                </div>
 
-                <button
-                  type="submit"
-                  className="btn-auth-primary"
-                  disabled={isSubmitting}
-                  onClick={() => console.log('🖱️ Register button clicked!')}
-                >
-                  {isSubmitting ? 'Creating Account...' : 'Register Account'}
-                </button>
+                  <div className="form-group checkbox-group">
 
-                <div className="divider">
-                  <span>OR</span>
-                </div>
+                    <label className="checkbox-label">
 
-                <button type="button" className="btn-google">
-                  <span className="google-icon">🌐</span>
-                  Sign up with Google
-                </button>
-              </Form>
-            );
-              }}
+                      <Field type="checkbox" name="terms" />
+
+                      <span>
+                        I agree to the{' '}
+                        <Link to="/terms" target="_blank" className="link-highlight">
+                          Terms & Conditions
+                        </Link>
+                      </span>
+
+                    </label>
+
+                    <ErrorMessage name="terms" component="div" className="error-message" />
+
+                  </div>
+
+
+                  <button
+                    type="submit"
+                    className="btn-auth-primary"
+                    disabled={isSubmitting}
+                  >
+
+                    {isSubmitting ? 'Creating Account...' : 'Register Account'}
+
+                  </button>
+
+                </Form>
+
+              )}
+
             </Formik>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
+
   );
+
 };
 
 export default Signup;

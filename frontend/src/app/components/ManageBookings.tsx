@@ -59,19 +59,22 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
   });
 
   useEffect(() => {
+    // Fetch immediately on mount
+    console.log('📝 ManageBookings mounted - fetching bookings');
     fetchBookings();
     
-    // Auto-refresh bookings every 10 seconds to detect admin approvals
-    const interval = setInterval(fetchBookings, 10000);
+    // REMOVED: Aggressive polling interval that was refreshing every 5 seconds
+    // This was causing excessive API calls and poor UX. Users can click "Refresh" manually if needed.
+    // Payment updates will be reflected when user returns from payment page.
     
-    // Also refresh when page comes into focus
+    // Refresh when page comes into focus (user returns to this tab)
     const handleFocus = () => {
+      console.log('👀 Page focused - refetching bookings');
       fetchBookings();
     };
     window.addEventListener('focus', handleFocus);
     
     return () => {
-      clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
     };
   }, []);
@@ -79,11 +82,21 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching bookings with upcoming=true filter');
       const response = await getUserBookings({ upcoming: true });
+      console.log('📦 Bookings response:', response);
+      
       const bookingData = response.data || response.bookings || response || [];
+      console.log('✅ Bookings data extracted:', bookingData);
+      
       setBookings(Array.isArray(bookingData) ? bookingData : []);
+      
+      // Log booking statuses for debugging
+      Array.isArray(bookingData) && bookingData.forEach((b: any) => {
+        console.log(`  Booking #${b.booking_id}: status=${b.booking_status}, payment_status=${b.payment_status}`);
+      });
     } catch (error: any) {
-      console.error('Error fetching bookings:', error);
+      console.error('❌ Error fetching bookings:', error);
       toast.error('Failed to load bookings');
     } finally {
       setLoading(false);
@@ -230,19 +243,68 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
   const handlePayNow = async (bookingId: number) => {
     try {
       setPayingBookingId(bookingId);
+      console.log('💳 [ManageBookings] Initiating payment for booking:', bookingId);
+      
+      // CRITICAL: Ensure return URL is correctly formatted for payment-success page
+      const returnUrl = `${window.location.origin}/payment-success`;
+      const websiteUrl = window.location.origin;
+      
+      console.log('🔗 [ManageBookings] Setting Khalti return URLs:');
+      console.log('   - return_url:', returnUrl);
+      console.log('   - website_url:', websiteUrl);
+      
       const response = await initiateKhaltiPayment({
         booking_id: bookingId,
-        return_url: `${window.location.origin}/payment-success`,
-        website_url: window.location.origin
+        return_url: returnUrl,
+        website_url: websiteUrl
+      });
+
+      console.log('✅ [ManageBookings] Payment initiated, received:', {
+        pidx: response?.data?.pidx,
+        booking_id: response?.data?.booking_id,
+        payment_url: response?.data?.payment_url ? 'received' : 'missing'
       });
 
       const paymentUrl = response?.data?.payment_url;
+      const pidx = response?.data?.pidx;
+      
       if (!paymentUrl) {
         throw new Error('Khalti payment URL was not returned by the server');
       }
 
+      // CRITICAL FIX: Store BOTH booking_id AND pidx in BOTH sessionStorage and localStorage
+      // Use localStorage as backup since sessionStorage sometimes clears on external redirects
+      const storageData = {
+        khalti_booking_id: String(bookingId),
+        khalti_pidx: String(pidx),
+        stored_at: new Date().toISOString()
+      };
+      
+      // Store in both places for redundancy
+      sessionStorage.setItem('khalti_booking_id', String(bookingId));
+      sessionStorage.setItem('khalti_pidx', String(pidx));
+      localStorage.setItem('khalti_booking_id', String(bookingId));
+      localStorage.setItem('khalti_pidx', String(pidx));
+      localStorage.setItem('khalti_storage_timestamp', new Date().toISOString());
+      
+      console.log('📦 [ManageBookings] Stored in sessionStorage AND localStorage:');
+      console.log('   - khalti_booking_id:', bookingId);
+      console.log('   - khalti_pidx:', pidx);
+      console.log('   - timestamp:', storageData.stored_at);
+      console.log('✅ [ManageBookings] Verified storage after write:', {
+        sessionStorage_pidx: sessionStorage.getItem('khalti_pidx'),
+        localStorage_pidx: localStorage.getItem('khalti_pidx'),
+        sessionStorage_booking_id: sessionStorage.getItem('khalti_booking_id'),
+        localStorage_booking_id: localStorage.getItem('khalti_booking_id')
+      });
+      console.log('🔗 [ManageBookings] Khalti payment URL:', paymentUrl);
+      console.log('🎯 [ManageBookings] About to redirect to Khalti - pidx stored as:', pidx);
+
+      // Navigate to Khalti
+      console.log('🚀 [ManageBookings] Redirecting to Khalti payment page...');
       window.location.href = paymentUrl;
     } catch (error: any) {
+      console.error('❌ [ManageBookings] Payment initiation failed:', error);
       toast.error(error.message || 'Failed to initiate Khalti payment');
     } finally {
       setPayingBookingId(null);

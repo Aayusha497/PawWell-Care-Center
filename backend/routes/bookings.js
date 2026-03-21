@@ -25,19 +25,60 @@ const {
 
 // Public routes (require authentication)
 router.post('/check-availability', authenticate, checkAvailability);
-router.post('/', authenticate, createBooking);
 router.post('/payment/initiate', authenticate, initiateKhaltiPayment);
-router.post('/payment/verify', authenticate, verifyKhaltiPayment);
-router.get('/', authenticate, getUserBookings);
-router.get('/:bookingId', authenticate, getBookingById);
-router.put('/:bookingId', authenticate, updateBooking);
-router.delete('/:bookingId', authenticate, cancelBooking);
 
-// Admin routes
+// CRITICAL: Add console output whenever verify endpoint is accessed
+router.post('/payment/verify', authenticate, (req, res, next) => {
+  console.log('\n╔════════════════════════════════════════════════════════╗');
+  console.log('║  🚨 PAYMENT VERIFY ENDPOINT ACCESSED 🚨               ║');
+  console.log('╚════════════════════════════════════════════════════════╝');
+  console.log('📨 Request Details:');
+  console.log('   - Body:', JSON.stringify(req.body));
+  console.log('   - User ID:', req.user?.id);
+  console.log('   - User Email:', req.user?.email);
+  console.log('   - User Type:', req.user?.userType);
+  console.log('   - Token present:', !!req.headers.authorization);
+  console.log('   - Content-Type:', req.headers['content-type']);
+  console.log('╚════════════════════════════════════════════════════════╝\n');
+  next();
+}, verifyKhaltiPayment);
+
+// Diagnostic endpoint to check system status
+router.get('/payment/diagnostic', authenticate, (req, res) => {
+  const config = require('../config/config');
+  
+  return res.status(200).json({
+    success: true,
+    message: 'Payment system diagnostic',
+    system: {
+      khalti_secret_configured: !!config.khalti.secretKey,
+      khalti_initiate_url: config.khalti.initiateUrl,
+      khalti_lookup_url: config.khalti.lookupUrl,
+      node_env: config.NODE_ENV,
+      frontend_url: config.frontendUrl
+    },
+    endpoints: {
+      initiate: 'POST /api/bookings/payment/initiate',
+      verify: 'POST /api/bookings/payment/verify',
+      diagnostic: 'GET /api/bookings/payment/diagnostic'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+router.post('/', authenticate, createBooking);
+
+// Admin routes (MUST come before /:bookingId to be properly matched)
 router.get('/admin/pending', authenticate, requireAdmin, getPendingBookings);
 router.get('/admin/all', authenticate, requireAdmin, getAllBookings);
 router.put('/admin/:bookingId/approve', authenticate, requireAdmin, approveBooking);
 router.put('/admin/:bookingId/reject', authenticate, requireAdmin, rejectBooking);
 router.put('/admin/:bookingId/complete', authenticate, requireAdmin, completeBooking);
+
+// User routes (must come after admin routes)
+router.get('/', authenticate, getUserBookings);
+router.get('/:bookingId', authenticate, getBookingById);
+router.put('/:bookingId', authenticate, updateBooking);
+router.delete('/:bookingId', authenticate, cancelBooking);
 
 module.exports = router;

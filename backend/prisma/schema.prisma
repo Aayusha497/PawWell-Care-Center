@@ -25,28 +25,32 @@ model activity_logs {
 }
 
 model bookings {
-  booking_id        Int                  @id @default(autoincrement())
+  booking_id        Int                         @id @default(autoincrement())
   user_id           Int
   pet_id            Int
   service_id        Int?
-  service_type      String               @db.VarChar(100)
-  price             Decimal              @db.Decimal(10, 2)
-  status            enum_bookings_status @default(pending)
-  payment_method    String?              @db.VarChar(50)
-  confirmation_code String?              @unique @db.VarChar(50)
-  created_at        DateTime             @db.Timestamptz(6)
-  updated_at        DateTime             @db.Timestamptz(6)
-  start_date        DateTime             @default(now()) @db.Timestamptz(6)
-  end_date          DateTime?            @db.Timestamptz(6)
-  number_of_days    Int                  @default(1)
-  requires_pickup   Boolean              @default(false)
-  pickup_address    String?              @db.VarChar(500)
-  pickup_time       String?              @db.VarChar(50)
-  dropoff_address   String?              @db.VarChar(500)
-  dropoff_time      String?              @db.VarChar(50)
-  pets              pets                 @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
-  services          services?            @relation(fields: [service_id], references: [service_id])
-  users             users                @relation(fields: [user_id], references: [id], onDelete: NoAction)
+  service_type      String                      @db.VarChar(100)
+  price             Decimal                     @db.Decimal(10, 2)
+  status            enum_bookings_status        @default(pending)
+  booking_status    enum_bookings_booking_status @default(pending)
+  payment_status    enum_bookings_payment_status @default(unpaid)
+  payment_method    String?                     @db.VarChar(50)
+  transaction_id    String?                     @db.VarChar(255)
+  pidx              String?                     @db.VarChar(255)
+  confirmation_code String?                    @unique @db.VarChar(50)
+  created_at        DateTime                    @db.Timestamptz(6)
+  updated_at        DateTime                    @db.Timestamptz(6)
+  start_date        DateTime                    @default(now()) @db.Timestamptz(6)
+  end_date          DateTime?                   @db.Timestamptz(6)
+  number_of_days    Int                         @default(1)
+  requires_pickup   Boolean                     @default(false)
+  pickup_address    String?                     @db.VarChar(500)
+  pickup_time       String?                     @db.VarChar(50)
+  dropoff_address   String?                     @db.VarChar(500)
+  dropoff_time      String?                     @db.VarChar(50)
+  pets              pets                        @relation(fields: [pet_id], references: [pet_id], onDelete: Cascade)
+  services          services?                   @relation(fields: [service_id], references: [service_id])
+  users             users                       @relation(fields: [user_id], references: [id], onDelete: NoAction)
   payments          payments?
   reviews           reviews?
 }
@@ -344,4 +348,20 @@ enum enum_users_user_type {
 enum enum_contact_messages_status {
   unread
   read
+}
+
+enum enum_bookings_booking_status {
+  pending
+  approved
+  confirmed
+  completed
+  rejected
+  cancelled
+}
+
+enum enum_bookings_payment_status {
+  unpaid
+  pending_payment
+  paid
+  failed
 }

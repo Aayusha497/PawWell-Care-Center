@@ -713,9 +713,19 @@ export const initiateKhaltiPayment = async (payload: {
   website_url?: string;
 }): Promise<any> => {
   try {
+    console.log('🔗 [API] Calling /bookings/payment/initiate with payload:', payload);
     const response = await api.post('/bookings/payment/initiate', payload);
+    console.log('✅ [API] /bookings/payment/initiate response:', {
+      pidx: response.data?.data?.pidx,
+      paymentUrl: response.data?.data?.payment_url ? 'exists' : 'missing',
+      expiresAt: response.data?.data?.expires_at
+    });
     return response.data;
   } catch (error) {
+    console.error('❌ [API] /bookings/payment/initiate error:', {
+      status: (error as AxiosError).response?.status,
+      data: (error as AxiosError).response?.data
+    });
     throw (error as AxiosError).response?.data || { message: 'Failed to initiate Khalti payment' };
   }
 };
@@ -730,10 +740,38 @@ export const verifyKhaltiPayment = async (payload: {
   booking_id?: number;
 }): Promise<any> => {
   try {
+    console.log('🔗 [API SERVICE] POST /bookings/payment/verify');
+    console.log('   Payload:', {
+      pidx: payload.pidx,
+      booking_id: payload.booking_id
+    });
+    
     const response = await api.post('/bookings/payment/verify', payload);
+    
+    console.log('✅ [API SERVICE] Response received:', {
+      status: response.status,
+      success: response.data?.success,
+      message: response.data?.message
+    });
+    console.log('   Booking state:', {
+      booking_id: response.data?.data?.booking?.booking_id,
+      payment_status: response.data?.data?.booking?.payment_status,
+      booking_status: response.data?.data?.booking?.booking_status
+    });
+    
     return response.data;
   } catch (error) {
-    throw (error as AxiosError).response?.data || { message: 'Failed to verify Khalti payment' };
+    console.error('❌ [API SERVICE] Payment verification failed:', {
+      status: (error as AxiosError).response?.status,
+      statusText: (error as AxiosError).response?.statusText,
+      message: (error as AxiosError).message
+    });
+    console.error('   Error data:', (error as AxiosError).response?.data);
+    
+    throw (error as AxiosError).response?.data || { 
+      success: false,
+      message: 'Failed to verify Khalti payment' 
+    };
   }
 };
 

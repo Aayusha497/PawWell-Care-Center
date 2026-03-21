@@ -558,6 +558,19 @@ const getBookingById = async (req, res) => {
       });
     }
 
+    console.log('📌 getBookingById - Returning booking:', {
+      booking_id: booking.booking_id,
+      payment_status: booking.payment_status,
+      booking_status: booking.booking_status,
+      status: booking.status,
+      pidx: booking.pidx
+    });
+
+    // Set cache control headers to prevent caching
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     res.status(200).json({
       success: true,
       data: booking
@@ -1219,24 +1232,44 @@ const initiateKhaltiPayment = async (req, res) => {
  */
 const verifyKhaltiPayment = async (req, res) => {
   try {
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('🔐 KHALTI PAYMENT VERIFICATION - STARTING');
+    console.log('═══════════════════════════════════════════════════════');
+    
     const userId = req.user.id;
-    const isAdmin = req.user.user_type === 'admin';
+    const isAdmin = req.user.userType === 'admin';
     const { pidx, booking_id } = req.body;
 
+    console.log('📥 Request Data:', { 
+      pidx, 
+      booking_id,
+      user_id: userId, 
+      is_admin: isAdmin
+    });
+
+    // Validate required parameters
     if (!pidx) {
+      console.log('❌ VALIDATION ERROR: pidx is required but not provided');
       return res.status(400).json({
         success: false,
-        message: 'pidx is required'
+        message: 'pidx (payment reference) is required'
       });
     }
 
+    // Validate Khalti configuration
     if (!config.khalti.secretKey) {
+      console.log('❌ CONFIG ERROR: Khalti secret key not configured');
       return res.status(500).json({
         success: false,
         message: 'Khalti secret key is not configured on the server'
       });
     }
 
+    // Step 1: Call Khalti Lookup API
+    console.log('\n📡 STEP 1: Calling Khalti Lookup API');
+    console.log('🔗 URL:', config.khalti.lookupUrl);
+    console.log('📦 Payload: {"pidx":"' + pidx + '"}');
+    
     const lookupResponse = await fetch(config.khalti.lookupUrl, {
       method: 'POST',
       headers: {
@@ -1246,69 +1279,216 @@ const verifyKhaltiPayment = async (req, res) => {
       body: JSON.stringify({ pidx })
     });
 
+    console.log('📊 Khalti Response Status:', lookupResponse.status);
+
     if (!lookupResponse.ok) {
       const khaltiError = await parseKhaltiError(lookupResponse);
+      console.log('❌ KHALTI API ERROR:', khaltiError);
       return res.status(400).json({
         success: false,
-        message: khaltiError
+        message: 'Failed to verify payment with Khalti: ' + khaltiError
       });
     }
 
     const lookupData = await lookupResponse.json();
+    console.log('✅ Khalti Response Received:', {
+      status: lookupData.status,
+      transaction_id: lookupData.transaction_id,
+      amount: lookupData.amount,
+      identifier: lookupData.identifier
+    });
 
-    const bookingWhere = booking_id
-      ? { booking_id: parseInt(booking_id, 10) }
-      : { pidx };
-
-    const booking = await Booking.findOne({ where: bookingWhere });
-
+    // Step 2: Find Booking
+    console.log('\n🔍 STEP 2: Finding Booking in Database');
+    
+    // Build query - prioritize booking_id if provided
+    let booking = null;
+    let searchMethod = '';
+    
+    if (booking_id) {
+      console.log('🎯 Searching by booking_id:', booking_id);
+      booking = await Booking.findOne({ where: { booking_id: parseInt(booking_id, 10) } });
+      searchMethod = 'booking_id';
+    } else {
+      console.log('🎯 Searching by pidx:', pidx);
+      booking = await Booking.findOne({ where: { pidx } });
+      searchMethod = 'pidx';
+    }
+    
     if (!booking) {
+      console.log('❌ BOOKING NOT FOUND');
+      console.log('   Search method:', searchMethod);
+      console.log('   Search value:', searchMethod === 'booking_id' ? booking_id : pidx);
+      console.log('   This could mean:');
+      console.log('   1. Payment was never initiated for this booking');
+      console.log('   2. pidx value changed or was corrupted');
+      console.log('   3. Booking was deleted');
+      
       return res.status(404).json({
         success: false,
-        message: 'Booking not found for provided payment reference'
+        message: 'Booking not found for this payment reference'
       });
     }
 
+    console.log('✅ Booking Found:', {
+      booking_id: booking.booking_id,
+      user_id: booking.user_id,
+      current_payment_status: booking.payment_status,
+      current_booking_status: booking.booking_status,
+      stored_pidx: booking.pidx
+    });
+
+    // Step 3: Verify user permission
+    console.log('\n🔐 STEP 3: Verifying User Permission');
     if (!isAdmin && booking.user_id !== userId) {
+      console.log('❌ PERMISSION DENIED');
+      console.log('   Booking user_id:', booking.user_id);
+      console.log('   Request user_id:', userId);
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to verify this payment'
       });
     }
+    console.log('✅ User authorized to verify this payment');
 
-    const payment = await Payment.findOne({ where: { booking_id: booking.booking_id } });
+    // Step 4: Check Khalti Payment Status
+    console.log('\n💰 STEP 4: Checking Khalti Payment Status');
+    const khaltiStatus = String(lookupData.status || '').trim().toUpperCase();
+    console.log('   Raw status from Khalti:', lookupData.status);
+    console.log('   Normalized status:', khaltiStatus);
+    console.log('   Is "COMPLETED"?:', khaltiStatus === 'COMPLETED');
 
-    if (lookupData.status === 'Completed') {
-      booking.payment_status = PAYMENT_STATUS.PAID;
-      booking.booking_status = BOOKING_STATUS.CONFIRMED;
-      booking.status = toLegacyStatus(BOOKING_STATUS.CONFIRMED);
+    if (khaltiStatus !== 'COMPLETED') {
+      console.log('⚠️ Payment not completed. Status:', khaltiStatus);
+      
+      // Update booking status to FAILED
+      console.log('\n📝 Updating booking status to FAILED');
+      booking.payment_status = PAYMENT_STATUS.FAILED;
+      booking.booking_status = BOOKING_STATUS.APPROVED; // Return to approved state
       booking.payment_method = 'khalti';
       booking.pidx = pidx;
-      booking.transaction_id = lookupData.transaction_id || lookupData.transactionId || booking.transaction_id;
-      booking.updated_at = new Date();
-      await booking.save();
+      
+      try {
+        await booking.save();
+        console.log('✅ Booking updated to FAILED status');
+      } catch (saveError) {
+        console.error('❌ Error saving booking:', saveError.message);
+      }
 
+      return res.status(200).json({
+        success: false,
+        message: `Payment status is ${khaltiStatus}, not completed`,
+        data: {
+          booking: booking.toJSON ? booking.toJSON() : booking,
+          khalti_status: khaltiStatus
+        }
+      });
+    }
+
+    // Step 5: Payment Verified - Update Booking
+    console.log('\n✅ STEP 5: Payment Verified! Updating Booking Status');
+    
+    // Set all required fields
+    booking.payment_status = PAYMENT_STATUS.PAID;
+    booking.booking_status = BOOKING_STATUS.CONFIRMED;
+    booking.status = toLegacyStatus(BOOKING_STATUS.CONFIRMED);
+    booking.payment_method = 'khalti';
+    booking.pidx = pidx;
+    // Use transaction_id from Khalti response, fallback to pidx
+    booking.transaction_id = lookupData.transaction_id || lookupData.transactionId || pidx;
+    booking.updated_at = new Date();
+    
+    console.log('   Updates to apply:', {
+      payment_status: booking.payment_status,
+      booking_status: booking.booking_status,
+      transaction_id: booking.transaction_id,
+      pidx: booking.pidx,
+      payment_method: booking.payment_method
+    });
+
+    try {
+      // Save the booking
+      console.log('\n💾 Attempting to save booking to database...');
+      await booking.save();
+      console.log('✅ Booking saved to database');
+      
+      // Verify save was successful by querying database directly
+      const savedBooking = await Booking.findOne({ where: { booking_id: booking.booking_id } });
+      if (!savedBooking) {
+        throw new Error('Booking save verification failed - booking not found after save');
+      }
+      
+      console.log('✅ Booking verified in database:', {
+        payment_status: savedBooking.payment_status,
+        booking_status: savedBooking.booking_status,
+        transaction_id: savedBooking.transaction_id,
+        pidx: savedBooking.pidx
+      });
+      
+      // Reload booking object to ensure we have latest data
+      await booking.reload();
+      console.log('✅ Booking reloaded from database');
+      console.log('   Confirmed values:', {
+        payment_status: booking.payment_status,
+        booking_status: booking.booking_status,
+        transaction_id: booking.transaction_id
+      });
+    } catch (saveError) {
+      console.error('❌ CRITICAL ERROR: Failed to save booking:', saveError.message);
+      console.error('   Error details:', saveError);
+      console.error('   Stack:', saveError.stack);
+      
+      // Don't just throw - return error response so frontend knows
+      return res.status(500).json({
+        success: false,
+        message: 'Payment verified by Khalti but failed to save to database: ' + saveError.message,
+        data: {
+          khalti: {
+            status: lookupData.status,
+            transaction_id: lookupData.transaction_id,
+            amount: lookupData.amount
+          },
+          error: process.env.NODE_ENV === 'development' ? saveError.message : undefined
+        }
+      });
+    }
+
+    // Step 6: Update/Create Payment Record (non-critical)
+    console.log('\n💾 STEP 6: Updating Payment Record');
+    try {
+      let payment = await Payment.findOne({ where: { booking_id: booking.booking_id } });
+      
       if (!payment) {
-        await Payment.create({
+        console.log('   Creating new Payment record');
+        payment = await Payment.create({
           booking_id: booking.booking_id,
           amount: booking.price,
           payment_method: 'khalti',
           transaction_details: JSON.stringify({
             stage: 'verified',
-            response: lookupData
+            khalti_response: lookupData
           }),
           payment_date: new Date()
         });
       } else {
+        console.log('   Updating existing Payment record');
         payment.payment_method = 'khalti';
         payment.transaction_details = JSON.stringify({
           stage: 'verified',
-          response: lookupData
+          khalti_response: lookupData
         });
         payment.payment_date = new Date();
         await payment.save();
       }
+      console.log('✅ Payment record updated successfully');
+    } catch (paymentError) {
+      console.error('⚠️ Non-critical: Payment record update failed:', paymentError.message);
+      // Continue - payment to booking is verified, payment record is optional
+    }
 
+    // Step 7: Create Notification (non-critical)
+    console.log('\n🔔 STEP 7: Creating Notification');
+    try {
       await createNotification(
         booking.user_id,
         'payment_completed',
@@ -1317,57 +1497,40 @@ const verifyKhaltiPayment = async (req, res) => {
         'booking',
         booking.booking_id
       );
-
-      return res.status(200).json({
-        success: true,
-        message: 'Payment verified and booking confirmed',
-        data: {
-          booking,
-          khalti: lookupData
-        }
-      });
+      console.log('✅ Notification created');
+    } catch (notifError) {
+      console.error('⚠️ Non-critical: Notification creation failed:', notifError.message);
+      // Continue - notification is optional
     }
 
-    booking.payment_status = PAYMENT_STATUS.FAILED;
-    booking.booking_status = BOOKING_STATUS.APPROVED;
-    booking.status = toLegacyStatus(BOOKING_STATUS.APPROVED);
-    booking.payment_method = 'khalti';
-    booking.pidx = pidx;
-    booking.updated_at = new Date();
-    await booking.save();
-
-    if (!payment) {
-      await Payment.create({
-        booking_id: booking.booking_id,
-        amount: booking.price,
-        payment_method: 'khalti',
-        transaction_details: JSON.stringify({
-          stage: 'failed',
-          response: lookupData
-        })
-      });
-    } else {
-      payment.payment_method = 'khalti';
-      payment.transaction_details = JSON.stringify({
-        stage: 'failed',
-        response: lookupData
-      });
-      await payment.save();
-    }
+    // Step 8: Send Success Response
+    console.log('\n🎉 STEP 8: Sending Success Response');
+    console.log('   Final booking state:', {
+      payment_status: booking.payment_status,
+      booking_status: booking.booking_status,
+      transaction_id: booking.transaction_id
+    });
 
     return res.status(200).json({
-      success: false,
-      message: 'Payment not completed',
+      success: true,
+      message: 'Payment verified successfully. Booking is now confirmed.',
       data: {
-        booking,
-        khalti: lookupData
+        booking: booking.toJSON ? booking.toJSON() : booking,
+        khalti: {
+          status: lookupData.status,
+          transaction_id: lookupData.transaction_id,
+          amount: lookupData.amount
+        }
       }
     });
+
   } catch (error) {
-    console.error('Error verifying Khalti payment:', error);
+    console.error('❌ FATAL ERROR in verifyKhaltiPayment:', error.message);
+    console.error('   Stack:', error.stack);
+    
     return res.status(500).json({
       success: false,
-      message: 'Failed to verify Khalti payment',
+      message: 'Payment verification failed: ' + error.message,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
