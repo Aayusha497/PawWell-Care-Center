@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { toast } from 'sonner';
-import { Settings, User as UserIcon, Moon, Sun, X, Shield, Copy, Check } from 'lucide-react';
+import { Settings, User as UserIcon, Moon, Sun, X, Shield, Copy, Check, LogOut } from 'lucide-react';
 import { getSettings, updateSettings, changePassword, changeEmail, resetSettings, get2FAStatus, setup2FA, verify2FA, disable2FA } from '../../services/api';
 import { isAdmin } from '../../utils/rbac';
+import NotificationBell from '../../components/NotificationBell';
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -439,6 +440,122 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
           </div>
         </nav>
       )}
+      {/* User Navbar */}
+      {/* {user && !isAdmin(user) && (
+        <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-8 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-8">
+              <button 
+                onClick={onBack}
+                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition"
+                title="Go to Dashboard"
+              >
+                <span className="text-2xl">🐾</span>
+              </button>
+              <div className="flex items-center gap-6">
+                <button 
+                  onClick={onBack}
+                  className="px-4 py-2 rounded-full bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium"
+                >
+                  Home
+                </button>
+                <button 
+                  onClick={() => onDashboardTarget?.('booking')}
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                >
+                  Booking
+                </button>
+                <button
+                  onClick={() => onDashboardTarget?.('activity-log')}
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                >
+                  Activity Log
+                </button>
+                <button
+                  onClick={() => onDashboardTarget?.('wellness-timeline')}
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                >
+                  Timeline
+                </button>
+                <button
+                  onClick={() => onNavigate?.('about')}
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                >
+                  About
+                </button>
+                <button
+                  onClick={() => onNavigate?.('contact')}
+                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
+                >
+                  Contact
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <NotificationBell userId={parseInt(user.id)} />
+              <button
+                onClick={() => onNavigate?.('emergency')}
+                className="px-4 py-2 bg-[#FF6B6B] dark:bg-red-700 text-white rounded-full text-sm flex items-center gap-2"
+              >
+                <span>📞</span> Emergency
+              </button>
+              {/* Profile Dropdown */}
+              {/* <div className="relative" ref={profileDropdownRef}>
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-gray-200 dark:border-gray-600 overflow-hidden"
+                  title="Profile Menu"
+                >
+                  {user.profilePicture ? (
+                    <img 
+                      src={user.profilePicture} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
+                      <span className="text-sm font-bold text-white">
+                        {user.firstName?.charAt(0)?.toUpperCase() || 'U'}{user.lastName?.charAt(0)?.toUpperCase() || ''}
+                      </span>
+                    </div>
+                  )}
+                </button>
+
+                {/* Dropdown Menu */}
+                {/* {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        onNavigate?.('profile');
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <UserIcon size={18} className="text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium">Edit Profile</span>
+                    </button>
+                    <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                        onLogout();
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/50 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
+                    >
+                      <LogOut size={18} className="text-red-500 dark:text-red-400" />
+                      <span className="text-sm font-medium">Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+      )} */} 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-8 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-8 transition-colors">

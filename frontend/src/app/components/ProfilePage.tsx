@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Settings, User as UserIcon, LogOut } from 'lucide-react';
 import SettingsPage from './SettingsPage';
 import { isAdmin } from '../../utils/rbac';
+import NotificationBell from '../../components/NotificationBell';
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -394,12 +395,15 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
             </div>
             <div className="flex items-center gap-4">
               {!isAdmin(user) && (
-                <button
-                  onClick={() => onNavigate?.('emergency')}
-                  className="px-4 py-2 bg-[#FF6B6B] dark:bg-red-700 text-white rounded-full text-sm flex items-center gap-2"
-                >
-                  <span>📞</span> Emergency
-                </button>
+                <>
+                  <NotificationBell userId={parseInt(user.id)} />
+                  <button
+                    onClick={() => onNavigate?.('emergency')}
+                    className="px-4 py-2 bg-[#FF6B6B] dark:bg-red-700 text-white rounded-full text-sm flex items-center gap-2"
+                  >
+                    <span>📞</span> Emergency
+                  </button>
+                </>
               )}
               {/* Profile Dropdown */}
               <div className="relative" ref={profileDropdownRef}>

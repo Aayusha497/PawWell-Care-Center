@@ -82,7 +82,10 @@ export default function App() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [resetToken, setResetToken] = useState('');
-  const [dashboardTarget, setDashboardTarget] = useState<'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | 'settings' | null>(null);
+  const [dashboardTarget, setDashboardTarget] = useState<'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | 'settings' | null>(() => {
+    const savedTarget = sessionStorage.getItem('dashboardTarget');
+    return (savedTarget as 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | 'settings' | null) || null;
+  });
   const [showSignupSuccess, setShowSignupSuccess] = useState(false);
 
   // Detect URL changes and switch to payment-success page if needed
@@ -105,6 +108,15 @@ export default function App() {
   useEffect(() => {
     sessionStorage.setItem('currentPage', currentPage);
   }, [currentPage]);
+
+  // Persist dashboard target to sessionStorage whenever it changes
+  useEffect(() => {
+    if (dashboardTarget) {
+      sessionStorage.setItem('dashboardTarget', dashboardTarget);
+    } else {
+      sessionStorage.removeItem('dashboardTarget');
+    }
+  }, [dashboardTarget]);
 
   useEffect(() => {
     if (isLoggedIn && user) {
@@ -358,6 +370,7 @@ export default function App() {
           onContact={() => handleNavigate('contact')}
           onEmergency={() => handleNavigate('emergency')}
           onSettings={() => handleDashboardTarget('settings')}
+          onProfile={() => handleNavigate('profile')}
           onLogout={isLoggedIn ? handleLogout : undefined}
           user={user}
         />

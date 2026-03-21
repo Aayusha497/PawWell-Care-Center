@@ -77,17 +77,50 @@ export default function UserDashboard({
   const [loading, setLoading] = useState(true);
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [activitiesLoading, setActivitiesLoading] = useState(true);
-  const [showPetForm, setShowPetForm] = useState(false);
-  const [showPetListing, setShowPetListing] = useState(false);
-  const [showBookingPage, setShowBookingPage] = useState(false);
-  const [showManageBookings, setShowManageBookings] = useState(false);
-  const [showBookingHistory, setShowBookingHistory] = useState(false);
-  const [showActivityLog, setShowActivityLog] = useState(false);
-  const [showWellnessTimeline, setShowWellnessTimeline] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
-  const [showContact, setShowContact] = useState(false);
-  const [showReviewPage, setShowReviewPage] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showPetForm, setShowPetForm] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'pet-form';
+  });
+  const [showPetListing, setShowPetListing] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'pet-listing';
+  });
+  const [showBookingPage, setShowBookingPage] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'booking';
+  });
+  const [showManageBookings, setShowManageBookings] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'manage-bookings';
+  });
+  const [showBookingHistory, setShowBookingHistory] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'booking-history';
+  });
+  const [showActivityLog, setShowActivityLog] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'activity-log';
+  });
+  const [showWellnessTimeline, setShowWellnessTimeline] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'wellness-timeline';
+  });
+  const [showAbout, setShowAbout] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'about';
+  });
+  const [showContact, setShowContact] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'contact';
+  });
+  const [showReviewPage, setShowReviewPage] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'review';
+  });
+  const [showSettings, setShowSettings] = useState(() => {
+    const savedShowState = sessionStorage.getItem('userDashboardSubPage');
+    return savedShowState === 'settings';
+  });
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<number | undefined>(undefined);
   const [selectedBookingId, setSelectedBookingId] = useState<number | undefined>(undefined);
@@ -249,6 +282,35 @@ export default function UserDashboard({
       setActivitiesLoading(false);
     }
   };
+
+  // Persist current sub-page to sessionStorage
+  useEffect(() => {
+    if (showBookingPage) {
+      sessionStorage.setItem('userDashboardSubPage', 'booking');
+    } else if (showManageBookings) {
+      sessionStorage.setItem('userDashboardSubPage', 'manage-bookings');
+    } else if (showBookingHistory) {
+      sessionStorage.setItem('userDashboardSubPage', 'booking-history');
+    } else if (showActivityLog) {
+      sessionStorage.setItem('userDashboardSubPage', 'activity-log');
+    } else if (showWellnessTimeline) {
+      sessionStorage.setItem('userDashboardSubPage', 'wellness-timeline');
+    } else if (showAbout) {
+      sessionStorage.setItem('userDashboardSubPage', 'about');
+    } else if (showContact) {
+      sessionStorage.setItem('userDashboardSubPage', 'contact');
+    } else if (showReviewPage) {
+      sessionStorage.setItem('userDashboardSubPage', 'review');
+    } else if (showSettings) {
+      sessionStorage.setItem('userDashboardSubPage', 'settings');
+    } else if (showPetForm) {
+      sessionStorage.setItem('userDashboardSubPage', 'pet-form');
+    } else if (showPetListing) {
+      sessionStorage.setItem('userDashboardSubPage', 'pet-listing');
+    } else {
+      sessionStorage.removeItem('userDashboardSubPage');
+    }
+  }, [showBookingPage, showManageBookings, showBookingHistory, showActivityLog, showWellnessTimeline, showAbout, showContact, showReviewPage, showSettings, showPetForm, showPetListing]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

@@ -22,6 +22,7 @@ interface EmergencyPageProps {
   onLogout?: () => void;
   onEmergency?: () => void;
   onSettings?: () => void;
+  onProfile?: () => void;
   user?: User | null;
 }
 
@@ -59,6 +60,7 @@ export default function EmergencyPage({
   onLogout,
   onEmergency,
   onSettings,
+  onProfile,
   user
 }: EmergencyPageProps) {
   const [pets, setPets] = useState<Pet[]>([]);
@@ -221,7 +223,7 @@ export default function EmergencyPage({
               <button
                 type="button"
                 onClick={onBack}
-                className="px-4 py-2 rounded-full bg-[#FFE4A3] dark:bg-yellow-600 dark:text-white font-medium"
+                className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 rounded-full"
               >
                 Home
               </button>
@@ -248,23 +250,23 @@ export default function EmergencyPage({
               <span>📞</span> Emergency
             </button>
             {/* Profile Dropdown */}
-            {userProfile && (
+            {user && (
               <div className="relative" ref={profileDropdownRef}>
                 <button
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                   className="w-10 h-10 rounded-full hover:shadow-lg transition-all cursor-pointer border-2 border-gray-200 dark:border-gray-600 overflow-hidden"
                   title="Profile Menu"
                 >
-                  {userProfile.profilePicture ? (
+                  {user.profilePicture ? (
                     <img 
-                      src={userProfile.profilePicture} 
+                      src={user.profilePicture} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-[#FA9884] to-[#FFE4A3] flex items-center justify-center">
                       <span className="text-sm font-bold text-white">
-                        {userProfile.firstName?.charAt(0)?.toUpperCase() || 'U'}{userProfile.lastName?.charAt(0)?.toUpperCase() || ''}
+                        {user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </span>
                     </div>
                   )}
@@ -274,18 +276,18 @@ export default function EmergencyPage({
                 {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{userProfile.firstName} {userProfile.lastName}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{userProfile.email}</p>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{user.fullName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                     </div>
                     <button
                       onClick={() => {
                         setShowProfileDropdown(false);
-                        onBack?.();
+                        onProfile?.();
                       }}
                       className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300 transition-colors"
                     >
                       <UserIcon size={18} className="text-gray-500 dark:text-gray-400" />
-                      <span className="text-sm font-medium">Profile</span>
+                      <span className="text-sm font-medium">Edit Profile</span>
                     </button>
                     <button
                       onClick={() => {

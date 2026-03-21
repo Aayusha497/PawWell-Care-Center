@@ -81,7 +81,10 @@ interface EmergencyRequest {
 }
 
 export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = sessionStorage.getItem('adminActiveTab');
+    return saved || 'dashboard';
+  });
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState<number | null>(null);
@@ -102,7 +105,9 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   const [photo, setPhoto] = useState<File | null>(null);
   const [notifyOwner, setNotifyOwner] = useState(false);
   const [submittingLog, setSubmittingLog] = useState(false);
-  const [viewingActivityLogs, setViewingActivityLogs] = useState(false);
+  const [viewingActivityLogs, setViewingActivityLogs] = useState(() => {
+    return sessionStorage.getItem('adminViewingActivityLogs') === 'true';
+  });
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notificationLoading, setNotificationLoading] = useState(false);
   const [notificationSummary, setNotificationSummary] = useState({
@@ -113,7 +118,9 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   });
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(() => {
+    return sessionStorage.getItem('adminShowSettings') === 'true';
+  });
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const [contactLoading, setContactLoading] = useState(false);
   const [emergencyRequests, setEmergencyRequests] = useState<EmergencyRequest[]>([]);
@@ -172,6 +179,13 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showProfileDropdown]);
+
+  // Persist admin dashboard state to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem('adminActiveTab', activeTab);
+    sessionStorage.setItem('adminViewingActivityLogs', viewingActivityLogs.toString());
+    sessionStorage.setItem('adminShowSettings', showSettings.toString());
+  }, [activeTab, viewingActivityLogs, showSettings]);
 
   const fetchPendingBookings = async () => {
     try {
