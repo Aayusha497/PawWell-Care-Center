@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const adminController = require('../controllers/adminController');
 const contactController = require('../controllers/contactController');
+const analyticsController = require('../controllers/analyticsController');
 
 /**
  * All routes require authentication and admin role
@@ -91,5 +92,84 @@ router.get('/emergency-requests', authenticate, requireAdmin, adminController.ge
  * @access  Admin only
  */
 router.put('/config', authenticate, requireAdmin, adminController.updateSystemConfig);
+
+// ====== ANALYTICS ROUTES ======
+
+/**
+ * @route   GET /api/admin/analytics/dashboard
+ * @desc    Get comprehensive dashboard analytics
+ * @access  Admin only
+ */
+router.get('/analytics/dashboard', authenticate, requireAdmin, analyticsController.getDashboardAnalytics);
+
+/**
+ * @route   GET /api/admin/analytics/booking-trends
+ * @desc    Get booking trends over time
+ * @access  Admin only
+ */
+router.get('/analytics/booking-trends', authenticate, requireAdmin, analyticsController.getBookingTrends);
+
+/**
+ * @route   GET /api/admin/analytics/revenue-trends
+ * @desc    Get revenue trends over time
+ * @access  Admin only
+ */
+router.get('/analytics/revenue-trends', authenticate, requireAdmin, analyticsController.getRevenueTrends);
+
+/**
+ * @route   GET /api/admin/analytics/top-services
+ * @desc    Get top services by booking count
+ * @access  Admin only
+ */
+router.get('/analytics/top-services', authenticate, requireAdmin, analyticsController.getTopServices);
+
+/**
+ * @route   GET /api/admin/analytics/booking-status
+ * @desc    Get booking status distribution
+ * @access  Admin only
+ */
+router.get('/analytics/booking-status', authenticate, requireAdmin, analyticsController.getBookingStatusDistribution);
+
+/**
+ * @route   GET /api/admin/analytics/pet-types
+ * @desc    Get pet types distribution
+ * @access  Admin only
+ */
+router.get('/analytics/pet-types', authenticate, requireAdmin, analyticsController.getPetTypesDistribution);
+
+/**
+ * @route   GET /api/admin/analytics/peak-hours
+ * @desc    Get peak hours and days for bookings
+ * @access  Admin only
+ */
+router.get('/analytics/peak-hours', authenticate, requireAdmin, analyticsController.getPeakHours);
+
+/**
+ * @route   GET /api/admin/analytics/recent-bookings
+ * @desc    Get recent bookings
+ * @access  Admin only
+ */
+router.get('/analytics/recent-bookings', authenticate, requireAdmin, analyticsController.getRecentBookings);
+
+/**
+ * @route   GET /api/admin/analytics/recent-payments
+ * @desc    Get recent payments
+ * @access  Admin only
+ */
+router.get('/analytics/recent-payments', authenticate, requireAdmin, analyticsController.getRecentPayments);
+
+/**
+ * @route   GET /api/admin/analytics/alerts
+ * @desc    Get system alerts
+ * @access  Admin only
+ */
+router.get('/analytics/alerts', authenticate, requireAdmin, analyticsController.getAlerts);
+
+/**
+ * @route   GET /api/admin/analytics/service-types
+ * @desc    Get all available service types
+ * @access  Admin only
+ */
+router.get('/analytics/service-types', authenticate, requireAdmin, analyticsController.getAvailableServiceTypes);
 
 module.exports = router;

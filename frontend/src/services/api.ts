@@ -1494,6 +1494,217 @@ export const disable2FA = async (data: {
   }
 };
 
+// ================================
+// ANALYTICS API FUNCTIONS
+// ================================
+
+/**
+ * Get comprehensive dashboard analytics
+ * @param {object} params - Optional date filters
+ * @returns {Promise<any>} Dashboard analytics data
+ */
+export const getDashboardAnalytics = async (params?: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+    if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
+
+    const response = await api.get(`/admin/analytics/dashboard${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch dashboard analytics' };
+  }
+};
+
+/**
+ * Get booking trends over time
+ * @param {object} params - Optional parameters (days)
+ * @returns {Promise<any>} Booking trends data
+ */
+export const getBookingTrends = async (params?: { days?: number }): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.days) queryParams.append('days', String(params.days));
+
+    const response = await api.get(`/admin/analytics/booking-trends${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch booking trends' };
+  }
+};
+
+/**
+ * Get revenue trends over time
+ * @param {object} params - Optional parameters (days)
+ * @returns {Promise<any>} Revenue trends data
+ */
+export const getRevenueTrends = async (params?: { days?: number }): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.days) queryParams.append('days', String(params.days));
+
+    const response = await api.get(`/admin/analytics/revenue-trends${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch revenue trends' };
+  }
+};
+
+/**
+ * Get top services by booking count
+ * @param {object} params - Optional parameters (limit)
+ * @returns {Promise<any>} Top services data
+ */
+export const getTopServices = async (params?: { limit?: number }): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+
+    const response = await api.get(`/admin/analytics/top-services${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch top services' };
+  }
+};
+
+/**
+ * Get booking status distribution
+ * @param {object} params - Optional filter parameters
+ * @returns {Promise<any>} Booking status data
+ */
+export const getBookingStatusDistribution = async (params?: any): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.serviceType) queryParams.append('serviceType', params.serviceType);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+    const response = await api.get(`/admin/analytics/booking-status${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch booking status distribution' };
+  }
+};
+
+/**
+ * Get pet types distribution
+ * @param {object} params - Optional filter parameters
+ * @returns {Promise<any>} Pet types data
+ */
+export const getPetTypesDistribution = async (params?: any): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.serviceType) queryParams.append('serviceType', params.serviceType);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+    const response = await api.get(`/admin/analytics/pet-types${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch pet types distribution' };
+  }
+};
+
+/**
+ * Get peak hours and days for bookings
+ * @param {object} params - Optional filter parameters
+ * @returns {Promise<any>} Peak hours and days data
+ */
+export const getPeakHours = async (params?: any): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.serviceType) queryParams.append('serviceType', params.serviceType);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+    const response = await api.get(`/admin/analytics/peak-hours${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch peak hours' };
+  }
+};
+
+/**
+ * Get recent bookings
+ * @param {object} params - Optional parameters (limit, serviceType, status, startDate, endDate)
+ * @returns {Promise<any>} Recent bookings data
+ */
+export const getRecentBookingsAnalytics = async (params?: any): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+    if (params?.serviceType) queryParams.append('serviceType', params.serviceType);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+    const response = await api.get(`/admin/analytics/recent-bookings${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch recent bookings' };
+  }
+};
+
+/**
+ * Get recent payments
+ * @param {object} params - Optional parameters (limit, serviceType, status, startDate, endDate)
+ * @returns {Promise<any>} Recent payments data
+ */
+export const getRecentPaymentsAnalytics = async (params?: any): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', String(params.limit));
+    if (params?.serviceType) queryParams.append('serviceType', params.serviceType);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+    const response = await api.get(`/admin/analytics/recent-payments${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch recent payments' };
+  }
+};
+
+/**
+ * Get system alerts
+ * @param {object} params - Optional filter parameters
+ * @returns {Promise<any>} Alerts data
+ */
+export const getAnalyticsAlerts = async (params?: any): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.serviceType) queryParams.append('serviceType', params.serviceType);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+    const response = await api.get(`/admin/analytics/alerts${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch alerts' };
+  }
+};
+
+/**
+ * Get all available service types
+ * @returns {Promise<any>} List of service types
+ */
+export const getAvailableServiceTypes = async (): Promise<any> => {
+  try {
+    const response = await api.get('/admin/analytics/service-types');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch service types' };
+  }
+};
+
 export default api;
 
 

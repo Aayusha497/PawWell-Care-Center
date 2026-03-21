@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
-import { Bell, Settings, User as UserIcon, LogOut } from 'lucide-react';
+import { Bell, Settings, User as UserIcon, LogOut, BarChart3 } from 'lucide-react';
 import {
   createActivityLog,
   getPendingBookings,
@@ -11,13 +11,15 @@ import {
   markAdminContactMessagesRead,
   markAdminContactMessageRead,
   getAdminEmergencyRequests,
-  updateEmergencyStatus
+  updateEmergencyStatus,
+  getDashboardAnalytics
 } from '../../services/api';
 import { toast } from 'sonner';
 import ActivityLogsManagement from './ActivityLogsManagement';
 import BookingManagement from './BookingManagement';
 import ReviewManagement from './ReviewManagement';
 import SettingsPage from './SettingsPage';
+import Analytics from './Analytics';
 
 interface User {
   id: string;
@@ -85,6 +87,15 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   const [approving, setApproving] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<number | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
+  const [dashboardStats, setDashboardStats] = useState({
+    activeBookings: 0,
+    totalPets: 0,
+    totalBookings: 0,
+    totalRevenue: 0,
+    revenueThisMonth: 0,
+    pendingApprovals: 0,
+    urgentItems: 0
+  });
   const [selectedPet, setSelectedPet] = useState('');
   const [activityType, setActivityType] = useState('');
   const [description, setDescription] = useState('');
@@ -124,6 +135,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   useEffect(() => {
     fetchPendingBookings();
     fetchPets();
+    fetchDashboardStats();
     fetchNotificationSummary();
     const intervalId = window.setInterval(() => {
       fetchNotificationSummary();
@@ -194,6 +206,24 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
     } catch (error: any) {
       console.error('Error fetching pets:', error);
       setPets([]);
+    }
+  };
+
+  const fetchDashboardStats = async () => {
+    try {
+      const response = await getDashboardAnalytics();
+      const topCards = response.data?.topCards || {};
+      setDashboardStats({
+        activeBookings: topCards.activeBookings || 0,
+        totalPets: topCards.totalPets || 0,
+        totalBookings: topCards.totalBookings || 0,
+        totalRevenue: topCards.totalRevenue || 0,
+        revenueThisMonth: topCards.revenueThisMonth || 0,
+        pendingApprovals: topCards.pendingApprovals || 0,
+        urgentItems: topCards.urgentItems || 0
+      });
+    } catch (error: any) {
+      console.error('Error fetching dashboard stats:', error);
     }
   };
 
@@ -395,9 +425,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   const titleMap: Record<string, string> = {
     dashboard: 'Admin Dashboard',
     'booking-management': 'Booking Management',
-    caretakers: 'Caretakers',
-    capacity: 'Capacity Management',
     'activity-logs': 'Daily Activity Log',
+    analytics: 'Analytics & Reports',
     announcements: 'Announcements',
     'contact-messages': 'Contact Messages',
     'emergency-requests': 'Emergency Requests',
@@ -462,26 +491,6 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
               Booking management
             </button>
             <button
-              onClick={() => setActiveTab('caretakers')}
-              className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                activeTab === 'caretakers'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              Caretakers
-            </button>
-            <button
-              onClick={() => setActiveTab('capacity')}
-              className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                activeTab === 'capacity'
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              Capacity management
-            </button>
-            <button
               onClick={() => setActiveTab('activity-logs')}
               className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors ${
                 activeTab === 'activity-logs'
@@ -490,6 +499,17 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
               }`}
             >
               Activity logs
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                activeTab === 'analytics'
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              <BarChart3 size={18} />
+              Analytics
             </button>
           </div>
 
@@ -710,11 +730,11 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
               <div className="grid grid-cols-2 gap-6 mb-8">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-yellow-200 dark:border-yellow-600">
                   <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">Active Bookings</h3>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-gray-100">120</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-gray-100">{dashboardStats.activeBookings}</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-yellow-200 dark:border-yellow-600">
                   <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">Total registered Pets</h3>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-gray-100">542</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-gray-100">{pets.length}</p>
                 </div>
               </div>
 
@@ -927,6 +947,10 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                 </div>
               )}
             </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <Analytics />
           )}
 
           {activeTab === 'contact-messages' && (
