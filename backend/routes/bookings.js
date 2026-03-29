@@ -25,13 +25,11 @@ const {
 
 // Public routes (require authentication)
 router.post('/check-availability', authenticate, checkAvailability);
-router.post('/payment/initiate', authenticate, initiateKhaltiPayment);
+router.post('/payment/initiate', authenticate, initiateKhaltiPayment); //backedn ednpoint to initiate khalti payment.
 
-// CRITICAL: Add console output whenever verify endpoint is accessed
+// Add console output whenever verify endpoint is accessed
 router.post('/payment/verify', authenticate, (req, res, next) => {
-  console.log('\n╔════════════════════════════════════════════════════════╗');
-  console.log('║  🚨 PAYMENT VERIFY ENDPOINT ACCESSED 🚨               ║');
-  console.log('╚════════════════════════════════════════════════════════╝');
+  console.log('\n PAYMENT VERIFY ENDPOINT ACCESSED ');
   console.log('📨 Request Details:');
   console.log('   - Body:', JSON.stringify(req.body));
   console.log('   - User ID:', req.user?.id);

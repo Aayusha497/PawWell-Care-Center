@@ -325,7 +325,7 @@ const createBooking = async (req, res) => {
       dropoff_address: requires_pickup ? (dropoff_address || pickup_address) : null,
       dropoff_time: requires_pickup ? dropoff_time : null,
       status: 'pending',
-      booking_status: BOOKING_STATUS.PENDING,
+      booking_status: BOOKING_STATUS.PENDING, // bookingis created first with booking status pending and payment status unpaid
       payment_status: PAYMENT_STATUS.UNPAID,
       confirmation_code: confirmationCode,
       created_at: new Date(),
@@ -838,13 +838,11 @@ const getPendingBookings = async (req, res) => {
   }
 };
 
-/**
- * Admin: Approve a booking
- * PUT /api/bookings/admin/:bookingId/approve
- */
+/*Admin: Approve a booking
+ * PUT /api/bookings/admin/:bookingId/approve*/
 const approveBooking = async (req, res) => {
   try {
-    const bookingId = parseInt(req.params.bookingId);
+    const bookingId = parseInt(req.params.bookingId); 
 
     const booking = await Booking.findByPk(bookingId);
 
@@ -862,7 +860,7 @@ const approveBooking = async (req, res) => {
       });
     }
 
-    booking.booking_status = BOOKING_STATUS.APPROVED;
+    booking.booking_status = BOOKING_STATUS.APPROVED; //on admin approval, booking status is set to approved and payment status is pending and unlocks the pay now button on frontend
     booking.payment_status = PAYMENT_STATUS.PENDING_PAYMENT;
     booking.status = toLegacyStatus(BOOKING_STATUS.APPROVED);
     booking.updated_at = new Date();
@@ -1097,10 +1095,11 @@ const getAllBookings = async (req, res) => {
   }
 };
 
-/**
- * User: Initiate Khalti payment for approved booking
+/**User Initiate Khalti payment for approved booking
  * POST /api/bookings/payment/initiate
  */
+
+// This endpoint is called when user clicks "Pay Now" button on frontend after booking is approved by admin. It initiates the Khalti payment process, checks the booking belongs to the user, ensures the booking is already approved, send request to khalti.
 const initiateKhaltiPayment = async (req, res) => {
   try {
     const userId = req.user.id;

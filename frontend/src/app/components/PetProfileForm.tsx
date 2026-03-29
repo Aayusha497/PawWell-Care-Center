@@ -343,7 +343,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Last Bet Visit Date</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Last Vet Visit Date</label>
                   <input
                     type="text"
                     value={formData.last_vet_visit}

@@ -20,6 +20,7 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +47,7 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
 
     // Clear validation errors if all fields are filled
     setValidationErrors({});
+    setTouched({});
     onLogin(email, password);
   };
 
@@ -105,12 +107,14 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
+                  // Mark field as touched when user starts typing
+                  setTouched(prev => ({ ...prev, email: true }));
                   // Clear server error when user starts typing
                   if (error && onClearError) {
                     onClearError();
                   }
-                  // Clear email validation error when user starts typing
-                  if (validationErrors.email) {
+                  // Clear email validation error only after user has touched the field
+                  if (touched.email && validationErrors.email && e.target.value.trim()) {
                     setValidationErrors(prev => ({ ...prev, email: '' }));
                   }
                 }}
@@ -132,12 +136,14 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
+                    // Mark field as touched when user starts typing
+                    setTouched(prev => ({ ...prev, password: true }));
                     // Clear server error when user starts typing
                     if (error && onClearError) {
                       onClearError();
                     }
-                    // Clear password validation error when user starts typing
-                    if (validationErrors.password) {
+                    // Clear password validation error only after user has touched the field
+                    if (touched.password && validationErrors.password && e.target.value.trim()) {
                       setValidationErrors(prev => ({ ...prev, password: '' }));
                     }
                   }}

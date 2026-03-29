@@ -253,6 +253,7 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
       console.log('   - return_url:', returnUrl);
       console.log('   - website_url:', websiteUrl);
       
+      // Call backend to initiate Khalti payment and get payment URL, passes bookingid and returs url, stores booking id and pidx in sessionStorage for retrieval on payment success page, redirectes the browser to khalti payment url
       const response = await initiateKhaltiPayment({
         booking_id: bookingId,
         return_url: returnUrl,
@@ -649,10 +650,11 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
                         </>
                       )}
                     </div>
-
-                    <div className="flex gap-3 pt-4 border-t">
+                      
+                   {/* pay now button only shows if booking is approved by admin and payment is either pending or failed. If payment is successful, button disappears and status updates to paid. If user clicks pay now, they are redirected to Khalti and button shows Redirecting while processing. */}
+                    <div className="flex gap-3 pt-4 border-t"> 
                       {getBookingStatus(booking) === 'approved' && ['pending_payment', 'failed'].includes(getPaymentStatus(booking)) && (
-                        <button
+                        <button 
                           onClick={() => handlePayNow(booking.booking_id)}
                           disabled={payingBookingId === booking.booking_id}
                           className="flex-1 bg-[#FA9884] text-white py-2 rounded-lg font-semibold hover:bg-[#E8876F] transition disabled:opacity-50"

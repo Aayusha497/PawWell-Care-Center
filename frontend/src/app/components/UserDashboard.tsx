@@ -547,6 +547,7 @@ const handleAddPet = () => {
     if (showSettings) {
       return (
         <SettingsPage
+          hideNavbar={true}
           onBack={handleBackToDashboard}
           onLogout={onLogout}
           userFullName={user.fullName}

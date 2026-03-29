@@ -702,8 +702,7 @@ export const rejectBooking = async (bookingId: number): Promise<any> => {
   }
 };
 
-/**
- * Initiate Khalti payment for an approved booking
+/**Initiate Khalti payment for an approved booking
  * @param {object} payload - Payment initiation payload
  * @returns {Promise<any>} Khalti payment URL and metadata
  */
@@ -730,8 +729,7 @@ export const initiateKhaltiPayment = async (payload: {
   }
 };
 
-/**
- * Verify Khalti payment using pidx after redirect
+/**Verify Khalti payment using pidx after redirect
  * @param {object} payload - Verify payload
  * @returns {Promise<any>} Verification result
  */

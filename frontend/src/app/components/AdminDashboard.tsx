@@ -451,6 +451,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   if (showSettings) {
     return (
       <SettingsPage
+        hideNavbar={true}
         onBack={() => setShowSettings(false)}
         onLogout={onLogout}
         userFullName={user.fullName}
