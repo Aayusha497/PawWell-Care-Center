@@ -38,24 +38,32 @@ const registerValidation = [
   body('firstName')
     .trim()
     .notEmpty()
-    .withMessage('First name is required.')
-    .isLength({ max: 150 })
-    .withMessage('First name must be less than 150 characters.'),
+    .withMessage('Full name is required.')
+    .isLength({ min: 2 })
+    .withMessage('Full name must be at least 2 characters long.')
+    .matches(/^[A-Za-z\s]+$/)
+    .withMessage('Full name should contain only letters (A–Z).')
+    .custom((value) => {
+      if (/\d/.test(value)) {
+        throw new Error('Full name should contain only letters (A–Z).');
+      }
+      return true;
+    }),
   
   body('lastName')
     .trim()
     .notEmpty()
     .withMessage('Last name is required.')
-    .isLength({ max: 150 })
-    .withMessage('Last name must be less than 150 characters.'),
-  
-  body('phoneNumber')
-    .optional()
-    .trim()
-    .matches(/^[0-9\s\-\(\)]+$/)
-    .withMessage('Enter a valid phone number.')
-    .isLength({ min: 10, max: 20 })
-    .withMessage('Phone number must be between 10 and 20 characters.'),
+    .isLength({ min: 2 })
+    .withMessage('Last name must be at least 2 characters long.')
+    .matches(/^[A-Za-z\s]+$/)
+    .withMessage('Last name should contain only letters (A–Z).')
+    .custom((value) => {
+      if (/\d/.test(value)) {
+        throw new Error('Last name should contain only letters (A–Z).');
+      }
+      return true;
+    }),
   
   body('userType')
     .optional()

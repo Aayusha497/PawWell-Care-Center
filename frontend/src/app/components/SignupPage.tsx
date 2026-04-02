@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import SuccessModal from './ui/SuccessModal';
 
 interface SignupPageProps {
-  onSignup: (fullName: string, email: string, password: string, confirmPassword: string) => void;
+  onSignup: (firstName: string, lastName: string, email: string, password: string, confirmPassword: string) => void;
   onNavigateToLogin: () => void;
   onNavigateToHome?: () => void;
   error?: string | null;
@@ -19,7 +19,8 @@ interface SignupPageProps {
 }
 
 export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHome, error, fieldErrors, showSignupSuccess, onSignupSuccessClose }: SignupPageProps) {
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,9 +33,18 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
     e.preventDefault();
     const errors: Record<string, string> = {};
 
-    // Validate all fields
-    if (!fullName.trim()) {
-      errors.fullName = 'Please fill this field';
+    // Validate First Name
+    if (!firstName.trim()) {
+      errors.firstName = 'Please fill this field';
+    } else if (!/^[A-Za-z\s]+$/.test(firstName.trim())) {
+      errors.firstName = 'First name should contain only letters (A–Z).';
+    }
+    
+    // Validate Last Name
+    if (!lastName.trim()) {
+      errors.lastName = 'Please fill this field';
+    } else if (!/^[A-Za-z\s]+$/.test(lastName.trim())) {
+      errors.lastName = 'Last name should contain only letters (A–Z).';
     }
     
     if (!email.trim()) {
@@ -76,7 +86,7 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
       });
       return;
     }
-    onSignup(fullName, email, password, confirmPassword);
+    onSignup(firstName, lastName, email, password, confirmPassword);
   };
 
   return (
@@ -134,17 +144,38 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
               )}
 
               <div>
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="firstName">First Name</Label>
                 <Input
-                  id="fullName"
+                  id="firstName"
                   type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Enter your full name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Enter your first name"
                   className="mt-1 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                 />
-                {validationErrors.fullName && (
-                  <p className="text-sm text-red-500 mt-1">{validationErrors.fullName}</p>
+                {validationErrors.firstName && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.firstName}</p>
+                )}
+                {fieldErrors?.firstName && (
+                  <p className="text-sm text-red-500 mt-1">{fieldErrors.firstName[0]}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Enter your last name"
+                  className="mt-1 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                />
+                {validationErrors.lastName && (
+                  <p className="text-sm text-red-500 mt-1">{validationErrors.lastName}</p>
+                )}
+                {fieldErrors?.lastName && (
+                  <p className="text-sm text-red-500 mt-1">{fieldErrors.lastName[0]}</p>
                 )}
               </div>
 

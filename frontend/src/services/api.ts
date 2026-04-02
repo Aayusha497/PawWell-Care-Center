@@ -82,7 +82,8 @@ api.interceptors.response.use(
     }
 
     // If error is 401 and we haven't tried to refresh token yet
-    if (error.response?.status === 401 && !(originalRequest as any)._retry) {
+    // BUT: Don't redirect for /accounts/login endpoint (initial login attempt)
+    if (error.response?.status === 401 && !(originalRequest as any)._retry && !originalRequest.url?.includes('/accounts/login')) {
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {

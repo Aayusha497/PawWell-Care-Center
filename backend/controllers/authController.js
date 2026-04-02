@@ -25,6 +25,131 @@ const register = async (req, res) => {
     const { email, password, firstName, lastName, phoneNumber, userType } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
+    // ============================================
+    // STRICT BACKEND VALIDATION FOR FIRSTNAME
+    // ============================================
+    console.log('🔒 BACKEND VALIDATION: Checking firstName...');
+    
+    if (!firstName || !firstName.trim()) {
+      console.error('❌ BACKEND REJECTED: firstName is empty');
+      return res.status(400).json({
+        success: false,
+        message: 'Full name is required',
+        errors: { firstName: ['Full name is required'] }
+      });
+    }
+
+    const trimmedFirstName = firstName.trim();
+    
+    if (trimmedFirstName.length < 2) {
+      console.error('❌ BACKEND REJECTED: firstName too short:', trimmedFirstName);
+      return res.status(400).json({
+        success: false,
+        message: 'Full name must be at least 2 characters long',
+        errors: { firstName: ['Full name must be at least 2 characters long'] }
+      });
+    }
+
+    // CHECK FOR NUMBERS - REJECT IMMEDIATELY
+    if (/\d/.test(trimmedFirstName)) {
+      console.error('❌ BACKEND REJECTED: Numbers found in firstName:', trimmedFirstName);
+      return res.status(400).json({
+        success: false,
+        message: 'Full name cannot contain numbers',
+        errors: { firstName: ['Full name should contain only letters (A–Z). Numbers are not allowed.'] }
+      });
+    }
+
+    // CHECK FOR SPECIAL CHARACTERS - REJECT IMMEDIATELY
+    if (!/^[A-Za-z\s]+$/.test(trimmedFirstName)) {
+      console.error('❌ BACKEND REJECTED: Invalid characters in firstName:', trimmedFirstName);
+      return res.status(400).json({
+        success: false,
+        message: 'Full name contains invalid characters',
+        errors: { firstName: ['Full name should contain only letters (A–Z). Special characters are not allowed.'] }
+      });
+    }
+
+    console.log('✅ BACKEND VALIDATION PASSED: firstName is valid');
+
+    // ============================================
+    // STRICT BACKEND VALIDATION FOR LASTNAME
+    // ============================================
+    console.log('🔒 BACKEND VALIDATION: Checking lastName...');
+    
+    if (!lastName || !lastName.trim()) {
+      console.error('❌ BACKEND REJECTED: lastName is empty');
+      return res.status(400).json({
+        success: false,
+        message: 'Last name is required',
+        errors: { lastName: ['Last name is required'] }
+      });
+    }
+
+    const trimmedLastName = lastName.trim();
+    
+    if (trimmedLastName.length < 2) {
+      console.error('❌ BACKEND REJECTED: lastName too short:', trimmedLastName);
+      return res.status(400).json({
+        success: false,
+        message: 'Last name must be at least 2 characters long',
+        errors: { lastName: ['Last name must be at least 2 characters long'] }
+      });
+    }
+
+    // CHECK FOR NUMBERS - REJECT IMMEDIATELY
+    if (/\d/.test(trimmedLastName)) {
+      console.error('❌ BACKEND REJECTED: Numbers found in lastName:', trimmedLastName);
+      return res.status(400).json({
+        success: false,
+        message: 'Last name cannot contain numbers',
+        errors: { lastName: ['Last name should contain only letters (A–Z). Numbers are not allowed.'] }
+      });
+    }
+
+    // CHECK FOR SPECIAL CHARACTERS - REJECT IMMEDIATELY
+    if (!/^[A-Za-z]+$/.test(trimmedLastName)) {
+      console.error('❌ BACKEND REJECTED: Invalid characters in lastName:', trimmedLastName);
+      return res.status(400).json({
+        success: false,
+        message: 'Last name contains invalid characters',
+        errors: { lastName: ['Last name should contain only letters (A–Z). Special characters are not allowed.'] }
+      });
+    }
+
+    console.log('✅ BACKEND VALIDATION PASSED: lastName is valid');
+
+    // ============================================
+    // STRICT BACKEND VALIDATION FOR PHONENUMBER
+    // ============================================
+    if (phoneNumber) {
+      console.log('🔒 BACKEND VALIDATION: Checking phoneNumber...');
+      
+      const cleanedPhoneNumber = phoneNumber.replace(/\s/g, '');
+      
+      // CHECK FOR NON-DIGITS - REJECT IMMEDIATELY
+      if (!/^\d+$/.test(cleanedPhoneNumber)) {
+        console.error('❌ BACKEND REJECTED: Non-digits found in phoneNumber:', phoneNumber);
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number must contain only digits',
+          errors: { phoneNumber: ['Phone number must contain only digits.'] }
+        });
+      }
+      
+      // CHECK FOR EXACT 10 DIGITS - REJECT IMMEDIATELY
+      if (cleanedPhoneNumber.length !== 10) {
+        console.error('❌ BACKEND REJECTED: Phone number not 10 digits:', phoneNumber);
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number must be exactly 10 digits',
+          errors: { phoneNumber: ['Phone number must be exactly 10 digits.'] }
+        });
+      }
+      
+      console.log('✅ BACKEND VALIDATION PASSED: phoneNumber is valid');
+    }
+
     // Check if user with this email already exists
     const existingUser = await User.findOne({
       where: { email: normalizedEmail }
@@ -88,7 +213,7 @@ const register = async (req, res) => {
         existingUser.password = password; // Will be hashed by beforeUpdate hook
         existingUser.firstName = firstName;
         existingUser.lastName = lastName;
-        existingUser.phoneNumber = phoneNumber;
+        existingUser.phoneNumber = phoneNumber || null; // Phone number is optional
         existingUser.userType = userType || 'pet_owner';
         existingUser.emailVerified = true;
         existingUser.isActive = true;
@@ -127,7 +252,7 @@ const register = async (req, res) => {
       password,
       firstName,
       lastName,
-      phoneNumber,
+      phoneNumber: phoneNumber || null, // Phone number is optional during signup
       userType: userType || 'pet_owner',
       emailVerified: true,
       isActive: true,
@@ -571,6 +696,63 @@ const updateProfile = async (req, res) => {
       });
     }
 
+
+    // BACKEND VALIDATION FOR PROFILE FIELDS
+    
+    const errors = {};
+
+    // Phone Number validation - must be exactly 10 digits
+    if (phoneNumber) {
+      console.log('🔒 BACKEND VALIDATION: Checking phoneNumber...');
+      const phoneValue = phoneNumber.trim();
+      if (!/^\d{10}$/.test(phoneValue)) {
+        console.error('❌ BACKEND REJECTED: Invalid phone number:', phoneValue);
+        errors.phoneNumber = 'Phone Number must be exactly 10 digits with no letters or symbols';
+      }
+    }
+
+    // City validation - only letters, no numbers or symbols
+    if (city) {
+      console.log('🔒 BACKEND VALIDATION: Checking city...');
+      const cityValue = city.trim();
+      if (!/^[A-Za-z\s]+$/.test(cityValue)) {
+        console.error('❌ BACKEND REJECTED: Invalid city:', cityValue);
+        errors.city = 'City can only contain letters (A–Z), no numbers or symbols allowed';
+      }
+    }
+
+    // Emergency Contact Name validation - only letters
+    if (emergencyContactName) {
+      console.log('🔒 BACKEND VALIDATION: Checking emergencyContactName...');
+      const nameValue = emergencyContactName.trim();
+      if (!/^[A-Za-z\s]+$/.test(nameValue)) {
+        console.error('❌ BACKEND REJECTED: Invalid emergency contact name:', nameValue);
+        errors.emergencyContactName = 'Emergency Contact Name can only contain letters (A–Z), no numbers or symbols allowed';
+      }
+    }
+
+    // Emergency Contact Number validation - must be exactly 10 digits
+    if (emergencyContactNumber) {
+      console.log('🔒 BACKEND VALIDATION: Checking emergencyContactNumber...');
+      const numberValue = emergencyContactNumber.trim();
+      if (!/^\d{10}$/.test(numberValue)) {
+        console.error('❌ BACKEND REJECTED: Invalid emergency contact number:', numberValue);
+        errors.emergencyContactNumber = 'Emergency Contact Number must be exactly 10 digits with no letters or symbols';
+      }
+    }
+
+    // If validation errors exist, return them
+    if (Object.keys(errors).length > 0) {
+      console.error('❌ BACKEND VALIDATION FAILED:', errors);
+      return res.status(400).json({
+        success: false,
+        message: 'Please check your information and try again.',
+        errors
+      });
+    }
+
+    console.log('✅ BACKEND VALIDATION PASSED: All fields are valid');
+
     // Handle profile picture upload
     if (req.file) {
       console.log('📷 Profile picture uploaded:', req.file.path);
@@ -637,12 +819,24 @@ const updateProfile = async (req, res) => {
     console.error('❌ Update profile error:', error);
     console.error('Error stack:', error.stack);
     
+    // Handle Sequelize validation errors
+    if (error.name === 'SequelizeValidationError') {
+      const errors = {};
+      error.errors.forEach(err => {
+        errors[err.path] = err.message;
+      });
+      console.error('❌ Sequelize validation errors:', errors);
+      return res.status(400).json({
+        success: false,
+        message: 'Please check your information and try again.',
+        errors
+      });
+    }
+    
     // Provide more specific error messages
     let errorMessage = 'Unable to update your profile. Please try again.';
     
-    if (error.name === 'SequelizeValidationError') {
-      errorMessage = 'Please check your information and try again.';
-    } else if (error.name === 'SequelizeDatabaseError') {
+    if (error.name === 'SequelizeDatabaseError') {
       errorMessage = 'A database error occurred. Please contact support if this continues.';
     } else if (error.message) {
       errorMessage = error.message;

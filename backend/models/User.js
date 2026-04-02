@@ -26,17 +26,66 @@ const User = sequelize.define('User', {
   firstName: {
     type: DataTypes.STRING(150),
     allowNull: false,
-    field: 'first_name'
+    field: 'first_name',
+    validate: {
+      notEmpty: {
+        msg: 'First name is required'
+      },
+      len: {
+        args: [2, 150],
+        msg: 'First name must be between 2 and 150 characters'
+      },
+      isValidName(value) {
+        // Check for numbers
+        if (/\d/.test(value)) {
+          throw new Error('First name cannot contain numbers');
+        }
+        // Check for special characters
+        if (!/^[A-Za-z]+$/.test(value)) {
+          throw new Error('First name can only contain letters');
+        }
+      }
+    }
   },
   lastName: {
     type: DataTypes.STRING(150),
     allowNull: false,
-    field: 'last_name'
+    field: 'last_name',
+    validate: {
+      notEmpty: {
+        msg: 'Last name is required'
+      },
+      len: {
+        args: [2, 150],
+        msg: 'Last name must be between 2 and 150 characters'
+      },
+      isValidName(value) {
+        // Check for numbers
+        if (/\d/.test(value)) {
+          throw new Error('Last name cannot contain numbers');
+        }
+        // Check for special characters
+        if (!/^[A-Za-z]+$/.test(value)) {
+          throw new Error('Last name can only contain letters');
+        }
+      }
+    }
   },
   phoneNumber: {
     type: DataTypes.STRING(20),
     allowNull: true,
-    field: 'phone_number'
+    field: 'phone_number',
+    validate: {
+      isValidPhone(value) {
+        // Only validate if value is provided
+        if (value) {
+          // Must be exactly 10 digits, no letters or symbols
+          if (!/^\d{10}$/.test(value)) {
+            throw new Error('Phone number must be exactly 10 digits with no letters or symbols');
+          }
+        }
+      }
+    }
   },
   userType: {
     type: DataTypes.ENUM('pet_owner', 'admin', 'staff'),
@@ -57,17 +106,47 @@ const User = sequelize.define('User', {
   city: {
     type: DataTypes.STRING(100),
     allowNull: true,
-    field: 'city'
+    field: 'city',
+    validate: {
+      isValidCity(value) {
+        // Only validate if value is provided
+        if (value) {
+          if (!/^[A-Za-z\s]+$/.test(value)) {
+            throw new Error('City can only contain letters (A–Z), no numbers or symbols allowed');
+          }
+        }
+      }
+    }
   },
   emergencyContactName: {
     type: DataTypes.STRING(100),
     allowNull: true,
-    field: 'emergency_contact_name'
+    field: 'emergency_contact_name',
+    validate: {
+      isValidName(value) {
+        // Only validate if value is provided
+        if (value) {
+          if (!/^[A-Za-z\s]+$/.test(value)) {
+            throw new Error('Emergency Contact Name can only contain letters (A–Z), no numbers or symbols allowed');
+          }
+        }
+      }
+    }
   },
   emergencyContactNumber: {
     type: DataTypes.STRING(20),
     allowNull: true,
-    field: 'emergency_contact_number'
+    field: 'emergency_contact_number',
+    validate: {
+      isValidPhoneNumber(value) {
+        // Only validate if value is provided
+        if (value) {
+          if (!/^\d{10}$/.test(value)) {
+            throw new Error('Emergency Contact Number must be exactly 10 digits with no letters or symbols');
+          }
+        }
+      }
+    }
   },
   isProfileComplete: {
     type: DataTypes.BOOLEAN,

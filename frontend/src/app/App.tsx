@@ -215,27 +215,22 @@ export default function App() {
     }
   };
 
-  const handleSignup = async (fullName: string, email: string, password: string, confirmPassword: string) => {
+  const handleSignup = async (firstName: string, lastName: string, email: string, password: string, confirmPassword: string) => {
     try {
       setError(null);
       setFieldErrors({});
 
-      const nameParts = fullName.trim().split(/\s+/).filter(part => part.length > 0);
-
-      if (nameParts.length === 0) {
-        setError('Please enter your name');
+      if (!firstName.trim() || !lastName.trim()) {
+        setError('Please enter your first and last name');
         return;
       }
-
-      const firstName = nameParts[0];
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : nameParts[0];
 
       const userData: RegisterData = {
         email,
         password,
         confirmPassword,
-        firstName,
-        lastName,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         userType: 'pet_owner'
       };
 

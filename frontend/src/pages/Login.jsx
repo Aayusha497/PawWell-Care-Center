@@ -7,19 +7,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
 // Removed direct loginUser import as we use AuthContext
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
-
-// Validation schema
-const LoginSchema = Yup.object().shape({
-  email: Yup.string()
-    .email('Invalid email address')
-    .required('Email is required'),
-  password: Yup.string()
-    .required('Password is required'),
-});
+import { LoginValidationSchema } from '../utils/formValidation';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -33,7 +24,24 @@ const Login = () => {
     password: '',
   };
 
-  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+  const handleSubmit = async (values, { setSubmitting, setErrors, setTouched }) => {
+    // Mark all fields as touched to show validation errors
+    setTouched({ email: true, password: true });
+
+    // Validate the form data
+    try {
+      await LoginValidationSchema.validate(values, { abortEarly: false });
+    } catch (validationError) {
+      const formErrors = {};
+      validationError.inner.forEach(error => {
+        formErrors[error.path] = error.message;
+      });
+      setErrors(formErrors);
+      toast.error('Please fix all validation errors before submitting.');
+      setSubmitting(false);
+      return; // Stop submission if validation fails
+    }
+
     try {
       // Use the login function from AuthContext which handles API call and state updates
       const response = await login({
@@ -104,11 +112,38 @@ const Login = () => {
 
             <Formik
               initialValues={initialValues}
-              validationSchema={LoginSchema}
+              validationSchema={LoginValidationSchema}
               onSubmit={handleSubmit}
+              validateOnChange={true}
+              validateOnBlur={true}
+              validateOnMount={true}
             >
-              {({ isSubmitting }) => (
+              {({ isSubmitting, errors, touched, isValid, dirty }) => (
                 <Form className="auth-form">
+                
+                  {/* Validation Error Summary */}
+                  {Object.keys(errors).length > 0 && Object.keys(touched).length > 0 && (
+                    <div className="validation-error-summary" style={{
+                      backgroundColor: '#fee',
+                      border: '1px solid #fcc',
+                      borderRadius: '4px',
+                      padding: '12px 16px',
+                      marginBottom: '16px',
+                      color: '#c33'
+                    }}>
+                      <strong style={{ display: 'block', marginBottom: '8px' }}>❌ Please fix these errors:</strong>
+                      <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                        {Object.entries(errors).map(([field, error]) => 
+                          touched[field] && (
+                            <li key={field} style={{ marginBottom: '4px', fontSize: '13px' }}>
+                              {error}
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
                   <div className="form-group">
                     <label htmlFor="email">Email / Username</label>
                     <div className="input-with-icon">
@@ -120,7 +155,7 @@ const Login = () => {
                             type="email"
                             id="email"
                             placeholder="Enter your email or username"
-                            className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
+                            className={`auth-input ${errors.email ? 'input-error' : ''}`}
                             autoComplete="email"
                           />
                         )}
@@ -140,7 +175,7 @@ const Login = () => {
                             type={showPassword ? 'text' : 'password'}
                             id="password"
                             placeholder="Enter your password"
-                            className={`auth-input ${meta.touched && meta.error ? 'input-error' : ''}`}
+                            className={`auth-input ${errors.password ? 'input-error' : ''}`}
                             autoComplete="current-password"
                           />
                         )}
@@ -166,7 +201,8 @@ const Login = () => {
                   <button
                     type="submit"
                     className="btn-auth-primary"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !isValid || !dirty}
+                    title={!isValid ? 'Please fix all validation errors' : 'Login to your account'}
                   >
                     {isSubmitting ? 'Logging in...' : 'Login'}
                   </button>

@@ -128,34 +128,71 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
     // Always required fields
     if (!formData.firstName || formData.firstName.trim() === '') {
       errors.firstName = 'First Name is required';
+    } else {
+      const firstNameValue = formData.firstName.trim();
+      if (!/^[A-Za-z\s]+$/.test(firstNameValue)) {
+        errors.firstName = 'First Name can only contain letters (A–Z), no numbers or symbols allowed';
+      }
     }
     if (!formData.lastName || formData.lastName.trim() === '') {
       errors.lastName = 'Last Name is required';
-    }
-    if (!formData.phoneNumber || formData.phoneNumber.trim() === '') {
-      errors.phoneNumber = 'Phone Number is required';
+    } else {
+      const lastNameValue = formData.lastName.trim();
+      if (!/^[A-Za-z\s]+$/.test(lastNameValue)) {
+        errors.lastName = 'Last Name can only contain letters (A–Z), no numbers or symbols allowed';
+      }
     }
     
-    // Required only during initial profile setup
+    // Phone Number validation - must be exactly 10 digits
+    if (!formData.phoneNumber || formData.phoneNumber.trim() === '') {
+      errors.phoneNumber = 'Phone Number is required';
+    } else {
+      const phoneValue = formData.phoneNumber.trim();
+      if (!/^\d{10}$/.test(phoneValue)) {
+        errors.phoneNumber = 'Phone Number must be exactly 10 digits with no letters or symbols';
+      }
+    }
+    
+    // City validation - only letters, no numbers or symbols
     if (isInitialSetup) {
       if (!formData.address || formData.address.trim() === '') {
         errors.address = 'Address is required';
       }
+      
       if (!formData.city || formData.city.trim() === '') {
         errors.city = 'City is required';
+      } else {
+        const cityValue = formData.city.trim();
+        if (!/^[A-Za-z\s]+$/.test(cityValue)) {
+          errors.city = 'City can only contain letters (A–Z), no numbers or symbols allowed';
+        }
       }
+      
+      // Emergency Contact Name validation - only letters
       if (!formData.emergencyContactName || formData.emergencyContactName.trim() === '') {
         errors.emergencyContactName = 'Emergency Contact Name is required';
+      } else {
+        const nameValue = formData.emergencyContactName.trim();
+        if (!/^[A-Za-z\s]+$/.test(nameValue)) {
+          errors.emergencyContactName = 'Emergency Contact Name can only contain letters (A–Z), no numbers or symbols allowed';
+        }
       }
+      
+      // Emergency Contact Number validation - must be exactly 10 digits
       if (!formData.emergencyContactNumber || formData.emergencyContactNumber.trim() === '') {
         errors.emergencyContactNumber = 'Emergency Contact Number is required';
+      } else {
+        const numberValue = formData.emergencyContactNumber.trim();
+        if (!/^\d{10}$/.test(numberValue)) {
+          errors.emergencyContactNumber = 'Emergency Contact Number must be exactly 10 digits with no letters or symbols';
+        }
       }
     }
     
     if (Object.keys(errors).length > 0) {
-      console.error('❌ Validation failed: Missing required fields:', errors);
+      console.error('❌ Validation failed:', errors);
       setFieldErrors(errors);
-      toast.error('Please fill in all required fields marked below');
+      toast.error('Please check your information and try again');
       return;
     }
     
@@ -494,7 +531,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
           </div>
 
           {editing ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
               {/* Avatar Upload */}
               <div className="flex items-center gap-6">
                 <div className="w-24 h-24 rounded-full border-4 border-[#FA9884] overflow-hidden flex-shrink-0">
@@ -592,6 +629,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
+                  autoComplete="off"
                   className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none transition dark:bg-gray-700 dark:text-gray-100 ${
                     fieldErrors.address ? 'border-red-500 focus:border-red-500' : 'border-gray-200 dark:border-gray-600 focus:border-[#FA9884]'
                   }`}

@@ -7,16 +7,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
 import { requestPasswordResetOTP } from '../services/api';
 import { toast } from 'react-toastify';
-
-// Validation schema
-const ForgotPasswordSchema = Yup.object().shape({
-  email: Yup.string()
-    .email('Invalid email address')
-    .required('Email is required'),
-});
+import { ForgotPasswordValidationSchema } from '../utils/formValidation';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -26,7 +19,22 @@ const ForgotPassword = () => {
     email: '',
   };
 
-  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+  const handleSubmit = async (values, { setSubmitting, setErrors, setTouched }) => {
+    setTouched({ email: true });
+
+    try {
+      await ForgotPasswordValidationSchema.validate(values, { abortEarly: false });
+    } catch (validationError) {
+      const formErrors = {};
+      validationError.inner.forEach(error => {
+        formErrors[error.path] = error.message;
+      });
+      setErrors(formErrors);
+      toast.error('Please fix all validation errors before submitting.');
+      setSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const response = await requestPasswordResetOTP(values.email);
@@ -69,28 +77,59 @@ const ForgotPassword = () => {
           <div className="auth-form-section">
             <Formik
               initialValues={initialValues}
-              validationSchema={ForgotPasswordSchema}
+              validationSchema={ForgotPasswordValidationSchema}
               onSubmit={handleSubmit}
+              validateOnChange={true}
+              validateOnBlur={true}
+              validateOnMount={true}
             >
-              {({ isSubmitting: formSubmitting }) => (
+              {({ isSubmitting: formSubmitting, errors, touched, isValid, dirty }) => (
                 <Form className="auth-form">
+                
+                  {/* Validation Error Summary */}
+                  {Object.keys(errors).length > 0 && Object.keys(touched).length > 0 && (
+                    <div className="validation-error-summary" style={{
+                      backgroundColor: '#fee',
+                      border: '1px solid #fcc',
+                      borderRadius: '4px',
+                      padding: '12px 16px',
+                      marginBottom: '16px',
+                      color: '#c33'
+                    }}>
+                      <strong style={{ display: 'block', marginBottom: '8px' }}>❌ Please fix these errors:</strong>
+                      <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                        {Object.entries(errors).map(([field, error]) => 
+                          touched[field] && (
+                            <li key={field} style={{ marginBottom: '4px', fontSize: '13px' }}>
+                              {error}
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
                   <div className="form-group">
                     <label htmlFor="email">Email Address</label>
-                    <Field
-                      type="email"
-                      id="email"
-                      name="email"
-                      className="form-control"
-                      placeholder="Enter your email"
-                      autoComplete="email"
-                    />
+                    <Field name="email">
+                      {({ field, meta }) => (
+                        <input
+                          {...field}
+                          type="email"
+                          id="email"
+                          placeholder="Enter your email"
+                          className={`form-control ${errors.email ? 'input-error' : ''}`}
+                          autoComplete="email"
+                        />
+                      )}
+                    </Field>
                     <ErrorMessage name="email" component="div" className="error-message" />
                   </div>
 
                   <button
                     type="submit"
                     className="btn btn-primary btn-block"
-                    disabled={formSubmitting || isSubmitting}
+                    disabled={formSubmitting || isSubmitting || !isValid || !dirty}
+                    title={!isValid ? 'Please fix all validation errors' : 'Send verification code'}
                   >
                     {formSubmitting || isSubmitting ? (
                       <>

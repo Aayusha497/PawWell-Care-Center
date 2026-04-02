@@ -113,9 +113,13 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
                   if (error && onClearError) {
                     onClearError();
                   }
-                  // Clear email validation error only after user has touched the field
-                  if (touched.email && validationErrors.email && e.target.value.trim()) {
-                    setValidationErrors(prev => ({ ...prev, email: '' }));
+                  // Clear validation error ONLY when field has valid content
+                  if (validationErrors.email && e.target.value.trim()) {
+                    setValidationErrors(prev => {
+                      const updated = { ...prev };
+                      delete updated.email;
+                      return updated;
+                    });
                   }
                 }}
                 placeholder="Enter your email"
@@ -142,9 +146,13 @@ export default function LoginPage({ onLogin, onNavigateToSignup, onNavigateToHom
                     if (error && onClearError) {
                       onClearError();
                     }
-                    // Clear password validation error only after user has touched the field
-                    if (touched.password && validationErrors.password && e.target.value.trim()) {
-                      setValidationErrors(prev => ({ ...prev, password: '' }));
+                    // Clear validation error ONLY when field has valid content
+                    if (validationErrors.password && e.target.value.trim()) {
+                      setValidationErrors(prev => {
+                        const updated = { ...prev };
+                        delete updated.password;
+                        return updated;
+                      });
                     }
                   }}
                   placeholder="Enter your password"

@@ -7,22 +7,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
 import { resetPassword } from '../services/api';
 import { toast } from 'react-toastify';
 import { getPasswordStrength } from '../utils/auth';
-
-// Validation schema
-const ResetPasswordSchema = Yup.object().shape({
-  new_password: Yup.string()
-    .min(8, 'Password must be at least 8 characters')
-    .matches(/[A-Za-z]/, 'Password must contain at least one letter')
-    .matches(/\d/, 'Password must contain at least one number')
-    .required('Password is required'),
-  confirm_password: Yup.string()
-    .oneOf([Yup.ref('new_password'), null], 'Passwords must match')
-    .required('Confirm password is required'),
-});
+import { ResetPasswordValidationSchema } from '../utils/formValidation';
 
 const ResetPassword = () => {
   const { token } = useParams();
@@ -72,7 +60,22 @@ const ResetPassword = () => {
     setPasswordStrength(strength);
   };
 
-  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+  const handleSubmit = async (values, { setSubmitting, setErrors, setTouched }) => {
+    setTouched({ new_password: true, confirm_password: true });
+
+    try {
+      await ResetPasswordValidationSchema.validate(values, { abortEarly: false });
+    } catch (validationError) {
+      const formErrors = {};
+      validationError.inner.forEach(error => {
+        formErrors[error.path] = error.message;
+      });
+      setErrors(formErrors);
+      toast.error('Please fix all validation errors before submitting.');
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const response = await resetPassword({
         token: token,
@@ -160,25 +163,56 @@ const ResetPassword = () => {
 
           <Formik
             initialValues={initialValues}
-            validationSchema={ResetPasswordSchema}
+            validationSchema={ResetPasswordValidationSchema}
             onSubmit={handleSubmit}
+            validateOnChange={true}
+            validateOnBlur={true}
+            validateOnMount={true}
           >
-            {({ values, isSubmitting, setFieldValue }) => (
+            {({ values, isSubmitting, setFieldValue, errors, touched, isValid, dirty }) => (
               <Form className="reset-password-form">
+              
+                {/* Validation Error Summary */}
+                {Object.keys(errors).length > 0 && Object.keys(touched).length > 0 && (
+                  <div className="validation-error-summary" style={{
+                    backgroundColor: '#fee',
+                    border: '1px solid #fcc',
+                    borderRadius: '4px',
+                    padding: '12px 16px',
+                    marginBottom: '16px',
+                    color: '#c33'
+                  }}>
+                    <strong style={{ display: 'block', marginBottom: '8px' }}>❌ Please fix these errors:</strong>
+                    <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                      {Object.entries(errors).map(([field, error]) => 
+                        touched[field] && (
+                          <li key={field} style={{ marginBottom: '4px', fontSize: '13px' }}>
+                            {error}
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </div>
+                )}
                 <div className="form-group password-group">
                   <label htmlFor="new_password">New Password</label>
                   <div className="password-input-wrapper">
-                    <Field
-                      type={showPassword ? 'text' : 'password'}
-                      name="new_password"
-                      id="new_password"
-                      placeholder="Enter your new password"
-                      autoComplete="new-password"
-                      onChange={(e) => {
-                        setFieldValue('new_password', e.target.value);
-                        handlePasswordChange(e.target.value);
-                      }}
-                    />
+                    <Field name="new_password">
+                      {({ field, meta }) => (
+                        <input
+                          {...field}
+                          type={showPassword ? 'text' : 'password'}
+                          id="new_password"
+                          placeholder="Enter your new password"
+                          autoComplete="new-password"
+                          className={errors.new_password ? 'input-error' : ''}
+                          onChange={(e) => {
+                            setFieldValue('new_password', e.target.value);
+                            handlePasswordChange(e.target.value);
+                          }}
+                        />
+                      )}
+                    </Field>
                     <button
                       type="button"
                       className="toggle-password"
@@ -209,13 +243,18 @@ const ResetPassword = () => {
                 <div className="form-group password-group">
                   <label htmlFor="confirm_password">Confirm New Password</label>
                   <div className="password-input-wrapper">
-                    <Field
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      name="confirm_password"
-                      id="confirm_password"
-                      placeholder="Confirm your new password"
-                      autoComplete="new-password"
-                    />
+                    <Field name="confirm_password">
+                      {({ field, meta }) => (
+                        <input
+                          {...field}
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          id="confirm_password"
+                          placeholder="Confirm your new password"
+                          autoComplete="new-password"
+                          className={errors.confirm_password ? 'input-error' : ''}
+                        />
+                      )}
+                    </Field>
                     <button
                       type="button"
                       className="toggle-password"
@@ -230,7 +269,8 @@ const ResetPassword = () => {
                 <button
                   type="submit"
                   className="btn btn-primary btn-block"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isValid || !dirty}
+                  title={!isValid ? 'Please fix all validation errors' : 'Reset your password'}
                 >
                   {isSubmitting ? 'Resetting Password...' : 'Reset Password'}
                 </button>
