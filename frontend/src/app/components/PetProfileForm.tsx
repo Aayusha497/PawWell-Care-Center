@@ -94,37 +94,86 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
     }
   };
 
+  const handleInputChange = (field: string, value: string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const updated = { ...prev };
+        delete updated[field];
+        return updated;
+      });
+    }
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    // Pet Name validation - letters and spaces only
     if (!formData.name.trim()) {
       newErrors.name = 'Pet name is required';
     } else if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
-      newErrors.name = 'Name can only contain letters and spaces';
+      newErrors.name = 'Pet Name can only contain letters (A–Z), no numbers or symbols allowed';
     }
 
+    // Breed validation - letters and spaces only
     if (!formData.breed.trim()) {
       newErrors.breed = 'Breed is required';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.breed)) {
+      newErrors.breed = 'Breed can only contain letters (A–Z), no numbers or symbols allowed';
     }
 
+    // Age validation - positive numbers only, range 0-50
     if (!formData.age) {
       newErrors.age = 'Age is required';
     } else if (Number(formData.age) < 0 || Number(formData.age) > 50) {
-      newErrors.age = 'Age must be between 0 and 50';
+      newErrors.age = 'Age must be between 0 and 50 years';
+    } else if (!/^\d+(\.\d+)?$/.test(formData.age)) {
+      newErrors.age = 'Age must be a valid number';
     }
 
+    // Weight validation - positive numbers only, range 0.1-999
     if (!formData.weight) {
       newErrors.weight = 'Weight is required';
     } else if (Number(formData.weight) < 0.1 || Number(formData.weight) > 999) {
       newErrors.weight = 'Weight must be between 0.1 and 999 kg';
+    } else if (!/^\d+(\.\d+)?$/.test(formData.weight)) {
+      newErrors.weight = 'Weight must be a valid number';
     }
 
+    // Height validation - positive numbers only, range 0.1-999
     if (!formData.height) {
       newErrors.height = 'Height is required';
     } else if (Number(formData.height) < 0.1 || Number(formData.height) > 999) {
       newErrors.height = 'Height must be between 0.1 and 999 cm';
+    } else if (!/^\d+(\.\d+)?$/.test(formData.height)) {
+      newErrors.height = 'Height must be a valid number';
     }
 
+    // Sex validation - must select Male or Female
+    if (!formData.sex) {
+      newErrors.sex = 'Please select a sex';
+    }
+
+    // Last Vet Visit Date validation - must be a valid date and not in the future
+    if (formData.last_vet_visit.trim()) {
+      try {
+        const visitDate = new Date(formData.last_vet_visit);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Check if date is valid
+        if (isNaN(visitDate.getTime())) {
+          newErrors.last_vet_visit = 'Please enter a valid date (YYYY-MM-DD format)';
+        } else if (visitDate > today) {
+          newErrors.last_vet_visit = 'Last Vet Visit Date cannot be in the future';
+        }
+      } catch (error) {
+        newErrors.last_vet_visit = 'Please enter a valid date (YYYY-MM-DD format)';
+      }
+    }
+
+    // Photo validation
     if (!photoFile && !photoPreview && !petId) {
       newErrors.photo = 'Pet photo is required';
     }
@@ -242,7 +291,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
                       className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="Kikyo"
                     />
@@ -254,7 +303,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                     <input
                       type="text"
                       value={formData.breed}
-                      onChange={(e) => setFormData({ ...formData, breed: e.target.value })}
+                      onChange={(e) => handleInputChange('breed', e.target.value)}
                       className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.breed ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="Golden Retriever"
                     />
@@ -268,7 +317,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                     <input
                       type="number"
                       value={formData.age}
-                      onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                      onChange={(e) => handleInputChange('age', e.target.value)}
                       className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.age ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="3"
                     />
@@ -281,7 +330,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                       type="number"
                       step="0.1"
                       value={formData.weight}
-                      onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                      onChange={(e) => handleInputChange('weight', e.target.value)}
                       className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.weight ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="20"
                     />
@@ -296,7 +345,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                       type="number"
                       step="0.1"
                       value={formData.height}
-                      onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                      onChange={(e) => handleInputChange('height', e.target.value)}
                       className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.height ? 'border-red-500' : 'border-gray-300'}`}
                       placeholder="60"
                     />
@@ -307,12 +356,13 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                     <label className="block text-sm font-medium mb-2 dark:text-gray-300">Sex</label>
                     <select
                       value={formData.sex}
-                      onChange={(e) => setFormData({ ...formData, sex: e.target.value as 'Male' | 'Female' })}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                      onChange={(e) => handleInputChange('sex', e.target.value)}
+                      className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.sex ? 'border-red-500' : 'border-gray-300'}`}
                     >
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                     </select>
+                    {errors.sex && <p className="text-red-500 text-sm mt-1">{errors.sex}</p>}
                   </div>
                 </div>
               </div>
@@ -345,12 +395,14 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                 <div>
                   <label className="block text-sm font-medium mb-2 dark:text-gray-300">Last Vet Visit Date</label>
                   <input
-                    type="text"
+                    type="date"
                     value={formData.last_vet_visit}
-                    onChange={(e) => setFormData({ ...formData, last_vet_visit: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
-                    placeholder="Dec 28 2025 - Jan 01 2026"
+                    onChange={(e) => handleInputChange('last_vet_visit', e.target.value)}
+                    className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.last_vet_visit ? 'border-red-500' : 'border-gray-300'}`}
                   />
+                  {errors.last_vet_visit && (
+                    <p className="text-red-500 text-sm mt-1">{errors.last_vet_visit}</p>
+                  )}
                 </div>
               </div>
 
