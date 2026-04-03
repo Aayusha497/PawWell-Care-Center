@@ -113,7 +113,7 @@ const createReview = async (req, res) => {
       review_text: review_text?.trim() || null,
       photos: photoUrl,
       is_verified: true,
-      is_approved: false, // Requires admin approval
+      is_approved: true, // Auto-approved - no admin approval needed
     });
 
     // Fetch created review with associations
@@ -144,7 +144,7 @@ const createReview = async (req, res) => {
         user_id: userId,
         type: 'review',
         title: 'Thank You for Your Review!',
-        message: `Thank you for your review! Your feedback helps us improve our services. We'll review it shortly and it will be published once approved.`,
+        message: `Thank you for your review! Your feedback has been posted and is now visible to other customers.`,
         reference_type: 'review',
         reference_id: review.review_id,
         is_read: false,
@@ -172,8 +172,8 @@ const createReview = async (req, res) => {
       const adminNotifications = adminUsers.map(admin => ({
         user_id: admin.id,
         type: 'review',
-        title: 'New Review Submitted',
-        message: `New review submitted by ${createdReview.user.first_name} ${createdReview.user.last_name} for ${createdReview.service_type} service. Awaiting approval.`,
+        title: 'New Review Posted',
+        message: `New review posted by ${createdReview.user.first_name} ${createdReview.user.last_name} for ${createdReview.service_type} service. Review is now live on the landing page.`,
         reference_type: 'review',
         reference_id: review.review_id,
         is_read: false,
@@ -190,7 +190,7 @@ const createReview = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Review submitted successfully. It will be visible after admin approval.',
+      message: 'Review submitted successfully and is now visible to other customers.',
       data: createdReview,
     });
   } catch (error) {
@@ -226,11 +226,11 @@ const getReviews = async (req, res) => {
     
     console.log('📊 Database stats:', {
       total: totalReviews,
-      approved: approvedReviews,
+      auto_approved: approvedReviews,
       featured: featuredReviews
     });
 
-    // Build where clause
+    // Build where clause - all reviews are auto-approved
     const whereClause = { is_approved: true };
     
     if (service_type) {
