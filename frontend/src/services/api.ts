@@ -1704,6 +1704,146 @@ export const getAvailableServiceTypes = async (): Promise<any> => {
   }
 };
 
+// ================================
+// ADMIN USER MANAGEMENT API FUNCTIONS
+// ================================
+
+/**
+ * Get all users with pagination and filters
+ * @param {object} params - Query parameters (page, limit, search, userType)
+ * @returns {Promise<any>} Users list with pagination
+ */
+export const getAdminUsers = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  userType?: string;
+}): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', String(params?.page || 1));
+    queryParams.append('limit', String(params?.limit || 20));
+    if (params?.search && params.search.trim()) queryParams.append('search', params.search.trim());
+    if (params?.userType && params.userType.trim()) queryParams.append('userType', params.userType.trim());
+
+    const response = await api.get(`/admin/users?${queryParams.toString()}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to fetch users:', error.response?.data || error.message);
+    throw error.response?.data || { message: 'Failed to fetch users' };
+  }
+};
+
+/**
+ * Get user by ID
+ * @param {number} userId - User ID
+ * @returns {Promise<any>} User details with pets
+ */
+export const getAdminUserById = async (userId: number): Promise<any> => {
+  try {
+    const response = await api.get(`/admin/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch user' };
+  }
+};
+
+/**
+ * Update user details
+ * @param {number} userId - User ID
+ * @param {object} data - User fields to update (firstName, lastName, email, phoneNumber, userType, isActive)
+ * @returns {Promise<any>} Updated user
+ */
+export const updateAdminUser = async (userId: number, data: {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  userType?: string;
+  isActive?: boolean;
+}): Promise<any> => {
+  try {
+    const response = await api.put(`/admin/users/${userId}`, data);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to update user' };
+  }
+};
+
+/**
+ * Delete/deactivate user
+ * @param {number} userId - User ID
+ * @param {boolean} permanent - Whether to permanently delete (hard delete)
+ * @returns {Promise<any>} Success response
+ */
+export const deleteAdminUser = async (userId: number, permanent: boolean = false): Promise<any> => {
+  try {
+    const response = await api.delete(`/admin/users/${userId}?permanent=${permanent}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to delete user' };
+  }
+};
+
+// ================================
+// ADMIN PET MANAGEMENT API FUNCTIONS
+// ================================
+
+/**
+ * Get all pets with pagination and filters
+ * @param {object} params - Query parameters (page, limit, search, petType)
+ * @returns {Promise<any>} Pets list with pagination
+ */
+export const getAdminPets = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  petType?: string;
+}): Promise<any> => {
+  try {
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', String(params?.page || 1));
+    queryParams.append('limit', String(params?.limit || 20));
+    if (params?.search && params.search.trim()) queryParams.append('search', params.search.trim());
+    if (params?.petType && params.petType.trim()) queryParams.append('petType', params.petType.trim());
+
+    const response = await api.get(`/admin/pets?${queryParams.toString()}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to fetch pets:', error.response?.data || error.message);
+    throw error.response?.data || { message: 'Failed to fetch pets' };
+  }
+};
+
+/**
+ * Get pet by ID with owner details
+ * @param {number} petId - Pet ID
+ * @returns {Promise<any>} Pet details with owner information
+ */
+export const getAdminPetById = async (petId: number): Promise<any> => {
+  try {
+    const response = await api.get(`/admin/pets/${petId}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch pet' };
+  }
+};
+
+/**
+ * Delete pet (soft delete by default)
+ * @param {number} petId - Pet ID
+ * @param {boolean} permanent - Whether to permanently delete (hard delete)
+ * @returns {Promise<any>} Success response
+ */
+export const deleteAdminPet = async (petId: number, permanent: boolean = false): Promise<any> => {
+  try {
+    const response = await api.delete(`/admin/pets/${petId}?permanent=${permanent}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to delete pet' };
+  }
+};
+
 export default api;
 
 

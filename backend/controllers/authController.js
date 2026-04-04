@@ -1,4 +1,4 @@
-const { User, PasswordReset, Pet, Booking, EmergencyRequest, ActivityLog, WellnessTimeline } = require('../models');
+const { User, PasswordReset, Pet, Booking, EmergencyRequest, ActivityLog, WellnessTimeline, Notification } = require('../models');
 const {
   sendPasswordResetEmail,
   sendPasswordChangedEmail,
@@ -7,6 +7,7 @@ const {
 const { generateTokens, verifyToken, getTokenExpiry } = require('../utils/jwtHelper');
 const config = require('../config/config');
 const bcrypt = require('bcrypt');
+const { Op } = require('sequelize');
 
 /**
  * @route   POST /api/accounts/register
@@ -260,6 +261,32 @@ const register = async (req, res) => {
     });
 
     console.log('✅ User created successfully:', user.email);
+
+    // SEND ADMIN NOTIFICATIONS FOR NEW USER REGISTRATION
+    try {
+      const admins = await User.findAll({
+        where: { userType: 'admin' },
+        attributes: ['id']
+      });
+
+      if (admins.length > 0) {
+        for (const admin of admins) {
+          await Notification.create({
+            user_id: admin.id,
+            type: 'user_registered',
+            title: '👤 New User Registered',
+            message: `New user ${firstName} ${lastName} (${email}) has registered as a ${userType || 'pet owner'}.`,
+            reference_type: 'user',
+            reference_id: user.id,
+            is_read: false
+          });
+        }
+        console.log(`✅ Admin notifications sent for new user: ${user.email}`);
+      }
+    } catch (notificationError) {
+      console.error('⚠️ Failed to send admin notifications:', notificationError.message);
+      // Don't fail the registration if notification fails
+    }
 
     return res.status(201).json({
       success: true,

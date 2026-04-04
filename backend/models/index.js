@@ -90,5 +90,11 @@ UserSettings.belongsTo(User, {
   as: 'user'
 });
 
+// User -> Pet association
+User.hasMany(Pet, {
+  foreignKey: 'user_id',
+  as: 'pets'
+});
+
 // Export all models
 module.exports = models;

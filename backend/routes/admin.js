@@ -86,6 +86,29 @@ router.put('/contact-messages/:contactId/read', authenticate, requireAdmin, cont
  */
 router.get('/emergency-requests', authenticate, requireAdmin, adminController.getEmergencyRequests);
 
+// ====== PET MANAGEMENT ROUTES ======
+
+/**
+ * @route   GET /api/admin/pets
+ * @desc    Get all pets with pagination and filtering
+ * @access  Admin only
+ */
+router.get('/pets', authenticate, requireAdmin, adminController.getAllPets);
+
+/**
+ * @route   GET /api/admin/pets/:petId
+ * @desc    Get pet by ID with owner details
+ * @access  Admin only
+ */
+router.get('/pets/:petId', authenticate, requireAdmin, adminController.getPetById);
+
+/**
+ * @route   DELETE /api/admin/pets/:petId
+ * @desc    Delete/soft delete pet
+ * @access  Admin only
+ */
+router.delete('/pets/:petId', authenticate, requireAdmin, adminController.deletePet);
+
 /**
  * @route   PUT /api/admin/config
  * @desc    Update system configuration

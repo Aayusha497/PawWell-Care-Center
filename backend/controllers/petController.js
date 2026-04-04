@@ -4,9 +4,10 @@
  * Handles all pet profile CRUD operations
  */
 
-const { Pet, User } = require('../models');
+const { Pet, User, Notification } = require('../models');
 const { deleteImage } = require('../config/cloudinary');
 const { createNotification } = require('./notificationController');
+const { Op } = require('sequelize');
 
 /**
  * Create a new pet profile
@@ -43,7 +44,7 @@ const createPet = async (req, res) => {
       photo: photoUrl,
     });
 
-    // Create notification for pet profile creation
+    // Create notification for pet profile creation (for the pet owner)
     await createNotification(
       userId,
       'pet_created',
@@ -52,6 +53,36 @@ const createPet = async (req, res) => {
       'pet',
       pet.pet_id
     );
+
+    // SEND ADMIN NOTIFICATIONS FOR NEW PET REGISTRATION
+    try {
+      const petOwner = await User.findByPk(userId, {
+        attributes: ['firstName', 'lastName', 'email']
+      });
+
+      const admins = await User.findAll({
+        where: { userType: 'admin' },
+        attributes: ['id']
+      });
+
+      if (admins.length > 0) {
+        for (const admin of admins) {
+          await Notification.create({
+            user_id: admin.id,
+            type: 'pet_registered',
+            title: '🐾 New Pet Registered',
+            message: `New pet "${pet.name}" (${pet.breed || 'Unknown breed'}) has been registered by ${petOwner?.firstName || 'a user'} ${petOwner?.lastName || ''}.`,
+            reference_type: 'pet',
+            reference_id: pet.pet_id,
+            is_read: false
+          });
+        }
+        console.log(`✅ Admin notifications sent for new pet: ${pet.name}`);
+      }
+    } catch (notificationError) {
+      console.error('⚠️ Failed to send admin notifications for new pet:', notificationError.message);
+      // Don't fail the pet creation if notification fails
+    }
 
     res.status(201).json({
       success: true,

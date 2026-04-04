@@ -20,6 +20,8 @@ import BookingManagement from './BookingManagement';
 import ReviewManagement from './ReviewManagement';
 import SettingsPage from './SettingsPage';
 import Analytics from './Analytics';
+import AdminUserManagement from './AdminUserManagement';
+import AdminPetManagement from './AdminPetManagement';
 
 interface User {
   id: string;
@@ -114,7 +116,9 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
     contactMessages: 0,
     pendingBookings: 0,
     emergencyRequests: 0,
-    pendingReviews: 0
+    pendingReviews: 0,
+    newUsers: 0,
+    newPets: 0
   });
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -250,7 +254,9 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
         contactMessages: data.contactMessages || 0,
         pendingBookings: data.pendingBookings || 0,
         emergencyRequests: data.emergencyRequests || 0,
-        pendingReviews: data.pendingReviews || 0
+        pendingReviews: data.pendingReviews || 0,
+        newUsers: data.newUsers || 0,
+        newPets: data.newPets || 0
       });
     } catch (error: any) {
       console.error('Error fetching notification summary:', error);
@@ -434,13 +440,17 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
     notificationSummary.contactMessages +
     notificationSummary.pendingBookings +
     notificationSummary.emergencyRequests +
-    notificationSummary.pendingReviews;
+    notificationSummary.pendingReviews +
+    notificationSummary.newUsers +
+    notificationSummary.newPets;
 
   const titleMap: Record<string, string> = {
     dashboard: 'Admin Dashboard',
     'booking-management': 'Booking Management',
     'activity-logs': 'Daily Activity Log',
     analytics: 'Analytics & Reports',
+    'user-management': 'User Management',
+    'pet-management': 'Pet Management',
     announcements: 'Announcements',
     'contact-messages': 'Contact Messages',
     'emergency-requests': 'Emergency Requests',
@@ -526,6 +536,32 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
               <BarChart3 size={18} />
               Analytics
             </button>
+
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-2">Management</p>
+              <button
+                onClick={() => setActiveTab('user-management')}
+                className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                  activeTab === 'user-management'
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span>👥</span>
+                User Management
+              </button>
+              <button
+                onClick={() => setActiveTab('pet-management')}
+                className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                  activeTab === 'pet-management'
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span>🐾</span>
+                Pet Management
+              </button>
+            </div>
           </div>
 
           <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -660,6 +696,30 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                         >
                           {notificationSummary.pendingReviews} Pending Reviews
                         </button>
+                        {notificationSummary.newUsers > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab('user-management');
+                              setNotificationOpen(false);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold"
+                          >
+                            👤 {notificationSummary.newUsers} New User{notificationSummary.newUsers > 1 ? 's' : ''}
+                          </button>
+                        )}
+                        {notificationSummary.newPets > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab('pet-management');
+                              setNotificationOpen(false);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 font-semibold"
+                          >
+                            🐾 {notificationSummary.newPets} New Pet{notificationSummary.newPets > 1 ? 's' : ''}
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
@@ -1191,6 +1251,14 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
 
           {activeTab === 'reviews' && (
             <ReviewManagement />
+          )}
+
+          {activeTab === 'user-management' && (
+            <AdminUserManagement />
+          )}
+
+          {activeTab === 'pet-management' && (
+            <AdminPetManagement />
           )}
         </div>
       </main>

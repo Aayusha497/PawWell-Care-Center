@@ -31,7 +31,7 @@ const getAllUsers = async (req, res) => {
       attributes: { exclude: ['password'] },
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['createdAt', 'DESC']]
+      order: [['dateJoined', 'DESC']]
     });
 
     return res.status(200).json({
@@ -64,7 +64,15 @@ const getUserById = async (req, res) => {
     const { userId } = req.params;
 
     const user = await User.findByPk(userId, {
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password'] },
+      include: [
+        {
+          model: Pet,
+          as: 'pets',
+          attributes: ['pet_id', 'name', 'breed', 'age', 'weight', 'sex', 'photo', 'created_at'],
+          required: false
+        }
+      ]
     });
 
     if (!user) {
@@ -288,13 +296,16 @@ const updateSystemConfig = async (req, res) => {
  */
 const getNotificationSummary = async (req, res) => {
   try {
-    const { Review } = require('../models');
+    const { Review, Notification } = require('../models');
+    const adminId = req.user.id;
     
-    const [pendingBookings, unreadMessages, openEmergency, pendingReviews] = await Promise.all([
+    const [pendingBookings, unreadMessages, openEmergency, pendingReviews, newUserNotifications, newPetNotifications] = await Promise.all([
       Booking.count({ where: { booking_status: 'pending' } }),
       ContactMessage.count({ where: { status: 'unread' } }),
       EmergencyRequest.count({ where: { status: { [Op.in]: ['pending', 'in_progress'] } } }),
-      Review.count({ where: { is_approved: false } })
+      Review.count({ where: { is_approved: false } }),
+      Notification.count({ where: { user_id: adminId, type: 'user_registered', is_read: false } }),
+      Notification.count({ where: { user_id: adminId, type: 'pet_registered', is_read: false } })
     ]);
 
     return res.status(200).json({
@@ -303,7 +314,9 @@ const getNotificationSummary = async (req, res) => {
         pendingBookings,
         contactMessages: unreadMessages,
         emergencyRequests: openEmergency,
-        pendingReviews
+        pendingReviews,
+        newUsers: newUserNotifications,
+        newPets: newPetNotifications
       }
     });
   } catch (error) {
@@ -338,7 +351,7 @@ const getEmergencyRequests = async (req, res) => {
         { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] },
         { model: Pet, as: 'pet', attributes: ['pet_id', 'name'] }
       ],
-      order: [['created_at', 'DESC']]
+      order: [['createdAt', 'DESC']]
     });
 
     return res.status(200).json({
@@ -355,6 +368,143 @@ const getEmergencyRequests = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Get all pets in the system
+ * @route   GET /api/admin/pets
+ * @access  Admin only
+ */
+const getAllPets = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search } = req.query;
+    const offset = (page - 1) * limit;
+
+    // Build query conditions
+    const whereClause = {}; // Paranoid mode handles soft deletes automatically
+    
+    if (search) {
+      whereClause[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const { count, rows: pets } = await Pet.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: User,
+          as: 'owner',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber']
+        }
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['created_at', 'DESC']]
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: pets,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(count / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get all pets error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pets',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Get pet by ID with details
+ * @route   GET /api/admin/pets/:petId
+ * @access  Admin only
+ */
+const getPetById = async (req, res) => {
+  try {
+    const { petId } = req.params;
+
+    const pet = await Pet.findByPk(petId, {
+      include: [
+        {
+          model: User,
+          as: 'owner',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber']
+        }
+      ]
+    });
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pet not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: pet
+    });
+  } catch (error) {
+    console.error('Get pet by ID error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pet',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Delete/soft delete pet
+ * @route   DELETE /api/admin/pets/:petId
+ * @access  Admin only
+ */
+const deletePet = async (req, res) => {
+  try {
+    const { petId } = req.params;
+    const { permanent = false } = req.query;
+
+    const pet = await Pet.findByPk(petId);
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pet not found'
+      });
+    }
+
+    if (permanent === 'true') {
+      // Permanent deletion (force destroy for paranoid model)
+      await pet.destroy({ force: true });
+      return res.status(200).json({
+        success: true,
+        message: 'Pet permanently deleted'
+      });
+    } else {
+      // Soft delete via paranoid model (sets deleted_at)
+      await pet.destroy();
+      return res.status(200).json({
+        success: true,
+        message: 'Pet deleted successfully'
+      });
+    }
+  } catch (error) {
+    console.error('Delete pet error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete pet',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -364,5 +514,8 @@ module.exports = {
   getSystemStats,
   updateSystemConfig,
   getNotificationSummary,
-  getEmergencyRequests
+  getEmergencyRequests,
+  getAllPets,
+  getPetById,
+  deletePet
 };
