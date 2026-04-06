@@ -287,6 +287,17 @@ export default function App() {
     setCurrentPage(page);
   };
 
+  const handleNavigateToHome = (section?: string) => {
+  setCurrentPage('landing');
+
+  if (section) {
+    setTimeout(() => {
+      const el = document.getElementById(section);
+      el?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }
+};
+
   const handleDashboardTarget = (target: 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | 'settings') => {
     setDashboardTarget(target);
     setCurrentPage(isLoggedIn ? 'user-dashboard' : 'login');
@@ -307,7 +318,7 @@ export default function App() {
         <LoginPage
           onLogin={handleLogin}
           onNavigateToSignup={() => setCurrentPage('signup')}
-          onNavigateToHome={() => setCurrentPage('landing')}
+          onNavigateToHome={handleNavigateToHome}
           onNavigateToForgotPassword={() => setCurrentPage('forgot-password')}
           error={error}
           onClearError={handleClearLoginError}
@@ -317,7 +328,7 @@ export default function App() {
         <SignupPage
           onSignup={handleSignup}
           onNavigateToLogin={() => setCurrentPage('login')}
-          onNavigateToHome={() => setCurrentPage('landing')}
+          onNavigateToHome={handleNavigateToHome}
           error={error}
           fieldErrors={fieldErrors}
           showSignupSuccess={showSignupSuccess}
@@ -465,6 +476,10 @@ export default function App() {
           />
         )
       )}
+
+      
+
+
       {currentPage === 'permission-denied' && (
         <PermissionDenied />
       )}

@@ -1502,14 +1502,13 @@ export const disable2FA = async (data: {
  * @param {object} params - Optional date filters
  * @returns {Promise<any>} Dashboard analytics data
  */
-export const getDashboardAnalytics = async (params?: {
-  dateFrom?: string;
-  dateTo?: string;
-}): Promise<any> => {
+export const getDashboardAnalytics = async (params?: any): Promise<any> => {
   try {
     const queryParams = new URLSearchParams();
-    if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
-    if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
+    if (params?.serviceType) queryParams.append('serviceType', params.serviceType);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
 
     const response = await api.get(`/admin/analytics/dashboard${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
     return response.data;
@@ -1523,10 +1522,14 @@ export const getDashboardAnalytics = async (params?: {
  * @param {object} params - Optional parameters (days)
  * @returns {Promise<any>} Booking trends data
  */
-export const getBookingTrends = async (params?: { days?: number }): Promise<any> => {
+export const getBookingTrends = async (params?: any): Promise<any> => {
   try {
     const queryParams = new URLSearchParams();
     if (params?.days) queryParams.append('days', String(params.days));
+    if (params?.serviceType) queryParams.append('serviceType', params.serviceType);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
 
     const response = await api.get(`/admin/analytics/booking-trends${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
     return response.data;
@@ -1540,10 +1543,14 @@ export const getBookingTrends = async (params?: { days?: number }): Promise<any>
  * @param {object} params - Optional parameters (days)
  * @returns {Promise<any>} Revenue trends data
  */
-export const getRevenueTrends = async (params?: { days?: number }): Promise<any> => {
+export const getRevenueTrends = async (params?: any): Promise<any> => {
   try {
     const queryParams = new URLSearchParams();
     if (params?.days) queryParams.append('days', String(params.days));
+    if (params?.serviceType) queryParams.append('serviceType', params.serviceType);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
 
     const response = await api.get(`/admin/analytics/revenue-trends${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
     return response.data;
@@ -1557,10 +1564,14 @@ export const getRevenueTrends = async (params?: { days?: number }): Promise<any>
  * @param {object} params - Optional parameters (limit)
  * @returns {Promise<any>} Top services data
  */
-export const getTopServices = async (params?: { limit?: number }): Promise<any> => {
+export const getTopServices = async (params?: any): Promise<any> => {
   try {
     const queryParams = new URLSearchParams();
     if (params?.limit) queryParams.append('limit', String(params.limit));
+    if (params?.serviceType) queryParams.append('serviceType', params.serviceType);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
 
     const response = await api.get(`/admin/analytics/top-services${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
     return response.data;

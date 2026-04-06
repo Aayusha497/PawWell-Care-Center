@@ -16,6 +16,14 @@ interface User {
   dateJoined: string;
   emailVerified?: boolean;
   pets?: any[];
+  profilePicture?: string;
+  lastLogin?: string;
+  twoFactorEnabled?: boolean;
+  emergencyContactName?: string;
+  emergencyContactNumber?: string;
+  isStaff?: boolean;
+  isSuperuser?: boolean;
+  isProfileComplete?: boolean;
 }
 
 interface UserDetailsModal {
@@ -41,7 +49,7 @@ export default function AdminUserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
 
@@ -65,11 +73,9 @@ export default function AdminUserManagement() {
         search: searchQuery || undefined
       });
 
-      // Response structure: { success: true, data: [...], pagination: {...} }
       let userData = response.data || [];
       const paginationData = response.pagination || {};
       
-      // Filter by status if selected
       if (filterStatus === 'active') {
         userData = userData.filter((u: User) => u.isActive);
       } else if (filterStatus === 'inactive') {
@@ -77,7 +83,6 @@ export default function AdminUserManagement() {
       }
       
       setUsers(Array.isArray(userData) ? userData : []);
-      // When filtering, use filtered count; otherwise use server total
       const totalCount = filterStatus ? userData.length : paginationData.total || 0;
       setTotalUsers(totalCount);
       setTotalPages(filterStatus ? 1 : paginationData.pages || 1);
@@ -121,7 +126,7 @@ export default function AdminUserManagement() {
 
     try {
       setUpdatingId(editModal.user.id);
-      const response = await updateAdminUser(editModal.user.id, editModal.formData);
+      await updateAdminUser(editModal.user.id, editModal.formData);
       toast.success('User updated successfully!');
       setEditModal({ isOpen: false, user: null, formData: {} });
       fetchUsers();
@@ -150,38 +155,38 @@ export default function AdminUserManagement() {
     }
   };
 
-  const getRoleColor = (role: string) => {
+  const getRoleTextColor = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+        return 'text-black dark:text-gray-100';
       case 'staff':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+        return 'text-black dark:text-gray-100';
       case 'pet_owner':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        return 'text-black dark:text-gray-100';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        return 'text-gray-700 dark:text-gray-300';
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white">
       {/* Header with Stats */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">User Management</h2>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Users</p>
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalUsers}</p>
+      <div className="bg-white p-6">
+        <h2 className="text-2xl font-bold text-black mb-6">User Management</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white p-5 rounded-2xl border border-[#FACC15]/50">
+            <p className="text-sm text-gray-500 mb-2">Total Users</p>
+            <p className="text-3xl font-bold text-black">{totalUsers}</p>
           </div>
-          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400">Active</p>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+          <div className="bg-white p-5 rounded-2xl border border-[#FACC15]/50">
+            <p className="text-sm text-gray-500 mb-2">Active</p>
+            <p className="text-3xl font-bold text-black">
               {users.filter(u => u.isActive).length}
             </p>
           </div>
-          <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400">Pet Owners</p>
-            <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+          <div className="bg-white p-5 rounded-2xl border border-[#FACC15]/50">
+            <p className="text-sm text-gray-500 mb-2">Pet Owners</p>
+            <p className="text-3xl font-bold text-black">
               {users.filter(u => u.userType === 'pet_owner').length}
             </p>
           </div>
@@ -189,10 +194,10 @@ export default function AdminUserManagement() {
       </div>
 
       {/* Search and Filter */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
               placeholder="Search by name or email..."
@@ -201,7 +206,7 @@ export default function AdminUserManagement() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full pl-10 pr-4 py-3 border border-[#FACC15]/50 rounded-2xl bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
             />
           </div>
 
@@ -211,63 +216,50 @@ export default function AdminUserManagement() {
               setFilterStatus(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="px-4 py-3 border border-[#FACC15]/50 rounded-2xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
-
-          <select
-            value={limit}
-            onChange={(e) => {
-              setLimit(parseInt(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          >
-            <option value="10">10 per page</option>
-            <option value="20">20 per page</option>
-            <option value="50">50 per page</option>
-          </select>
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-[28px] border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading users...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-[#FACC15] border-t-transparent"></div>
+            <p className="mt-4 text-gray-500">Loading users...</p>
           </div>
         ) : users.length === 0 ? (
-          <div className="p-8 text-center text-gray-600 dark:text-gray-400">
+          <div className="p-8 text-center text-gray-500">
             <AlertCircle size={32} className="mx-auto mb-4 opacity-50" />
             <p>No users found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+              <thead className="bg-white border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Name</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Email</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Phone</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Role</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">Actions</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-black">Name</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-black">Email</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-black">Phone</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-black">Role</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-black">Status</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-black">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                  <tr key={user.id} className="border-b border-gray-200 hover:bg-[#FACC15]/10 transition">
+                    <td className="px-6 py-4 text-sm text-black">
                       {user.firstName} {user.lastName}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{user.email}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{user.phoneNumber || '-'}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(user.userType)}`}>
+                    <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{user.phoneNumber || '-'}</td>
+                    <td className="px-6 py-4 text-sm font-medium">
+                      <span className={getRoleTextColor(user.userType)}>
                         {user.userType === 'pet_owner' ? 'Pet Owner' : user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}
                       </span>
                     </td>
@@ -275,39 +267,39 @@ export default function AdminUserManagement() {
                       <div className="flex items-center gap-2">
                         {user.isActive ? (
                           <>
-                            <CheckCircle size={16} className="text-green-500" />
-                            <span className="text-green-600 dark:text-green-400">Active</span>
+                            <CheckCircle size={16} className="text-[#F59E0B]" />
+                            <span className="text-black">Active</span>
                           </>
                         ) : (
                           <>
-                            <XCircle size={16} className="text-red-500" />
-                            <span className="text-red-600 dark:text-red-400">Inactive</span>
+                            <XCircle size={16} className="text-[#D97706]" />
+                            <span className="text-black">Inactive</span>
                           </>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <button
                           onClick={() => handleViewUser(user)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition"
+                          className="text-[#F59E0B] hover:text-[#D97706] transition"
                           title="View Details"
                         >
                           <Eye size={18} />
                         </button>
                         <button
                           onClick={() => handleEditClick(user)}
-                          className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition"
+                          className="text-[#F59E0B] hover:text-[#D97706] transition"
                           title="Edit"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDeleteClick(user)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
+                          className="p-2 rounded-xl border border-[#FACC15]/50 hover:bg-[#FACC15]/10 transition"
                           title="Deactivate"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={18} className="text-black" />
                         </button>
                       </div>
                     </td>
@@ -321,22 +313,22 @@ export default function AdminUserManagement() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex items-center justify-between">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="bg-white rounded-[28px] border border-gray-200 p-4 flex items-center justify-between">
+          <p className="text-sm text-gray-600">
             Page {currentPage} of {totalPages} ({totalUsers} total users)
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              className="px-4 py-2 border border-[#FACC15]/50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#FACC15]/10 transition text-black"
             >
               Previous
             </button>
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              className="px-4 py-2 bg-[#FACC15] text-black rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#EAB308] transition font-semibold"
             >
               Next
             </button>
@@ -347,50 +339,59 @@ export default function AdminUserManagement() {
       {/* View Details Modal */}
       {detailsModal.isOpen && detailsModal.user && (
         <div className="fixed inset-0 z-50 overflow-auto bg-white">
-          <div className="min-h-screen p-8">
+          <div className="min-h-screen p-8 bg-white">
             <div className="max-w-4xl mx-auto">
               {/* Header */}
-              <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
-                    {detailsModal.user.firstName} {detailsModal.user.lastName}
-                  </h1>
-                  <p className="text-gray-600 mt-1">{detailsModal.user.email}</p>
+              <div className="flex items-center justify-between mb-8 pb-6 border-b border-[#FACC15]/40">
+                <div className="flex items-center gap-4">
+                  {detailsModal.user.profilePicture && (
+                    <img
+                      src={detailsModal.user.profilePicture}
+                      alt={`${detailsModal.user.firstName} ${detailsModal.user.lastName}`}
+                      className="w-20 h-20 rounded-full object-cover border-2 border-[#FACC15]/50"
+                    />
+                  )}
+                  <div>
+                    <h1 className="text-3xl font-bold text-black">
+                      {detailsModal.user.firstName} {detailsModal.user.lastName}
+                    </h1>
+                    <p className="text-gray-600 mt-1">{detailsModal.user.email}</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setDetailsModal({ isOpen: false, user: null })}
-                  className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                  className="w-11 h-11 rounded-xl border border-[#FACC15]/50 text-black hover:bg-[#FACC15]/10 transition text-2xl font-bold"
                 >
                   ×
                 </button>
               </div>
 
               {/* Main Content Grid */}
-              <div className="grid grid-cols-2 gap-8 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 {/* Left Column - Personal Info */}
                 <div className="space-y-6">
-                  <div className="bg-gray-50 p-6 rounded-lg">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h2>
+                  <div className="bg-white p-6 rounded-2xl border border-[#FACC15]/50">
+                    <h2 className="text-lg font-semibold text-black mb-4">Personal Information</h2>
                     <div className="space-y-4">
                       <div>
-                        <p className="text-sm text-gray-600">Full Name</p>
-                        <p className="text-gray-900 font-medium">{detailsModal.user.firstName} {detailsModal.user.lastName}</p>
+                        <p className="text-sm text-gray-500">Full Name</p>
+                        <p className="text-black font-medium">{detailsModal.user.firstName} {detailsModal.user.lastName}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Email</p>
-                        <p className="text-gray-900">{detailsModal.user.email}</p>
+                        <p className="text-sm text-gray-500">Email</p>
+                        <p className="text-black">{detailsModal.user.email}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Phone</p>
-                        <p className="text-gray-900">{detailsModal.user.phoneNumber || '-'}</p>
+                        <p className="text-sm text-gray-500">Phone</p>
+                        <p className="text-black">{detailsModal.user.phoneNumber || '-'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Address</p>
-                        <p className="text-gray-900">{detailsModal.user.address || '-'}</p>
+                        <p className="text-sm text-gray-500">Address</p>
+                        <p className="text-black">{detailsModal.user.address || '-'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">City</p>
-                        <p className="text-gray-900">{detailsModal.user.city || '-'}</p>
+                        <p className="text-sm text-gray-500">City</p>
+                        <p className="text-black">{detailsModal.user.city || '-'}</p>
                       </div>
                     </div>
                   </div>
@@ -398,34 +399,34 @@ export default function AdminUserManagement() {
 
                 {/* Right Column - Account Info */}
                 <div className="space-y-6">
-                  <div className="bg-gray-50 p-6 rounded-lg">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h2>
+                  <div className="bg-white p-6 rounded-2xl border border-[#FACC15]/50">
+                    <h2 className="text-lg font-semibold text-black mb-4">Account Information</h2>
                     <div className="space-y-4">
                       <div>
-                        <p className="text-sm text-gray-600">Role</p>
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(detailsModal.user.userType)}`}>
+                        <p className="text-sm text-gray-500">Role</p>
+                        <p className={`font-medium mt-1 ${getRoleTextColor(detailsModal.user.userType)}`}>
                           {detailsModal.user.userType === 'pet_owner' ? 'Pet Owner' : detailsModal.user.userType.charAt(0).toUpperCase() + detailsModal.user.userType.slice(1)}
-                        </span>
+                        </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Status</p>
+                        <p className="text-sm text-gray-500">Status</p>
                         <div className="flex items-center gap-2 mt-1">
                           {detailsModal.user.isActive ? (
                             <>
-                              <CheckCircle size={18} className="text-green-500" />
-                              <span className="text-green-600 font-medium">Active</span>
+                              <CheckCircle size={18} className="text-[#F59E0B]" />
+                              <span className="text-black font-medium">Active</span>
                             </>
                           ) : (
                             <>
-                              <XCircle size={18} className="text-red-500" />
-                              <span className="text-red-600 font-medium">Inactive</span>
+                              <XCircle size={18} className="text-[#D97706]" />
+                              <span className="text-black font-medium">Inactive</span>
                             </>
                           )}
                         </div>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Registered Date</p>
-                        <p className="text-gray-900 font-medium">
+                        <p className="text-sm text-gray-500">Registered Date</p>
+                        <p className="text-black font-medium">
                           {detailsModal.user.dateJoined 
                             ? new Date(detailsModal.user.dateJoined).toLocaleDateString('en-US', { 
                                 year: 'numeric', 
@@ -439,26 +440,77 @@ export default function AdminUserManagement() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Email Verified</p>
-                        <p className="text-gray-900 font-medium">{detailsModal.user.emailVerified ? '✓ Yes' : '✗ No'}</p>
+                        <p className="text-sm text-gray-500">Email Verified</p>
+                        <p className="text-black font-medium">{detailsModal.user.emailVerified ? '✓ Yes' : '✗ No'}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Extended Profile Information */}
+              <div className="bg-white p-6 rounded-2xl border border-[#FACC15]/50 mb-8">
+                <h2 className="text-lg font-semibold text-black mb-4">Extended Profile</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {detailsModal.user.lastLogin && (
+                    <div>
+                      <p className="text-sm text-gray-500">Last Login</p>
+                      <p className="text-black">
+                        {new Date(detailsModal.user.lastLogin).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  )}
+                  {detailsModal.user.emergencyContactName && (
+                    <div>
+                      <p className="text-sm text-gray-500">Emergency Contact Name</p>
+                      <p className="text-black">{detailsModal.user.emergencyContactName}</p>
+                    </div>
+                  )}
+                  {detailsModal.user.emergencyContactNumber && (
+                    <div>
+                      <p className="text-sm text-gray-500">Emergency Contact Number</p>
+                      <p className="text-black">{detailsModal.user.emergencyContactNumber}</p>
+                    </div>
+                  )}
+                  {detailsModal.user.isProfileComplete !== undefined && (
+                    <div>
+                      <p className="text-sm text-gray-500">Profile Complete</p>
+                      <p className="text-black font-medium">{detailsModal.user.isProfileComplete ? '✓ Yes' : '✗ No'}</p>
+                    </div>
+                  )}
+                  {detailsModal.user.twoFactorEnabled !== undefined && (
+                    <div>
+                      <p className="text-sm text-gray-500">Two Factor Enabled</p>
+                      <p className="text-black font-medium">{detailsModal.user.twoFactorEnabled ? '✓ Yes' : '✗ No'}</p>
+                    </div>
+                  )}
+                  {detailsModal.user.isStaff !== undefined && (
+                    <div>
+                      <p className="text-sm text-gray-500">Is Staff</p>
+                      <p className="text-black font-medium">{detailsModal.user.isStaff ? '✓ Yes' : '✗ No'}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Pets Owned Section */}
-              <div className="bg-gray-50 p-6 rounded-lg mb-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <div className="bg-white p-6 rounded-2xl border border-[#FACC15]/50 mb-8">
+                <h2 className="text-lg font-semibold text-black mb-4">
                   Pets Owned {detailsModal.user.pets && detailsModal.user.pets.length > 0 && `(${detailsModal.user.pets.length})`}
                 </h2>
                 {detailsModal.user.pets && detailsModal.user.pets.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {detailsModal.user.pets.map((pet: any) => (
-                      <div key={pet.pet_id} className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition">
+                      <div key={pet.pet_id} className="bg-white p-4 rounded-xl border border-[#FACC15]/50 hover:bg-[#FACC15]/10 transition">
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="font-semibold text-gray-900 text-lg">{pet.name}</p>
+                            <p className="font-semibold text-black text-lg">{pet.name}</p>
                             <p className="text-sm text-gray-600 mt-1">{pet.breed || 'Unknown Breed'}</p>
                             <div className="mt-3 space-y-1">
                               <p className="text-sm text-gray-700"><span className="font-medium">Age:</span> {pet.age || '-'} years</p>
@@ -470,7 +522,7 @@ export default function AdminUserManagement() {
                             <img 
                               src={pet.photo} 
                               alt={pet.name} 
-                              className="w-16 h-16 rounded-lg object-cover"
+                              className="w-16 h-16 rounded-lg object-cover border border-[#FACC15]/50"
                             />
                           )}
                         </div>
@@ -483,10 +535,10 @@ export default function AdminUserManagement() {
               </div>
 
               {/* Footer */}
-              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+              <div className="flex justify-end gap-3 pt-6 border-t border-[#FACC15]/40">
                 <button
                   onClick={() => setDetailsModal({ isOpen: false, user: null })}
-                  className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium"
+                  className="px-6 py-2 bg-[#FACC15] text-black rounded-xl hover:bg-[#EAB308] transition font-semibold"
                 >
                   Close
                 </button>
@@ -498,54 +550,54 @@ export default function AdminUserManagement() {
 
       {/* Edit Modal */}
       {editModal.isOpen && editModal.user && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Edit User</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full border border-[#FACC15]/40">
+            <div className="p-6 border-b border-[#FACC15]/30">
+              <h3 className="text-lg font-bold text-black">Edit User</h3>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">First Name</label>
+                <label className="block text-sm font-medium text-black mb-2">First Name</label>
                 <input
                   type="text"
                   value={editModal.formData.firstName || ''}
                   onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, firstName: e.target.value } })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full px-3 py-2 border border-[#FACC15]/50 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Last Name</label>
+                <label className="block text-sm font-medium text-black mb-2">Last Name</label>
                 <input
                   type="text"
                   value={editModal.formData.lastName || ''}
                   onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, lastName: e.target.value } })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full px-3 py-2 border border-[#FACC15]/50 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                <label className="block text-sm font-medium text-black mb-2">Email</label>
                 <input
                   type="email"
                   value={editModal.formData.email || ''}
                   onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, email: e.target.value } })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full px-3 py-2 border border-[#FACC15]/50 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone</label>
+                <label className="block text-sm font-medium text-black mb-2">Phone</label>
                 <input
                   type="tel"
                   value={editModal.formData.phoneNumber || ''}
                   onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, phoneNumber: e.target.value } })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full px-3 py-2 border border-[#FACC15]/50 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
+                <label className="block text-sm font-medium text-black mb-2">Role</label>
                 <select
                   value={editModal.formData.userType || ''}
                   onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, userType: (e.target.value as any) } })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="w-full px-3 py-2 border border-[#FACC15]/50 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
                 >
                   <option value="pet_owner">Pet Owner</option>
                   <option value="admin">Admin</option>
@@ -560,21 +612,21 @@ export default function AdminUserManagement() {
                     onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, isActive: e.target.checked } })}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
+                  <span className="text-sm font-medium text-black">Active</span>
                 </label>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <div className="p-6 border-t border-[#FACC15]/30 flex justify-end gap-3">
               <button
                 onClick={() => setEditModal({ isOpen: false, user: null, formData: {} })}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                className="px-4 py-2 border border-[#FACC15]/50 rounded-xl hover:bg-[#FACC15]/10 transition text-black"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpdateUser}
                 disabled={updatingId === editModal.user?.id}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="px-4 py-2 bg-[#FACC15] text-black rounded-xl hover:bg-[#EAB308] disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
               >
                 {updatingId === editModal.user?.id ? 'Updating...' : 'Update'}
               </button>
@@ -585,31 +637,33 @@ export default function AdminUserManagement() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm.isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center gap-4">
-              <AlertCircle size={32} className="text-red-500" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full border border-[#FACC15]/40">
+            <div className="p-6 border-b border-[#FACC15]/30 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#FACC15] flex items-center justify-center">
+                <AlertCircle size={24} className="text-black" />
+              </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Deactivate User?</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{deleteConfirm.userName}</p>
+                <h3 className="text-lg font-bold text-black">Deactivate User?</h3>
+                <p className="text-sm text-gray-600">{deleteConfirm.userName}</p>
               </div>
             </div>
             <div className="p-6">
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600">
                 This will deactivate the user account. They won't be able to log in, but their data will be preserved.
               </p>
             </div>
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+            <div className="p-6 border-t border-[#FACC15]/30 flex justify-end gap-3">
               <button
                 onClick={() => setDeleteConfirm({ isOpen: false, userId: null, userName: '' })}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                className="px-4 py-2 border border-[#FACC15]/50 rounded-xl hover:bg-[#FACC15]/10 transition text-black"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={deletingId === deleteConfirm.userId}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="px-4 py-2 bg-[#FACC15] text-black rounded-xl hover:bg-[#EAB308] disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
               >
                 {deletingId === deleteConfirm.userId ? 'Deactivating...' : 'Deactivate'}
               </button>

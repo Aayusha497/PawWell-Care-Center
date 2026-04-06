@@ -16,7 +16,7 @@ import {
   getAvailableServiceTypes
 } from '../../services/api';
 import { toast } from 'sonner';
-import { AlertCircle, TrendingUp, Users, PawPrint, Banknote, Clock, AlertTriangle } from 'lucide-react';
+import { AlertCircle, TrendingUp, PawPrint, Banknote, Clock, AlertTriangle } from 'lucide-react';
 
 interface TopCards {
   totalBookings: number;
@@ -86,6 +86,12 @@ export default function Analytics() {
   const [recentPayments, setRecentPayments] = useState<RecentPayment[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
 
+  const [recentBookingsPage, setRecentBookingsPage] = useState(1);
+  const [recentPaymentsPage, setRecentPaymentsPage] = useState(1);
+
+  const recentBookingsPerPage = 5;
+  const recentPaymentsPerPage = 5;
+
   // Fetch available service types on mount
   useEffect(() => {
     const fetchServiceTypes = async () => {
@@ -102,6 +108,14 @@ export default function Analytics() {
   useEffect(() => {
     fetchAnalyticsData();
   }, [dateRange, serviceType, statusFilter, customStartDate, customEndDate]);
+
+  useEffect(() => {
+    setRecentBookingsPage(1);
+  }, [recentBookings]);
+
+  useEffect(() => {
+    setRecentPaymentsPage(1);
+  }, [recentPayments]);
 
   const getDaysFromRange = () => {
     if (dateRange === 'custom') {
@@ -124,6 +138,8 @@ export default function Analytics() {
         })
       };
 
+      const daysParam = dateRange === 'custom' ? {} : { days: days || 30 };
+
       const [
         dashboardRes,
         bookingTrendsRes,
@@ -136,16 +152,16 @@ export default function Analytics() {
         recentPaymentsRes,
         alertsRes
       ] = await Promise.all([
-        getDashboardAnalytics(),
-        getBookingTrends({ days: days || 30, ...filterParams }),
-        getRevenueTrends({ days: days || 30, ...filterParams }),
+        getDashboardAnalytics(filterParams),
+        getBookingTrends({ ...daysParam, ...filterParams }),
+        getRevenueTrends({ ...daysParam, ...filterParams }),
         getTopServices({ limit: 5, ...filterParams }),
-        getBookingStatusDistribution({ ...filterParams }),
-        getPetTypesDistribution({ ...filterParams }),
-        getPeakHours({ ...filterParams }),
+        getBookingStatusDistribution(filterParams),
+        getPetTypesDistribution(filterParams),
+        getPeakHours(filterParams),
         getRecentBookingsAnalytics({ limit: 8, ...filterParams }),
         getRecentPaymentsAnalytics({ limit: 8, ...filterParams }),
-        getAnalyticsAlerts({ ...filterParams })
+        getAnalyticsAlerts(filterParams)
       ]);
 
       setTopCards(dashboardRes.data?.topCards);
@@ -179,6 +195,19 @@ export default function Analytics() {
     return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  const totalRecentBookingsPages = Math.max(1, Math.ceil(recentBookings.length / recentBookingsPerPage));
+  const totalRecentPaymentsPages = Math.max(1, Math.ceil(recentPayments.length / recentPaymentsPerPage));
+
+  const paginatedRecentBookings = recentBookings.slice(
+    (recentBookingsPage - 1) * recentBookingsPerPage,
+    recentBookingsPage * recentBookingsPerPage
+  );
+
+  const paginatedRecentPayments = recentPayments.slice(
+    (recentPaymentsPage - 1) * recentPaymentsPerPage,
+    recentPaymentsPage * recentPaymentsPerPage
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -193,7 +222,7 @@ export default function Analytics() {
     <div className="space-y-6">
       {/* Filters Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Filters</h3>
+        {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Filters</h3> */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Date Range Filter */}
           <div>
@@ -282,7 +311,7 @@ export default function Analytics() {
               <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Bookings</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{topCards?.totalBookings || 0}</p>
             </div>
-            <TrendingUp className="w-10 h-10 text-yellow-500" />
+            {/* <TrendingUp className="w-10 h-10 text-yellow-500" /> */}
           </div>
         </div>
 
@@ -292,7 +321,7 @@ export default function Analytics() {
               <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Active Bookings</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{topCards?.activeBookings || 0}</p>
             </div>
-            <Clock className="w-10 h-10 text-green-500" />
+            {/* <Clock className="w-10 h-10 text-green-500" /> */}
           </div>
         </div>
 
@@ -302,7 +331,7 @@ export default function Analytics() {
               <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Pets</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{topCards?.totalPets || 0}</p>
             </div>
-            <PawPrint className="w-10 h-10 text-blue-500" />
+            {/* <PawPrint className="w-10 h-10 text-blue-500" /> */}
           </div>
         </div>
 
@@ -312,24 +341,24 @@ export default function Analytics() {
               <p className="text-gray-600 dark:text-gray-400 text-sm mb-1">Total Revenue</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(topCards?.totalRevenue || 0)}</p>
             </div>
-            <Banknote className="w-10 h-10 text-purple-500" />
+            {/* <Banknote className="w-10 h-10 text-purple-500" /> */}
           </div>
         </div>
       </div>
 
       {/* Additional Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-6 shadow-sm border border-blue-100 dark:border-blue-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">This Month Revenue</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(topCards?.revenueThisMonth || 0)}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-white to-orange-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-6 shadow-sm border border-orange-100 dark:border-orange-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">Pending Approvals</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{topCards?.pendingApprovals || 0}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-white to-red-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-6 shadow-sm border border-red-100 dark:border-red-900">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">Urgent Items</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{topCards?.urgentItems || 0}</p>
         </div>
@@ -364,7 +393,7 @@ export default function Analytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Booking Trends */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Booking Trends (30 Days)</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Booking Trends</h3>
           {bookingTrends.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={bookingTrends}>
@@ -383,7 +412,7 @@ export default function Analytics() {
 
         {/* Revenue Trends */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Revenue Trends (30 Days)</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Revenue Trends</h3>
           {revenueTrends.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={revenueTrends}>
@@ -529,72 +558,124 @@ export default function Analytics() {
       {/* Bottom Section - Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Bookings */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-[28px] p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Bookings</h3>
           {recentBookings.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">Pet</th>
-                    <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">Owner</th>
-                    <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">Service</th>
-                    <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">Amount</th>
-                    <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentBookings.map(booking => (
-                    <tr key={booking.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="py-3 px-3 text-gray-900 dark:text-gray-100">{booking.petName}</td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-400">{booking.ownerName}</td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-400">{booking.service}</td>
-                      <td className="py-3 px-3 text-gray-900 dark:text-gray-100 font-medium">{formatCurrency(booking.amount)}</td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          booking.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' :
-                          booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100'
-                        }`}>
-                          {booking.status}
-                        </span>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-gray-200 dark:border-gray-700">
+                    <tr>
+                      <th className="text-left py-3 px-3 text-gray-700 dark:text-gray-300 font-medium">Pet</th>
+                      <th className="text-left py-3 px-3 text-gray-700 dark:text-gray-300 font-medium">Owner</th>
+                      <th className="text-left py-3 px-3 text-gray-700 dark:text-gray-300 font-medium">Service</th>
+                      <th className="text-left py-3 px-3 text-gray-700 dark:text-gray-300 font-medium">Amount</th>
+                      <th className="text-left py-3 px-3 text-gray-700 dark:text-gray-300 font-medium">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedRecentBookings.map(booking => (
+                      <tr
+                        key={booking.id}
+                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-[#FACC15]/10 dark:hover:bg-gray-700 transition"
+                      >
+                        <td className="py-3 px-3 text-gray-900 dark:text-gray-100">{booking.petName}</td>
+                        <td className="py-3 px-3 text-gray-600 dark:text-gray-400">{booking.ownerName}</td>
+                        <td className="py-3 px-3 text-gray-600 dark:text-gray-400">{booking.service}</td>
+                        <td className="py-3 px-3 text-gray-900 dark:text-gray-100 font-medium">{formatCurrency(booking.amount)}</td>
+                        <td className="py-3 px-3 text-gray-900 dark:text-gray-100 font-medium">
+                          {booking.status}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {totalRecentBookingsPages > 1 && (
+                <div className="pt-4 flex items-center justify-between">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Page {recentBookingsPage} of {totalRecentBookingsPages} ({recentBookings.length} total bookings)
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setRecentBookingsPage(prev => Math.max(1, prev - 1))}
+                      disabled={recentBookingsPage === 1}
+                      className="px-4 py-2 border border-[#FACC15]/50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#FACC15]/10 transition text-black dark:text-gray-100"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setRecentBookingsPage(prev => Math.min(totalRecentBookingsPages, prev + 1))}
+                      disabled={recentBookingsPage === totalRecentBookingsPages}
+                      className="px-4 py-2 bg-[#FACC15] text-black rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#EAB308] transition font-semibold"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-center text-gray-500 py-8">No recent bookings</p>
           )}
         </div>
 
         {/* Recent Payments */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-[28px] p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Payments</h3>
           {recentPayments.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">Pet</th>
-                    <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">Owner</th>
-                    <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">Amount</th>
-                    <th className="text-left py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentPayments.map(payment => (
-                    <tr key={payment.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="py-3 px-3 text-gray-900 dark:text-gray-100">{payment.petName}</td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-400">{payment.ownerName}</td>
-                      <td className="py-3 px-3 text-gray-900 dark:text-gray-100 font-medium">{formatCurrency(payment.amount)}</td>
-                      <td className="py-3 px-3 text-gray-600 dark:text-gray-400">{formatDate(payment.date)}</td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-gray-200 dark:border-gray-700">
+                    <tr>
+                      <th className="text-left py-3 px-3 text-gray-700 dark:text-gray-300 font-medium">Pet</th>
+                      <th className="text-left py-3 px-3 text-gray-700 dark:text-gray-300 font-medium">Owner</th>
+                      <th className="text-left py-3 px-3 text-gray-700 dark:text-gray-300 font-medium">Amount</th>
+                      <th className="text-left py-3 px-3 text-gray-700 dark:text-gray-300 font-medium">Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedRecentPayments.map(payment => (
+                      <tr
+                        key={payment.id}
+                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-[#FACC15]/10 dark:hover:bg-gray-700 transition"
+                      >
+                        <td className="py-3 px-3 text-gray-900 dark:text-gray-100">{payment.petName}</td>
+                        <td className="py-3 px-3 text-gray-600 dark:text-gray-400">{payment.ownerName}</td>
+                        <td className="py-3 px-3 text-gray-900 dark:text-gray-100 font-medium">{formatCurrency(payment.amount)}</td>
+                        <td className="py-3 px-3 text-gray-600 dark:text-gray-400">{formatDate(payment.date)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {totalRecentPaymentsPages > 1 && (
+                <div className="pt-4 flex items-center justify-between">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Page {recentPaymentsPage} of {totalRecentPaymentsPages} ({recentPayments.length} total payments)
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setRecentPaymentsPage(prev => Math.max(1, prev - 1))}
+                      disabled={recentPaymentsPage === 1}
+                      className="px-4 py-2 border border-[#FACC15]/50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#FACC15]/10 transition text-black dark:text-gray-100"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setRecentPaymentsPage(prev => Math.min(totalRecentPaymentsPages, prev + 1))}
+                      disabled={recentPaymentsPage === totalRecentPaymentsPages}
+                      className="px-4 py-2 bg-[#FACC15] text-black rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#EAB308] transition font-semibold"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-center text-gray-500 py-8">No recent payments</p>
           )}

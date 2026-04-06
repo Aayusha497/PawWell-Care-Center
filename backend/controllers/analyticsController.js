@@ -37,6 +37,29 @@ const buildSequelizeWhere = (req) => {
  */
 const getDashboardAnalytics = async (req, res) => {
   try {
+    const { serviceType, status, startDate, endDate } = req.query;
+    
+    // Build filter conditions - separate payment filters from other filters
+    let filterConditions = '';
+    let paymentFilterCondition = '';
+    let bookingStatusFilterCondition = '';
+    
+    if (serviceType || startDate || endDate) {
+      let conditions = [];
+      if (serviceType) conditions.push(`b.service_type = '${serviceType}'`);
+      if (startDate) conditions.push(`b.start_date >= '${startDate}'`);
+      if (endDate) conditions.push(`b.start_date <= '${endDate}'`);
+      filterConditions = conditions.length > 0 ? ' AND ' + conditions.join(' AND ') : '';
+    }
+
+    // Separate payment and booking status filters
+    if (status) {
+      if (status === 'paid' || status === 'unpaid') {
+        paymentFilterCondition = ` AND b.payment_status = '${status}'`;
+      } else {
+        bookingStatusFilterCondition = ` AND b.booking_status = '${status}'`;
+      }
+    }
 
     // Fetch top cards data (quick stats)
     const [
@@ -48,61 +71,72 @@ const getDashboardAnalytics = async (req, res) => {
       pendingApprovals,
       urgentItems
     ] = await Promise.all([
-      // Total bookings all time
-      Booking.count(),
+      // Total bookings (with filters - all statuses)
+      sequelize.query(
+        `SELECT COUNT(*) as count FROM bookings b WHERE b.booking_status IS NOT NULL${filterConditions}${bookingStatusFilterCondition}${paymentFilterCondition}`,
+        { type: QueryTypes.SELECT }
+      ),
       
       // Active bookings (approved or confirmed and ongoing)
-      Booking.count({
-        where: {
-          booking_status: { [Op.in]: ['approved', 'confirmed'] }
-        }
-      }),
-      
-      // Total pets registered
-      Pet.count({
-        where: { deleted_at: null }
-      }),
-      
-      // Total revenue from paid bookings
       sequelize.query(
-        `SELECT COALESCE(SUM(b.price), 0) as total FROM bookings b 
-         WHERE b.payment_status = 'paid'`,
+        `SELECT COUNT(*) as count FROM bookings b 
+         WHERE b.booking_status IN ('approved', 'confirmed')${filterConditions}${bookingStatusFilterCondition}${paymentFilterCondition}`,
         { type: QueryTypes.SELECT }
       ),
       
-      // Revenue this month
+      // Total pets registered (only from selected bookings if filters exist)
+      (filterConditions || bookingStatusFilterCondition || paymentFilterCondition)
+        ? sequelize.query(
+            `SELECT COUNT(DISTINCT b.pet_id) as count FROM bookings b 
+             WHERE b.pet_id IS NOT NULL${filterConditions}${bookingStatusFilterCondition}${paymentFilterCondition}`,
+            { type: QueryTypes.SELECT }
+          )
+        : sequelize.query(
+            `SELECT COUNT(*) as count FROM pets WHERE deleted_at IS NULL`,
+            { type: QueryTypes.SELECT }
+          ),
+      
+      // Total revenue from paid bookings (only apply date/service filters, not payment/booking status filters)
       sequelize.query(
         `SELECT COALESCE(SUM(b.price), 0) as total FROM bookings b 
-         WHERE b.payment_status = 'paid' AND EXTRACT(MONTH FROM b.created_at) = EXTRACT(MONTH FROM NOW())
-         AND EXTRACT(YEAR FROM b.created_at) = EXTRACT(YEAR FROM NOW())`,
+         WHERE b.payment_status = 'paid'${filterConditions}`,
         { type: QueryTypes.SELECT }
       ),
       
-      // Pending approvals
-      Booking.count({
-        where: { booking_status: 'pending' }
-      }),
+      // Revenue this month (only apply date/service filters, not payment/booking status filters)
+      sequelize.query(
+        `SELECT COALESCE(SUM(b.price), 0) as total FROM bookings b 
+         WHERE b.payment_status = 'paid' 
+         AND EXTRACT(MONTH FROM b.created_at) = EXTRACT(MONTH FROM NOW())
+         AND EXTRACT(YEAR FROM b.created_at) = EXTRACT(YEAR FROM NOW())${filterConditions}`,
+        { type: QueryTypes.SELECT }
+      ),
       
-      // Urgent items (bookings starting within 3 days or no caretaker assigned)
-      Booking.count({
-        where: {
-          booking_status: 'approved',
-          start_date: {
-            [Op.gte]: new Date(),
-            [Op.lte]: new Date(new Date().getTime() + 3 * 24 * 60 * 60 * 1000)
-          }
-        }
-      })
+      // Pending approvals (only filter by date/service, ignore booking/payment status)
+      sequelize.query(
+        `SELECT COUNT(*) as count FROM bookings b 
+         WHERE b.booking_status = 'pending'${filterConditions}`,
+        { type: QueryTypes.SELECT }
+      ),
+      
+      // Urgent items (only filter by date/service, ignore booking/payment status)
+      sequelize.query(
+        `SELECT COUNT(*) as count FROM bookings b 
+         WHERE b.booking_status = 'approved' 
+         AND b.start_date >= NOW() 
+         AND b.start_date <= NOW() + INTERVAL '3 days'${filterConditions}`,
+        { type: QueryTypes.SELECT }
+      )
     ]);
 
     const topCardsData = {
-      totalBookings: totalBookings || 0,
-      activeBookings: activeBookings || 0,
-      totalPets: totalPets || 0,
+      totalBookings: totalBookings && totalBookings.length > 0 ? parseInt(totalBookings[0].count) || 0 : 0,
+      activeBookings: activeBookings && activeBookings.length > 0 ? parseInt(activeBookings[0].count) || 0 : 0,
+      totalPets: totalPets && totalPets.length > 0 ? parseInt(totalPets[0].count) || 0 : 0,
       totalRevenue: totalRevenue && totalRevenue.length > 0 ? parseFloat(totalRevenue[0].total) || 0 : 0,
       revenueThisMonth: revenueThisMonth && revenueThisMonth.length > 0 ? parseFloat(revenueThisMonth[0].total) || 0 : 0,
-      pendingApprovals: pendingApprovals || 0,
-      urgentItems: urgentItems || 0
+      pendingApprovals: pendingApprovals && pendingApprovals.length > 0 ? parseInt(pendingApprovals[0].count) || 0 : 0,
+      urgentItems: urgentItems && urgentItems.length > 0 ? parseInt(urgentItems[0].count) || 0 : 0
     };
 
     return res.status(200).json({
@@ -135,7 +169,11 @@ const getBookingTrends = async (req, res) => {
       whereConditions.push('b.service_type = \'' + serviceType + '\'');
     }
     if (status) {
-      whereConditions.push('b.booking_status = \'' + status + '\'');
+      if (status === 'paid' || status === 'unpaid') {
+        whereConditions.push('b.payment_status = \'' + status + '\'');
+      } else {
+        whereConditions.push('b.booking_status = \'' + status + '\'');
+      }
     }
     if (startDate) {
       whereConditions.push('b.start_date >= \'' + startDate + '\'');
@@ -187,7 +225,8 @@ const getRevenueTrends = async (req, res) => {
     if (serviceType) {
       whereConditions.push('b.service_type = \'' + serviceType + '\'');
     }
-    if (status) {
+    // NOTE: Don't apply payment status filters to revenue - only apply booking status if it's not a payment status
+    if (status && status !== 'paid' && status !== 'unpaid') {
       whereConditions.push('b.booking_status = \'' + status + '\'');
     }
     if (startDate) {
@@ -241,7 +280,11 @@ const getTopServices = async (req, res) => {
       whereConditions.push('b.service_type = \'' + serviceType + '\'');
     }
     if (status) {
-      whereConditions.push('b.booking_status = \'' + status + '\'');
+      if (status === 'paid' || status === 'unpaid') {
+        whereConditions.push('b.payment_status = \'' + status + '\'');
+      } else {
+        whereConditions.push('b.booking_status = \'' + status + '\'');
+      }
     }
     if (startDate) {
       whereConditions.push('b.start_date >= \'' + startDate + '\'');
@@ -295,7 +338,11 @@ const getBookingStatusDistribution = async (req, res) => {
       whereConditions.push('b.service_type = \'' + serviceType + '\'');
     }
     if (status) {
-      whereConditions.push('b.booking_status = \'' + status + '\'');
+      if (status === 'paid' || status === 'unpaid') {
+        whereConditions.push('b.payment_status = \'' + status + '\'');
+      } else {
+        whereConditions.push('b.booking_status = \'' + status + '\'');
+      }
     }
     if (startDate) {
       whereConditions.push('b.start_date >= \'' + startDate + '\'');
@@ -347,7 +394,11 @@ const getPetTypesDistribution = async (req, res) => {
       whereConditions.push('b.service_type = \'' + serviceType + '\'');
     }
     if (status) {
-      whereConditions.push('b.booking_status = \'' + status + '\'');
+      if (status === 'paid' || status === 'unpaid') {
+        whereConditions.push('b.payment_status = \'' + status + '\'');
+      } else {
+        whereConditions.push('b.booking_status = \'' + status + '\'');
+      }
     }
     if (startDate) {
       whereConditions.push('b.start_date >= \'' + startDate + '\'');
@@ -402,7 +453,11 @@ const getPeakHours = async (req, res) => {
       whereConditions.push('b.service_type = \'' + serviceType + '\'');
     }
     if (status) {
-      whereConditions.push('b.booking_status = \'' + status + '\'');
+      if (status === 'paid' || status === 'unpaid') {
+        whereConditions.push('b.payment_status = \'' + status + '\'');
+      } else {
+        whereConditions.push('b.booking_status = \'' + status + '\'');
+      }
     }
     if (startDate) {
       whereConditions.push('b.start_date >= \'' + startDate + '\'');
@@ -466,23 +521,27 @@ const getPeakHours = async (req, res) => {
  */
 const getRecentBookings = async (req, res) => {
   try {
-    const { limit = 10, serviceType, status, startDate, endDate } = req.query;
+    const { limit = 10, days, serviceType, status, startDate, endDate } = req.query;
     
     const where = {};
+    
+    // Handle date range: either use explicit startDate/endDate or calculate from days
+    if (startDate && endDate) {
+      where.start_date = { [Op.gte]: new Date(startDate), [Op.lte]: new Date(endDate) };
+    } else if (days) {
+      const now = new Date();
+      const pastDate = new Date(now.getTime() - parseInt(days) * 24 * 60 * 60 * 1000);
+      where.start_date = { [Op.gte]: pastDate };
+    }
+    
     if (serviceType) {
       where.service_type = serviceType;
     }
     if (status) {
-      where.booking_status = status;
-    }
-    if (startDate) {
-      where.start_date = { [Op.gte]: new Date(startDate) };
-    }
-    if (endDate) {
-      if (where.start_date) {
-        where.start_date[Op.lte] = new Date(endDate);
+      if (status === 'paid' || status === 'unpaid') {
+        where.payment_status = status;
       } else {
-        where.start_date = { [Op.lte]: new Date(endDate) };
+        where.booking_status = status;
       }
     }
     
@@ -513,11 +572,6 @@ const getRecentBookings = async (req, res) => {
         }
       ]
     });
-
-    console.log('📊 Recent bookings fetched:', bookings.length);
-    if (bookings.length > 0) {
-      console.log('👤 First booking owner data:', bookings[0].pet?.owner);
-    }
 
     return res.status(200).json({
       success: true,
@@ -555,23 +609,27 @@ const getRecentBookings = async (req, res) => {
  */
 const getRecentPayments = async (req, res) => {
   try {
-    const { limit = 10, serviceType, status, startDate, endDate } = req.query;
+    const { limit = 10, days, serviceType, status, startDate, endDate } = req.query;
     
     const bookingWhere = {};
+    
+    // Handle date range: either use explicit startDate/endDate or calculate from days
+    if (startDate && endDate) {
+      bookingWhere.start_date = { [Op.gte]: new Date(startDate), [Op.lte]: new Date(endDate) };
+    } else if (days) {
+      const now = new Date();
+      const pastDate = new Date(now.getTime() - parseInt(days) * 24 * 60 * 60 * 1000);
+      bookingWhere.start_date = { [Op.gte]: pastDate };
+    }
+    
     if (serviceType) {
       bookingWhere.service_type = serviceType;
     }
     if (status) {
-      bookingWhere.booking_status = status;
-    }
-    if (startDate) {
-      bookingWhere.start_date = { [Op.gte]: new Date(startDate) };
-    }
-    if (endDate) {
-      if (bookingWhere.start_date) {
-        bookingWhere.start_date[Op.lte] = new Date(endDate);
+      if (status === 'paid' || status === 'unpaid') {
+        bookingWhere.payment_status = status;
       } else {
-        bookingWhere.start_date = { [Op.lte]: new Date(endDate) };
+        bookingWhere.booking_status = status;
       }
     }
     
@@ -602,11 +660,6 @@ const getRecentPayments = async (req, res) => {
         }
       ]
     });
-
-    console.log('💳 Recent payments fetched:', payments.length);
-    if (payments.length > 0) {
-      console.log('👤 First payment owner data:', payments[0].booking?.pet?.owner);
-    }
 
     return res.status(200).json({
       success: true,
@@ -648,6 +701,12 @@ const getAlerts = async (req, res) => {
     const baseWhere = {};
     if (serviceType) {
       baseWhere.service_type = serviceType;
+    }
+    if (status && status !== 'paid' && status !== 'unpaid') {
+      baseWhere.booking_status = status;
+    }
+    if (status && (status === 'paid' || status === 'unpaid')) {
+      baseWhere.payment_status = status;
     }
     if (startDate) {
       baseWhere.start_date = { [Op.gte]: new Date(startDate) };

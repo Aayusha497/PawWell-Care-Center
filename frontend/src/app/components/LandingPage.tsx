@@ -6,8 +6,8 @@ import pawwellchoose from "../../assets/pawwellchoose.png";
 import about from "../../assets/about.png";
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Phone } from "lucide-react"; //phone icon from lucide-react
 
+import { Phone, Mail, MapPin } from "lucide-react"; //icon for these useing lucide-react library
 
 interface LandingPageProps {
   onNavigateToLogin: () => void;
@@ -36,7 +36,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: L
       </nav>
 
       {/* Hero Section */}
-      <section className="relative px-8 py-16 bg-[#EAB308] dark:bg-gray-800 overflow-hidden">
+      <section id="home" className="relative px-8 py-16 bg-[#EAB308] dark:bg-gray-800 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           <div className="text-center lg:text-left z-10">
             <h1 className="text-5xl mb-4 dark:text-gray-100">Care they Deserve</h1>
@@ -168,10 +168,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: L
 
       
       {/* How PawWell Works */}
-      <section
-        id="how-it-works"
-        className="relative overflow-hidden px-8 py-20 bg-[#FFF8E8] dark:bg-gray-800"
-      >
+      <section id="how-it-works" className="relative overflow-hidden px-8 py-20 bg-[#FFF8E8] dark:bg-gray-800">
         <div className="absolute top-10 left-6 text-4xl opacity-20 rotate-[-20deg]">🐾</div>
         <div className="absolute top-28 left-16 text-2xl opacity-20 rotate-12">🐾</div>
         <div className="absolute top-20 right-10 text-4xl opacity-20 rotate-12">🐾</div>
@@ -742,10 +739,21 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: L
               <h3 className="text-lg font-semibold text-black dark:text-gray-100 mb-4">
                 Contact
               </h3>
-              <ul className="space-y-2 text-gray-800 dark:text-gray-300">
-                <li>📞 9703712593</li>
-                <li>📍 Kathmandu, Nepal</li>
-                <li>✉️ support@pawwell.com</li>
+              <ul className="space-y-3 text-gray-800 dark:text-gray-300">
+                <li className="flex items-center gap-2">
+                  <Phone size={18} />
+                  <span>+977-9703712593</span>
+                </li>
+
+                <li className="flex items-center gap-2">
+                  <MapPin size={18} />
+                  <span>Kathmandu, Nepal</span>
+                </li>
+
+                <li className="flex items-center gap-2">
+                  <Mail size={18} />
+                  <span>support@pawwell.com</span>
+                </li>
               </ul>
             </div>
 

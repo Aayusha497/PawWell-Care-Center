@@ -64,7 +64,7 @@ const getUserById = async (req, res) => {
     const { userId } = req.params;
 
     const user = await User.findByPk(userId, {
-      attributes: { exclude: ['password'] },
+      attributes: { exclude: ['password', 'twoFactorSecret', 'backupCodes'] },
       include: [
         {
           model: Pet,
