@@ -212,13 +212,6 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
     fetchPets();
     fetchDashboardStats();
     fetchNotificationSummary();
-    const intervalId = window.setInterval(() => {
-      fetchNotificationSummary();
-    }, 45000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
   }, []);
 
   useEffect(() => {
