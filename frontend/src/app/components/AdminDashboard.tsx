@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
-import { Bell, Settings, User as UserIcon, LogOut, BarChart3 } from 'lucide-react';
+import { Bell, Settings, User as UserIcon, LogOut, BarChart3, X, Edit2, Trash2 } from 'lucide-react';
 import {
   createActivityLog,
   getPendingBookings,
@@ -82,6 +82,33 @@ interface EmergencyRequest {
   users?: { first_name?: string; last_name?: string; email?: string };
 }
 
+interface Caretaker {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  address: string;
+  emergencyContactName: string;
+  emergencyContactNumber: string;
+  serviceType?: string;
+  specialization?: string;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+interface CaretakerShift {
+  id: string;
+  caretakerId: string;
+  caretakerName: string;
+  shiftDate: string;
+  startTime: string;
+  endTime: string;
+  notes?: string;
+  serviceType?: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  createdAt?: string;
+}
+
 export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState(() => {
     const saved = sessionStorage.getItem('adminActiveTab');
@@ -131,6 +158,43 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   const [emergencyLoading, setEmergencyLoading] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [markingMessageId, setMarkingMessageId] = useState<number | null>(null);
+  const [selectedEmergencyRequest, setSelectedEmergencyRequest] = useState<EmergencyRequest | null>(null);
+  const [updatingEmergencyId, setUpdatingEmergencyId] = useState<number | null>(null);
+
+  // Caretaker Shift Management State
+  const [caretakers, setCaretakers] = useState<Caretaker[]>([]);
+  const [assignedShifts, setAssignedShifts] = useState<CaretakerShift[]>([]);
+  const [showAddCaretakerModal, setShowAddCaretakerModal] = useState(false);
+  const [showEditShiftModal, setShowEditShiftModal] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<string | null>(null);
+  const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
+
+  // Form state for new caretaker
+  const [caretakerForm, setCaretakerForm] = useState({
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    address: '',
+    emergencyContactName: '',
+    emergencyContactNumber: '',
+    serviceType: ''
+  });
+  const [caretakerFormErrors, setCaretakerFormErrors] = useState<Record<string, string>>({});
+  const [caretakerFormTouched, setCaretakerFormTouched] = useState<Record<string, boolean>>({});
+  const [submittingCaretaker, setSubmittingCaretaker] = useState(false);
+
+  // Form state for shift assignment
+  const [shiftForm, setShiftForm] = useState({
+    caretakerId: '',
+    shiftDate: '',
+    startTime: '',
+    endTime: '',
+    notes: '',
+    serviceType: ''
+  });
+  const [shiftFormErrors, setShiftFormErrors] = useState<Record<string, string>>({});
+  const [shiftFormTouched, setShiftFormTouched] = useState<Record<string, boolean>>({});
+  const [submittingShift, setSubmittingShift] = useState(false);
 
   const activityTypes = [
     { value: 'feeding', label: 'Feeding' },
@@ -373,11 +437,19 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
     try {
       await updateEmergencyStatus(requestId, status);
       toast.success('Emergency request updated.');
+      
+      // Update the selected request
+      if (selectedEmergencyRequest && selectedEmergencyRequest.emergency_id === requestId) {
+        setSelectedEmergencyRequest({ ...selectedEmergencyRequest, status: status as 'pending' | 'in_progress' | 'resolved' | 'cancelled' });
+      }
+      
       fetchEmergencyRequests();
       fetchNotificationSummary();
+      setUpdatingEmergencyId(null);
     } catch (error: any) {
       console.error('Error updating emergency request:', error);
       toast.error(error.message || 'Failed to update emergency request');
+      setUpdatingEmergencyId(null);
     }
   };
 
@@ -426,6 +498,351 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
     } finally {
       setSubmittingLog(false);
     }
+  };
+
+  //CARETAKER SHIFT MANAGEMENT FUNCTIONS 
+
+  // Validation functions for caretaker form
+  const validateCaretakerField = (fieldName: string, value: string): string => {
+    const trimmed = value.trim();
+
+    switch (fieldName) {
+      case 'fullName':
+        if (!trimmed) return 'Full name is required';
+        if (trimmed.length < 2) return 'Full name must be at least 2 characters';
+        if (!/^[A-Za-z\s]+$/.test(trimmed)) return 'Full name should contain only letters and spaces';
+        return '';
+      
+      case 'email':
+        if (!trimmed) return 'Email is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'Please enter a valid email address';
+        return '';
+      
+      case 'phoneNumber':
+        if (!trimmed) return 'Phone number is required';
+        const cleanPhone = trimmed.replace(/\s/g, '');
+        if (!/^\d+$/.test(cleanPhone)) return 'Phone number must contain only digits';
+        if (cleanPhone.length !== 10) return 'Phone number must be exactly 10 digits';
+        return '';
+      
+      case 'address':
+        if (!trimmed) return 'Address is required';
+        if (trimmed.length < 5) return 'Address must be at least 5 characters';
+        return '';
+      
+      case 'emergencyContactName':
+        if (!trimmed) return 'Emergency contact name is required';
+        if (trimmed.length < 2) return 'Emergency contact name must be at least 2 characters';
+        if (!/^[A-Za-z\s]+$/.test(trimmed)) return 'Emergency contact name should contain only letters and spaces';
+        return '';
+      
+      case 'emergencyContactNumber':
+        if (!trimmed) return 'Emergency contact number is required';
+        const cleanEmergency = trimmed.replace(/\s/g, '');
+        if (!/^\d+$/.test(cleanEmergency)) return 'Emergency contact number must contain only digits';
+        if (cleanEmergency.length !== 10) return 'Emergency contact number must be exactly 10 digits';
+        return '';
+      
+      default:
+        return '';
+    }
+  };
+
+  // Validation functions for shift form
+  const validateShiftField = (fieldName: string, value: string): string => {
+    const trimmed = value.trim();
+
+    switch (fieldName) {
+      case 'caretakerId':
+        if (!trimmed) return 'Please select a caretaker';
+        return '';
+      
+      case 'shiftDate':
+        if (!trimmed) return 'Shift date is required';
+        return '';
+      
+      case 'startTime':
+        if (!trimmed) return 'Start time is required';
+        return '';
+      
+      case 'endTime':
+        if (!trimmed) return 'End time is required';
+        return '';
+      
+      case 'serviceType':
+        if (!trimmed) return 'Service type is required';
+        return '';
+      
+      default:
+        return '';
+    }
+  };
+
+  // Check for overlapping shifts
+  const hasOverlappingShift = (caretakerId: string, shiftDate: string, startTime: string, endTime: string, excludeShiftId?: string): boolean => {
+    return assignedShifts.some(shift => {
+      if (excludeShiftId && shift.id === excludeShiftId) return false;
+      if (shift.caretakerId !== caretakerId) return false;
+      if (shift.shiftDate !== shiftDate) return false;
+
+      const newStart = new Date(`${shiftDate}T${startTime}`).getTime();
+      const newEnd = new Date(`${shiftDate}T${endTime}`).getTime();
+      const existingStart = new Date(`${shift.shiftDate}T${shift.startTime}`).getTime();
+      const existingEnd = new Date(`${shift.shiftDate}T${shift.endTime}`).getTime();
+
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+  };
+
+  // Handle caretaker form input change
+  const handleCaretakerFormChange = (field: string, value: string) => {
+    setCaretakerForm(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (caretakerFormErrors[field]) {
+      setCaretakerFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validate caretaker form on blur
+  const handleCaretakerFieldBlur = (field: string) => {
+    const error = validateCaretakerField(field, caretakerForm[field as keyof typeof caretakerForm] || '');
+    setCaretakerFormTouched(prev => ({ ...prev, [field]: true }));
+    if (error) {
+      setCaretakerFormErrors(prev => ({ ...prev, [field]: error }));
+    }
+  };
+
+  // Handle add caretaker submission
+  const handleAddCaretaker = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate all required fields
+    const newErrors: Record<string, string> = {};
+    const requiredFields = ['fullName', 'email', 'phoneNumber', 'address', 'emergencyContactName', 'emergencyContactNumber'];
+
+    requiredFields.forEach(field => {
+      const error = validateCaretakerField(field, caretakerForm[field as keyof typeof caretakerForm] || '');
+      if (error) {
+        newErrors[field] = error;
+      }
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setCaretakerFormErrors(newErrors);
+      toast.error('Please fix all validation errors');
+      return;
+    }
+
+    try {
+      setSubmittingCaretaker(true);
+
+      // Create new caretaker object
+      const newCaretaker: Caretaker = {
+        id: `caretaker_${Date.now()}`,
+        fullName: caretakerForm.fullName.trim(),
+        email: caretakerForm.email.trim(),
+        phoneNumber: caretakerForm.phoneNumber.trim(),
+        address: caretakerForm.address.trim(),
+        emergencyContactName: caretakerForm.emergencyContactName.trim(),
+        emergencyContactNumber: caretakerForm.emergencyContactNumber.trim(),
+        serviceType: caretakerForm.serviceType.trim() || 'General',
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+
+      // In a real app, this would be an API call
+      setCaretakers(prev => [...prev, newCaretaker]);
+      
+      // Reset form
+      setCaretakerForm({
+        fullName: '',
+        email: '',
+        phoneNumber: '',
+        address: '',
+        emergencyContactName: '',
+        emergencyContactNumber: '',
+        serviceType: ''
+      });
+      setCaretakerFormErrors({});
+      setCaretakerFormTouched({});
+
+      toast.success(`Caretaker "${newCaretaker.fullName}" created successfully!`);
+      setShowAddCaretakerModal(false);
+      
+      // Auto-select newly created caretaker
+      setShiftForm(prev => ({ ...prev, caretakerId: newCaretaker.id }));
+    } catch (error: any) {
+      console.error('Error creating caretaker:', error);
+      toast.error(error.message || 'Failed to create caretaker');
+    } finally {
+      setSubmittingCaretaker(false);
+    }
+  };
+
+  // Handle shift form input change
+  const handleShiftFormChange = (field: string, value: string) => {
+    setShiftForm(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (shiftFormErrors[field]) {
+      setShiftFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validate shift form on blur
+  const handleShiftFieldBlur = (field: string) => {
+    const error = validateShiftField(field, shiftForm[field as keyof typeof shiftForm] || '');
+    setShiftFormTouched(prev => ({ ...prev, [field]: true }));
+    if (error) {
+      setShiftFormErrors(prev => ({ ...prev, [field]: error }));
+    }
+  };
+
+  // Handle assign shift submission
+  const handleAssignShift = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate all required fields
+    const newErrors: Record<string, string> = {};
+    const requiredFields = ['caretakerId', 'shiftDate', 'startTime', 'endTime', 'serviceType'];
+
+    requiredFields.forEach(field => {
+      const error = validateShiftField(field, shiftForm[field as keyof typeof shiftForm] || '');
+      if (error) {
+        newErrors[field] = error;
+      }
+    });
+
+    // Additional validation: end time must be after start time
+    if (shiftForm.startTime && shiftForm.endTime) {
+      if (shiftForm.startTime >= shiftForm.endTime) {
+        newErrors.endTime = 'End time must be after start time';
+      }
+    }
+
+    // Check for overlapping shifts
+    if (shiftForm.caretakerId && shiftForm.shiftDate && shiftForm.startTime && shiftForm.endTime && !newErrors.endTime) {
+      if (hasOverlappingShift(shiftForm.caretakerId, shiftForm.shiftDate, shiftForm.startTime, shiftForm.endTime, selectedShiftId || undefined)) {
+        newErrors.shiftDate = 'This caretaker already has a shift during the selected time. Please choose a different time or date.';
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setShiftFormErrors(newErrors);
+      toast.error('Please fix all validation errors');
+      return;
+    }
+
+    try {
+      setSubmittingShift(true);
+
+      const selectedCaretaker = caretakers.find(c => c.id === shiftForm.caretakerId);
+
+      if (selectedShiftId) {
+        // Edit existing shift
+        setAssignedShifts(prev =>
+          prev.map(shift =>
+            shift.id === selectedShiftId
+              ? {
+                  ...shift,
+                  caretakerId: shiftForm.caretakerId,
+                  caretakerName: selectedCaretaker?.fullName || '',
+                  shiftDate: shiftForm.shiftDate,
+                  startTime: shiftForm.startTime,
+                  endTime: shiftForm.endTime,
+                  notes: shiftForm.notes.trim(),
+                  serviceType: shiftForm.serviceType.trim() || 'General'
+                }
+              : shift
+          )
+        );
+        toast.success('Shift updated successfully!');
+      } else {
+        // Create new shift
+        const newShift: CaretakerShift = {
+          id: `shift_${Date.now()}`,
+          caretakerId: shiftForm.caretakerId,
+          caretakerName: selectedCaretaker?.fullName || '',
+          shiftDate: shiftForm.shiftDate,
+          startTime: shiftForm.startTime,
+          endTime: shiftForm.endTime,
+          notes: shiftForm.notes.trim(),
+          serviceType: shiftForm.serviceType.trim() || 'General',
+          status: 'scheduled',
+          createdAt: new Date().toISOString()
+        };
+
+        setAssignedShifts(prev => [...prev, newShift]);
+        toast.success('Shift assigned successfully!');
+      }
+
+      // Reset form
+      setShiftForm({
+        caretakerId: '',
+        shiftDate: '',
+        startTime: '',
+        endTime: '',
+        notes: '',
+        serviceType: ''
+      });
+      setShiftFormErrors({});
+      setShiftFormTouched({});
+      setSelectedShiftId(null);
+      setShowEditShiftModal(false);
+    } catch (error: any) {
+      console.error('Error assigning shift:', error);
+      toast.error(error.message || 'Failed to assign shift');
+    } finally {
+      setSubmittingShift(false);
+    }
+  };
+
+  // Handle edit shift
+  const handleEditShift = (shift: CaretakerShift) => {
+    setSelectedShiftId(shift.id);
+    setShiftForm({
+      caretakerId: shift.caretakerId,
+      shiftDate: shift.shiftDate,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      notes: shift.notes || '',
+      serviceType: shift.serviceType || ''
+    });
+    setShowEditShiftModal(true);
+  };
+
+  // Handle delete shift
+  const handleDeleteShift = (shiftId: string) => {
+    setAssignedShifts(prev => prev.filter(shift => shift.id !== shiftId));
+    setShowDeleteConfirmation(null);
+    toast.success('Shift deleted successfully!');
+  };
+
+  // Format time for display
+  const formatTime = (time: string): string => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  // Format date for display
+  const formatShiftDate = (dateString: string): string => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -871,34 +1288,554 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                 )}
               </div>
 
-              {/* Caretaker Shift */}
+              {/* Caretaker Shift Management */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Caretaker Shift</h2>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Caretaker</label>
-                    <select className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400">
-                      <option>Select caretaker</option>
-                      <option>John Doe</option>
-                      <option>Jane Smith</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shift Details</label>
-                    <input
-                      type="text"
-                      placeholder="8:00 am - 7:00 pm"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                    />
-                  </div>
-
-                  <button className="px-6 py-2 bg-yellow-300 dark:bg-yellow-500 hover:bg-yellow-400 dark:hover:bg-yellow-600 text-gray-900 dark:text-gray-100 rounded-lg font-semibold transition-colors">
-                    Assign Shifts
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Caretaker Shift Management</h2>
+                  <button
+                    onClick={() => {
+                      setShowAddCaretakerModal(true);
+                      setCaretakerForm({
+                        fullName: '',
+                        email: '',
+                        phoneNumber: '',
+                        address: '',
+                        emergencyContactName: '',
+                        emergencyContactNumber: '',
+                        serviceType: ''
+                      });
+                      setCaretakerFormErrors({});
+                      setCaretakerFormTouched({});
+                    }}
+                    className="px-4 py-2 bg-yellow-300 dark:bg-yellow-500 hover:bg-yellow-400 dark:hover:bg-yellow-600 text-gray-900 dark:text-gray-100 rounded-lg font-semibold transition-colors text-sm"
+                  >
+                    + Add New Caretaker
                   </button>
                 </div>
+
+                {/* Shift Assignment Form */}
+                <form onSubmit={handleAssignShift} className="space-y-4 mb-8 pb-8 border-b border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Caretaker</label>
+                      <select
+                        value={shiftForm.caretakerId}
+                        onChange={(e) => {
+                          handleShiftFormChange('caretakerId', e.target.value);
+                        }}
+                        onBlur={() => handleShiftFieldBlur('caretakerId')}
+                        className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                          shiftFormErrors.caretakerId
+                            ? 'border-red-500 focus:ring-red-400'
+                            : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                        }`}
+                      >
+                        <option value="">Select caretaker</option>
+                        {caretakers.map(caretaker => (
+                          <option key={caretaker.id} value={caretaker.id}>
+                            {caretaker.fullName} {!caretaker.isActive && '(Inactive)'}
+                          </option>
+                        ))}
+                      </select>
+                      {shiftFormErrors.caretakerId && (
+                        <p className="text-red-500 text-sm mt-1">{shiftFormErrors.caretakerId}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shift Date</label>
+                      <input
+                        type="date"
+                        value={shiftForm.shiftDate}
+                        onChange={(e) => handleShiftFormChange('shiftDate', e.target.value)}
+                        onBlur={() => handleShiftFieldBlur('shiftDate')}
+                        min={new Date().toISOString().split('T')[0]}
+                        className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                          shiftFormErrors.shiftDate
+                            ? 'border-red-500 focus:ring-red-400'
+                            : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                        }`}
+                      />
+                      {shiftFormErrors.shiftDate && (
+                        <p className="text-red-500 text-sm mt-1">{shiftFormErrors.shiftDate}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Time</label>
+                      <input
+                        type="time"
+                        value={shiftForm.startTime}
+                        onChange={(e) => handleShiftFormChange('startTime', e.target.value)}
+                        onBlur={() => handleShiftFieldBlur('startTime')}
+                        className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                          shiftFormErrors.startTime
+                            ? 'border-red-500 focus:ring-red-400'
+                            : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                        }`}
+                      />
+                      {shiftFormErrors.startTime && (
+                        <p className="text-red-500 text-sm mt-1">{shiftFormErrors.startTime}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Time</label>
+                      <input
+                        type="time"
+                        value={shiftForm.endTime}
+                        onChange={(e) => handleShiftFormChange('endTime', e.target.value)}
+                        onBlur={() => handleShiftFieldBlur('endTime')}
+                        className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                          shiftFormErrors.endTime
+                            ? 'border-red-500 focus:ring-red-400'
+                            : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                        }`}
+                      />
+                      {shiftFormErrors.endTime && (
+                        <p className="text-red-500 text-sm mt-1">{shiftFormErrors.endTime}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Type *</label>
+                      <select
+                        value={shiftForm.serviceType}
+                        onChange={(e) => handleShiftFormChange('serviceType', e.target.value)}
+                        onBlur={() => handleShiftFieldBlur('serviceType')}
+                        className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                          shiftFormErrors.serviceType
+                            ? 'border-red-500 focus:ring-red-400'
+                            : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                        }`}
+                      >
+                        <option value="">Select service type</option>
+                        <option value="Daycation/Pet Sitting">Daycation/Pet Sitting</option>
+                        <option value="Pet Boarding">Pet Boarding</option>
+                        <option value="Grooming">Grooming</option>
+                      </select>
+                      {shiftFormErrors.serviceType && (
+                        <p className="text-red-500 text-sm mt-1">{shiftFormErrors.serviceType}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
+                      <input
+                        type="text"
+                        value={shiftForm.notes}
+                        onChange={(e) => handleShiftFormChange('notes', e.target.value)}
+                        placeholder="Additional notes"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submittingShift}
+                    className="px-6 py-2 bg-yellow-300 dark:bg-yellow-500 hover:bg-yellow-400 dark:hover:bg-yellow-600 disabled:opacity-50 text-gray-900 dark:text-gray-100 rounded-lg font-semibold transition-colors"
+                  >
+                    {submittingShift ? 'Assigning...' : selectedShiftId ? 'Update Shift' : 'Assign Shift'}
+                  </button>
+                </form>
+
+                {/* Assigned Shifts Table */}
+                {assignedShifts.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-300 dark:border-gray-600">
+                          <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100">Caretaker</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100">Date</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100">Time</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100">Service Type</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100">Status</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-gray-100">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {assignedShifts.map((shift) => (
+                          <tr
+                            key={shift.id}
+                            className="border-b border-gray-200 dark:border-gray-700 hover:bg-yellow-50 dark:hover:bg-gray-700/40 transition-colors"
+                          >
+                            <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{shift.caretakerName}</td>
+                            <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{formatShiftDate(shift.shiftDate)}</td>
+                            <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                              {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
+                            </td>
+                            <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{shift.serviceType || '-'}</td>
+                            <td className="px-4 py-3 text-gray-900 dark:text-gray-100 capitalize">{shift.status}</td>
+                            <td className="px-4 py-3 flex gap-2">
+                              <button
+                                onClick={() => handleEditShift(shift)}
+                                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                                title="Edit shift"
+                              >
+                                <Edit2 size={18} />
+                              </button>
+                              <button
+                                onClick={() => setShowDeleteConfirmation(shift.id)}
+                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                                title="Delete shift"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                    <p>No shifts assigned yet. Create caretakers and assign shifts above.</p>
+                  </div>
+                )}
               </div>
+
+              {/* Add Caretaker Modal */}
+              {showAddCaretakerModal && (
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+                    <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Add New Caretaker</h3>
+                      <button
+                        onClick={() => {
+                          setShowAddCaretakerModal(false);
+                          setCaretakerFormErrors({});
+                          setCaretakerFormTouched({});
+                        }}
+                        className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                      >
+                        <X size={24} />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleAddCaretaker} className="p-6 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name *</label>
+                        <input
+                          type="text"
+                          value={caretakerForm.fullName}
+                          onChange={(e) => handleCaretakerFormChange('fullName', e.target.value)}
+                          onBlur={() => handleCaretakerFieldBlur('fullName')}
+                          placeholder="Full Name"
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            caretakerFormErrors.fullName
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        />
+                        {caretakerFormErrors.fullName && (
+                          <p className="text-red-500 text-sm mt-1">{caretakerFormErrors.fullName}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email *</label>
+                        <input
+                          type="email"
+                          value={caretakerForm.email}
+                          onChange={(e) => handleCaretakerFormChange('email', e.target.value)}
+                          onBlur={() => handleCaretakerFieldBlur('email')}
+                          placeholder="@example.com"
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            caretakerFormErrors.email
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        />
+                        {caretakerFormErrors.email && (
+                          <p className="text-red-500 text-sm mt-1">{caretakerFormErrors.email}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number *</label>
+                        <input
+                          type="tel"
+                          value={caretakerForm.phoneNumber}
+                          onChange={(e) => handleCaretakerFormChange('phoneNumber', e.target.value)}
+                          onBlur={() => handleCaretakerFieldBlur('phoneNumber')}
+                          placeholder="9800000000"
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            caretakerFormErrors.phoneNumber
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        />
+                        {caretakerFormErrors.phoneNumber && (
+                          <p className="text-red-500 text-sm mt-1">{caretakerFormErrors.phoneNumber}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address *</label>
+                        <input
+                          type="text"
+                          value={caretakerForm.address}
+                          onChange={(e) => handleCaretakerFormChange('address', e.target.value)}
+                          onBlur={() => handleCaretakerFieldBlur('address')}
+                          placeholder="Kamalpokhari, Kathmandu"
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            caretakerFormErrors.address
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        />
+                        {caretakerFormErrors.address && (
+                          <p className="text-red-500 text-sm mt-1">{caretakerFormErrors.address}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Emergency Contact Name *</label>
+                        <input
+                          type="text"
+                          value={caretakerForm.emergencyContactName}
+                          onChange={(e) => handleCaretakerFormChange('emergencyContactName', e.target.value)}
+                          onBlur={() => handleCaretakerFieldBlur('emergencyContactName')}
+                          placeholder="Enter your emergency contact's name"
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            caretakerFormErrors.emergencyContactName
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        />
+                        {caretakerFormErrors.emergencyContactName && (
+                          <p className="text-red-500 text-sm mt-1">{caretakerFormErrors.emergencyContactName}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Emergency Contact Number *</label>
+                        <input
+                          type="tel"
+                          value={caretakerForm.emergencyContactNumber}
+                          onChange={(e) => handleCaretakerFormChange('emergencyContactNumber', e.target.value)}
+                          onBlur={() => handleCaretakerFieldBlur('emergencyContactNumber')}
+                          placeholder="9800000000"
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            caretakerFormErrors.emergencyContactNumber
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        />
+                        {caretakerFormErrors.emergencyContactNumber && (
+                          <p className="text-red-500 text-sm mt-1">{caretakerFormErrors.emergencyContactNumber}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Type (Optional)</label>
+                        <input
+                          type="text"
+                          value={caretakerForm.serviceType}
+                          onChange={(e) => handleCaretakerFormChange('serviceType', e.target.value)}
+                          placeholder="Grooming, Pet Sitting"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        />
+                      </div>
+
+                      <div className="flex gap-3 pt-4">
+                        <button
+                          type="submit"
+                          disabled={submittingCaretaker}
+                          className="flex-1 px-4 py-2 bg-yellow-300 dark:bg-yellow-500 hover:bg-yellow-400 dark:hover:bg-yellow-600 disabled:opacity-50 text-gray-900 dark:text-gray-100 rounded-lg font-semibold transition-colors"
+                        >
+                          {submittingCaretaker ? 'Creating...' : 'Create Caretaker'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowAddCaretakerModal(false);
+                            setCaretakerFormErrors({});
+                            setCaretakerFormTouched({});
+                          }}
+                          className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg font-semibold transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Shift Modal */}
+              {showEditShiftModal && selectedShiftId && (
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full">
+                    <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Edit Shift</h3>
+                      <button
+                        onClick={() => {
+                          setShowEditShiftModal(false);
+                          setSelectedShiftId(null);
+                          setShiftFormErrors({});
+                          setShiftFormTouched({});
+                        }}
+                        className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                      >
+                        <X size={24} />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleAssignShift} className="p-6 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Caretaker</label>
+                        <select
+                          value={shiftForm.caretakerId}
+                          onChange={(e) => handleShiftFormChange('caretakerId', e.target.value)}
+                          onBlur={() => handleShiftFieldBlur('caretakerId')}
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            shiftFormErrors.caretakerId
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        >
+                          <option value="">Select caretaker</option>
+                          {caretakers.map(caretaker => (
+                            <option key={caretaker.id} value={caretaker.id}>
+                              {caretaker.fullName}
+                            </option>
+                          ))}
+                        </select>
+                        {shiftFormErrors.caretakerId && (
+                          <p className="text-red-500 text-sm mt-1">{shiftFormErrors.caretakerId}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shift Date</label>
+                        <input
+                          type="date"
+                          value={shiftForm.shiftDate}
+                          onChange={(e) => handleShiftFormChange('shiftDate', e.target.value)}
+                          onBlur={() => handleShiftFieldBlur('shiftDate')}
+                          min={new Date().toISOString().split('T')[0]}
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            shiftFormErrors.shiftDate
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        />
+                        {shiftFormErrors.shiftDate && (
+                          <p className="text-red-500 text-sm mt-1">{shiftFormErrors.shiftDate}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Time</label>
+                        <input
+                          type="time"
+                          value={shiftForm.startTime}
+                          onChange={(e) => handleShiftFormChange('startTime', e.target.value)}
+                          onBlur={() => handleShiftFieldBlur('startTime')}
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            shiftFormErrors.startTime
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        />
+                        {shiftFormErrors.startTime && (
+                          <p className="text-red-500 text-sm mt-1">{shiftFormErrors.startTime}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Time</label>
+                        <input
+                          type="time"
+                          value={shiftForm.endTime}
+                          onChange={(e) => handleShiftFormChange('endTime', e.target.value)}
+                          onBlur={() => handleShiftFieldBlur('endTime')}
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            shiftFormErrors.endTime
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        />
+                        {shiftFormErrors.endTime && (
+                          <p className="text-red-500 text-sm mt-1">{shiftFormErrors.endTime}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Type *</label>
+                        <select
+                          value={shiftForm.serviceType}
+                          onChange={(e) => handleShiftFormChange('serviceType', e.target.value)}
+                          onBlur={() => handleShiftFieldBlur('serviceType')}
+                          className={`w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 ${
+                            shiftFormErrors.serviceType
+                              ? 'border-red-500 focus:ring-red-400'
+                              : 'border-gray-300 dark:border-gray-600 focus:ring-yellow-400'
+                          }`}
+                        >
+                          <option value="">Select service type</option>
+                          <option value="Daycation/Pet Sitting">Daycation/Pet Sitting</option>
+                          <option value="Pet Boarding">Pet Boarding</option>
+                          <option value="Grooming">Grooming</option>
+                        </select>
+                        {shiftFormErrors.serviceType && (
+                          <p className="text-red-500 text-sm mt-1">{shiftFormErrors.serviceType}</p>
+                        )}
+                      </div>
+
+                      <div className="flex gap-3 pt-4">
+                        <button
+                          type="submit"
+                          disabled={submittingShift}
+                          className="flex-1 px-4 py-2 bg-yellow-300 dark:bg-yellow-500 hover:bg-yellow-400 dark:hover:bg-yellow-600 disabled:opacity-50 text-gray-900 dark:text-gray-100 rounded-lg font-semibold transition-colors"
+                        >
+                          {submittingShift ? 'Updating...' : 'Update Shift'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowEditShiftModal(false);
+                            setSelectedShiftId(null);
+                            setShiftFormErrors({});
+                            setShiftFormTouched({});
+                          }}
+                          className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg font-semibold transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Delete Confirmation Modal */}
+              {showDeleteConfirmation && (
+                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-sm w-full">
+                    <div className="p-6">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Shift</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-6">Are you sure you want to delete this shift? This action cannot be undone.</p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleDeleteShift(showDeleteConfirmation)}
+                          className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          onClick={() => setShowDeleteConfirmation(null)}
+                          className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg font-semibold transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -1109,54 +2046,99 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
               )}
 
               {selectedMessage && (
-                <div className="fixed inset-0 bg-black/30 dark:bg-black/50 flex items-end justify-end z-30">
-                  <div className="bg-white dark:bg-gray-800 w-full max-w-md h-full sm:h-auto sm:rounded-l-2xl p-6 shadow-xl overflow-y-auto">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Message Details</p>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{selectedMessage.subject}</h3>
+                <div className="fixed inset-0 z-50 overflow-auto bg-white dark:bg-gray-900">
+                  <div className="min-h-screen p-8 bg-white dark:bg-gray-900">
+                    <div className="max-w-4xl mx-auto">
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Contact Message</p>
+                          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">{selectedMessage.subject}</h1>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMessage(null)}
+                          className="w-12 h-12 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-2xl font-bold flex items-center justify-center"
+                        >
+                          ✕
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedMessage(null)}
-                        className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <p className="text-gray-500 dark:text-gray-400">From</p>
-                        <p className="text-gray-900 dark:text-gray-100 font-medium">{selectedMessage.full_name}</p>
-                        <p className="text-gray-600 dark:text-gray-400">{selectedMessage.email}</p>
-                        <p className="text-gray-600 dark:text-gray-400">{selectedMessage.phone_number || 'No phone provided'}</p>
-                        <p className="text-gray-600 dark:text-gray-400">{selectedMessage.location || 'No location provided'}</p>
+
+                      {/* Main Content Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        {/* Left Column - Sender Info */}
+                        <div className="space-y-6">
+                          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">From</h2>
+                            <div className="space-y-4">
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Name</p>
+                                <p className="text-gray-900 dark:text-gray-100 font-medium text-lg">{selectedMessage.full_name}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                                <p className="text-gray-900 dark:text-gray-100 break-all">{selectedMessage.email}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
+                                <p className="text-gray-900 dark:text-gray-100">{selectedMessage.phone_number || 'No phone provided'}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Location</p>
+                                <p className="text-gray-900 dark:text-gray-100">{selectedMessage.location || 'No location provided'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Column - Message Info */}
+                        <div className="space-y-6">
+                          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Message Info</h2>
+                            <div className="space-y-4">
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Received</p>
+                                <p className="text-gray-900 dark:text-gray-100 font-medium">{formatDate(selectedMessage.created_at)}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                                <div className="mt-2 flex items-center gap-2">
+                                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${selectedMessage.status === 'read' ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400'}`}>
+                                    {selectedMessage.status === 'read' ? '✓ Read' : '● Unread'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-gray-500 dark:text-gray-400">Received</p>
-                        <p className="text-gray-900 dark:text-gray-100">{formatDate(selectedMessage.created_at)}</p>
+
+                      {/* Full Message Content */}
+                      <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-2xl border border-gray-200 dark:border-gray-700 mb-8">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Message</h2>
+                        <div className="prose dark:prose-invert max-w-none">
+                          <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed text-base">{selectedMessage.message}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-gray-500 dark:text-gray-400">Message</p>
-                        <p className="text-gray-900 dark:text-gray-100 whitespace-pre-line">{selectedMessage.message}</p>
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMessage(null)}
+                          className="px-6 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition font-semibold"
+                        >
+                          Close
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMarkMessageRead(selectedMessage.contact_id)}
+                          disabled={selectedMessage.status === 'read' || markingMessageId === selectedMessage.contact_id}
+                          className="px-8 py-3 rounded-lg bg-yellow-300 dark:bg-yellow-500 text-gray-900 dark:text-gray-100 hover:bg-yellow-400 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
+                        >
+                          {markingMessageId === selectedMessage.contact_id ? 'Marking...' : 'Mark as Read'}
+                        </button>
                       </div>
-                    </div>
-                    <div className="mt-6 flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedMessage(null)}
-                        className="flex-1 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                      >
-                        Close
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMarkMessageRead(selectedMessage.contact_id)}
-                        disabled={selectedMessage.status === 'read' || markingMessageId === selectedMessage.contact_id}
-                        className="flex-1 px-4 py-2 rounded-lg bg-yellow-300 dark:bg-yellow-500 text-gray-900 dark:text-gray-100 hover:bg-yellow-400 dark:hover:bg-yellow-600 disabled:opacity-50"
-                      >
-                        {markingMessageId === selectedMessage.contact_id ? 'Marking...' : 'Mark read'}
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -1210,40 +2192,160 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                           <td className="py-3 px-4 text-gray-600 dark:text-gray-400 max-w-xs truncate" title={request.description || ''}>{request.description || '-'}</td>
                           <td className="py-3 px-4 text-gray-600 dark:text-gray-400 text-sm">{request.contact_info}</td>
                           <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{formatDate(request.created_at)}</td>
-                          <td className="py-3 px-4">
-                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
-                              {request.status.replace('_', ' ')}
-                            </span>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                            {request.status.replace('_', ' ')}
                           </td>
                           <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateEmergencyStatus(request.emergency_id, 'in_progress')}
-                                className="px-3 py-1.5 text-sm rounded-lg bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/60"
-                              >
-                                In Progress
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateEmergencyStatus(request.emergency_id, 'resolved')}
-                                className="px-3 py-1.5 text-sm rounded-lg bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60"
-                              >
-                                Resolve
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateEmergencyStatus(request.emergency_id, 'cancelled')}
-                                className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                              >
-                                Cancel
-                              </button>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedEmergencyRequest(request)}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition"
+                            >
+                              View
+                            </button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {selectedEmergencyRequest && (
+                <div className="fixed inset-0 z-50 overflow-auto bg-white dark:bg-gray-900">
+                  <div className="min-h-screen p-8 bg-white dark:bg-gray-900">
+                    <div className="max-w-4xl mx-auto">
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Emergency Request</p>
+                          <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100">{selectedEmergencyRequest.emergency_type}</h1>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedEmergencyRequest(null)}
+                          className="w-12 h-12 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-2xl font-bold flex items-center justify-center"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      {/* Main Content Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        {/* Left Column - Pet & Contact Info */}
+                        <div className="space-y-6">
+                          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Pet Information</h2>
+                            <div className="space-y-4">
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Pet Name</p>
+                                <p className="text-gray-900 dark:text-gray-100 font-medium text-lg">{selectedEmergencyRequest.pets?.name || 'Unknown'}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Owner</p>
+                                <p className="text-gray-900 dark:text-gray-100">{selectedEmergencyRequest.users ? `${selectedEmergencyRequest.users.first_name} ${selectedEmergencyRequest.users.last_name}` : 'Unknown'}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Contact Information</h2>
+                            <div className="space-y-4">
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Contact Info</p>
+                                <p className="text-gray-900 dark:text-gray-100 break-all">{selectedEmergencyRequest.contact_info || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Submitted</p>
+                                <p className="text-gray-900 dark:text-gray-100">{formatDate(selectedEmergencyRequest.created_at)}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Column - Request Info */}
+                        <div className="space-y-6">
+                          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Request Details</h2>
+                            <div className="space-y-4">
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Type</p>
+                                <p className="text-gray-900 dark:text-gray-100 font-medium text-lg">{selectedEmergencyRequest.emergency_type}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                                <div className="mt-2">
+                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400">
+                                    {selectedEmergencyRequest.status.replace('_', ' ')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Full Description */}
+                      <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-2xl border border-gray-200 dark:border-gray-700 mb-8">
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Description</h2>
+                        <div className="prose dark:prose-invert max-w-none">
+                          <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed text-base">{selectedEmergencyRequest.description || 'No description provided'}</p>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-between gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedEmergencyRequest(null)}
+                          className="px-6 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition font-semibold"
+                        >
+                          Close
+                        </button>
+                        <div className="flex gap-3">
+                          {selectedEmergencyRequest.status !== 'in_progress' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleUpdateEmergencyStatus(selectedEmergencyRequest.emergency_id, 'in_progress');
+                                setUpdatingEmergencyId(selectedEmergencyRequest.emergency_id);
+                              }}
+                              disabled={updatingEmergencyId === selectedEmergencyRequest.emergency_id}
+                              className="px-6 py-3 rounded-lg bg-yellow-300 dark:bg-yellow-500 text-gray-900 dark:text-gray-100 hover:bg-yellow-400 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
+                            >
+                              {updatingEmergencyId === selectedEmergencyRequest.emergency_id ? 'Updating...' : 'In Progress'}
+                            </button>
+                          )}
+                          {selectedEmergencyRequest.status !== 'resolved' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleUpdateEmergencyStatus(selectedEmergencyRequest.emergency_id, 'resolved');
+                                setUpdatingEmergencyId(selectedEmergencyRequest.emergency_id);
+                              }}
+                              disabled={updatingEmergencyId === selectedEmergencyRequest.emergency_id}
+                              className="px-6 py-3 rounded-lg bg-green-500 dark:bg-green-600 text-white hover:bg-green-600 dark:hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
+                            >
+                              {updatingEmergencyId === selectedEmergencyRequest.emergency_id ? 'Updating...' : 'Resolve'}
+                            </button>
+                          )}
+                          {selectedEmergencyRequest.status !== 'cancelled' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleUpdateEmergencyStatus(selectedEmergencyRequest.emergency_id, 'cancelled');
+                                setUpdatingEmergencyId(selectedEmergencyRequest.emergency_id);
+                              }}
+                              disabled={updatingEmergencyId === selectedEmergencyRequest.emergency_id}
+                              className="px-6 py-3 rounded-lg bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
+                            >
+                              {updatingEmergencyId === selectedEmergencyRequest.emergency_id ? 'Updating...' : 'Cancel'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

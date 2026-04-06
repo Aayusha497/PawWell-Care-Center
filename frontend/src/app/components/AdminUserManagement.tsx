@@ -43,6 +43,13 @@ interface DeleteConfirmation {
   userName: string;
 }
 
+interface ValidationErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
 export default function AdminUserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,6 +64,7 @@ export default function AdminUserManagement() {
   const [detailsModal, setDetailsModal] = useState<UserDetailsModal>({ isOpen: false, user: null });
   const [editModal, setEditModal] = useState<EditModal>({ isOpen: false, user: null, formData: {} });
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmation>({ isOpen: false, userId: null, userName: '' });
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -111,6 +119,49 @@ export default function AdminUserManagement() {
       user,
       formData: { ...user }
     });
+    setValidationErrors({});
+  };
+
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+
+    // First name validation
+    if (!editModal.formData.firstName || !editModal.formData.firstName.trim()) {
+      errors.firstName = 'First name is required';
+    } else if (editModal.formData.firstName.trim().length < 2) {
+      errors.firstName = 'First name must be at least 2 characters long';
+    } else if (!/^[A-Za-z\s]+$/.test(editModal.formData.firstName)) {
+      errors.firstName = 'First name should contain only letters and spaces';
+    }
+
+    // Last name validation
+    if (!editModal.formData.lastName || !editModal.formData.lastName.trim()) {
+      errors.lastName = 'Last name is required';
+    } else if (editModal.formData.lastName.trim().length < 2) {
+      errors.lastName = 'Last name must be at least 2 characters long';
+    } else if (!/^[A-Za-z]+$/.test(editModal.formData.lastName)) {
+      errors.lastName = 'Last name should contain only letters (no spaces or special characters)';
+    }
+
+    // Email validation
+    if (!editModal.formData.email || !editModal.formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editModal.formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    // Phone number validation (optional but if provided must be 10 digits)
+    if (editModal.formData.phoneNumber) {
+      const cleaned = editModal.formData.phoneNumber.replace(/\s/g, '');
+      if (!/^\d+$/.test(cleaned)) {
+        errors.phoneNumber = 'Phone number should contain only digits';
+      } else if (cleaned.length !== 10) {
+        errors.phoneNumber = 'Phone number must be exactly 10 digits';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleDeleteClick = (user: User) => {
@@ -124,11 +175,17 @@ export default function AdminUserManagement() {
   const handleUpdateUser = async () => {
     if (!editModal.user) return;
 
+    if (!validateForm()) {
+      toast.error('Please fix the errors above');
+      return;
+    }
+
     try {
       setUpdatingId(editModal.user.id);
       await updateAdminUser(editModal.user.id, editModal.formData);
       toast.success('User updated successfully!');
       setEditModal({ isOpen: false, user: null, formData: {} });
+      setValidationErrors({});
       fetchUsers();
     } catch (error: any) {
       console.error('Error updating user:', error);
@@ -187,7 +244,7 @@ export default function AdminUserManagement() {
           <div className="bg-white p-5 rounded-2xl border border-[#FACC15]/50">
             <p className="text-sm text-gray-500 mb-2">Pet Owners</p>
             <p className="text-3xl font-bold text-black">
-              {users.filter(u => u.userType === 'pet_owner').length}
+              {users.filter(u => u.userType === 'pet_owner' && u.isActive).length}
             </p>
           </div>
         </div>
@@ -551,8 +608,8 @@ export default function AdminUserManagement() {
       {/* Edit Modal */}
       {editModal.isOpen && editModal.user && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full border border-[#FACC15]/40">
-            <div className="p-6 border-b border-[#FACC15]/30">
+          <div className="bg-white rounded-2xl max-w-md w-full border border-[#FACC15]/40 max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-[#FACC15]/30 sticky top-0 bg-white">
               <h3 className="text-lg font-bold text-black">Edit User</h3>
             </div>
             <div className="p-6 space-y-4">
@@ -561,36 +618,86 @@ export default function AdminUserManagement() {
                 <input
                   type="text"
                   value={editModal.formData.firstName || ''}
-                  onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, firstName: e.target.value } })}
-                  className="w-full px-3 py-2 border border-[#FACC15]/50 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
+                  onChange={(e) => {
+                    setEditModal({ ...editModal, formData: { ...editModal.formData, firstName: e.target.value } });
+                    if (validationErrors.firstName) setValidationErrors({ ...validationErrors, firstName: undefined });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
+                    validationErrors.firstName 
+                      ? 'border-red-500 focus:ring-red-400' 
+                      : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
+                  }`}
                 />
+                {validationErrors.firstName && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                    <span className="text-lg">⚠</span> {validationErrors.firstName}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-black mb-2">Last Name</label>
                 <input
                   type="text"
                   value={editModal.formData.lastName || ''}
-                  onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, lastName: e.target.value } })}
-                  className="w-full px-3 py-2 border border-[#FACC15]/50 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
+                  onChange={(e) => {
+                    setEditModal({ ...editModal, formData: { ...editModal.formData, lastName: e.target.value } });
+                    if (validationErrors.lastName) setValidationErrors({ ...validationErrors, lastName: undefined });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
+                    validationErrors.lastName 
+                      ? 'border-red-500 focus:ring-red-400' 
+                      : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
+                  }`}
                 />
+                {validationErrors.lastName && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                    <span className="text-lg">⚠</span> {validationErrors.lastName}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-black mb-2">Email</label>
                 <input
                   type="email"
                   value={editModal.formData.email || ''}
-                  onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, email: e.target.value } })}
-                  className="w-full px-3 py-2 border border-[#FACC15]/50 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
+                  onChange={(e) => {
+                    setEditModal({ ...editModal, formData: { ...editModal.formData, email: e.target.value } });
+                    if (validationErrors.email) setValidationErrors({ ...validationErrors, email: undefined });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
+                    validationErrors.email 
+                      ? 'border-red-500 focus:ring-red-400' 
+                      : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
+                  }`}
                 />
+                {validationErrors.email && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                    <span className="text-lg">⚠</span> {validationErrors.email}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-black mb-2">Phone</label>
                 <input
                   type="tel"
+                  placeholder="e.g., 9876543210"
                   value={editModal.formData.phoneNumber || ''}
-                  onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, phoneNumber: e.target.value } })}
-                  className="w-full px-3 py-2 border border-[#FACC15]/50 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
+                  onChange={(e) => {
+                    setEditModal({ ...editModal, formData: { ...editModal.formData, phoneNumber: e.target.value } });
+                    if (validationErrors.phoneNumber) setValidationErrors({ ...validationErrors, phoneNumber: undefined });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
+                    validationErrors.phoneNumber 
+                      ? 'border-red-500 focus:ring-red-400' 
+                      : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
+                  }`}
                 />
+                {validationErrors.phoneNumber && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                    <span className="text-lg">⚠</span> {validationErrors.phoneNumber}
+                  </p>
+                )}
+                <p className="text-gray-500 text-xs mt-1">Must be exactly 10 digits</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-black mb-2">Role</label>
@@ -616,9 +723,12 @@ export default function AdminUserManagement() {
                 </label>
               </div>
             </div>
-            <div className="p-6 border-t border-[#FACC15]/30 flex justify-end gap-3">
+            <div className="p-6 border-t border-[#FACC15]/30 flex justify-end gap-3 sticky bottom-0 bg-white">
               <button
-                onClick={() => setEditModal({ isOpen: false, user: null, formData: {} })}
+                onClick={() => {
+                  setEditModal({ isOpen: false, user: null, formData: {} });
+                  setValidationErrors({});
+                }}
                 className="px-4 py-2 border border-[#FACC15]/50 rounded-xl hover:bg-[#FACC15]/10 transition text-black"
               >
                 Cancel

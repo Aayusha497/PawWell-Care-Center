@@ -172,7 +172,15 @@ const LandingPage = () => {
     if (isLoggedIn) {
       navigate('/booking');
     } else {
-      navigate('/signup', { state: { from: '/booking' } });
+      navigate('/login', { state: { from: '/booking' } });
+    }
+  };
+
+  const handleSearchClick = () => {
+    if (isLoggedIn) {
+      navigate('/booking');
+    } else {
+      navigate('/login', { state: { from: '/booking' } });
     }
   };
 
@@ -215,9 +223,9 @@ const LandingPage = () => {
             </div>
 
             <div className="search-section">
-              <button className="search-btn drop-off">Drop off</button>
-              <button className="search-btn pick-up">Pick up</button>
-              <button className="search-btn-primary">Search</button>
+              <button className="search-btn drop-off" onClick={handleSearchClick}>Drop off</button>
+              <button className="search-btn pick-up" onClick={handleSearchClick}>Pick up</button>
+              <button className="search-btn-primary" onClick={handleSearchClick}>Search</button>
             </div>
 
             <div className="hero-cta-buttons">

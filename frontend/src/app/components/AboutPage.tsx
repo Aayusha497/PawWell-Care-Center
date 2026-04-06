@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { Settings, User as UserIcon, LogOut } from 'lucide-react';
 import NotificationBell from '../../components/NotificationBell';
+import Footer from '../../components/Footer';
 import '../../pages/About.css';
 
 interface User {
@@ -226,10 +227,16 @@ export default function AboutPage({
             <h3>Transparency you can trust</h3>
             <p>Every log, photo, and update is tracked in one secure place.</p>
           </div>
-          <div className="about-hero-badge">
+          <button 
+            className="about-hero-badge"
+            onClick={onEmergency}
+            type="button"
+            title="View Emergency Support - 24/7 Team Available"
+            style={{ cursor: 'pointer' }}
+          >
             <span>24/7</span>
             <small>Emergency support</small>
-          </div>
+          </button>
         </div>
       </section>
 

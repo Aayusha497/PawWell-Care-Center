@@ -144,7 +144,7 @@ const Navbar = () => {
 
           <li className="nav-item">
             <Link
-              to="/about#contact"
+              to="/contact"
               className="nav-link"
               onClick={closeMobileMenu}
             >

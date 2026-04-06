@@ -67,30 +67,114 @@ export default function ContactPage({
     subject: '',
     message: '',
   });
+  const [touched, setTouched] = useState<Record<string, boolean>>({
+    fullName: false,
+    email: false,
+    phoneNumber: false,
+    location: false,
+    subject: false,
+    message: false,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (field: keyof typeof formValues) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormValues((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
+  const handleBlur = (field: keyof typeof formValues) => () => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const getFieldError = (field: keyof typeof formValues): string => {
+    const value = formValues[field];
+    
+    if (!value.trim()) {
+      const fieldLabels: Record<string, string> = {
+        fullName: 'Full Name',
+        email: 'Email',
+        phoneNumber: 'Phone Number',
+        location: 'Location',
+        subject: 'Subject',
+        message: 'Message',
+      };
+      return `${fieldLabels[field]} is required`;
+    }
+
+    if (field === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) {
+        return 'Please enter a valid email address';
+      }
+    }
+
+    if (field === 'phoneNumber') {
+      const phoneRegex = /^[\d\s\-+()]{10,}$/;
+      if (!phoneRegex.test(value.replace(/\s/g, ''))) {
+        return 'Please enter a valid phone number (at least 10 digits)';
+      }
+    }
+
+    if (field === 'fullName') {
+      if (value.trim().length < 3) {
+        return 'Full Name must be at least 3 characters';
+      }
+      // Check for numbers
+      const hasNumbers = /\d/.test(value);
+      if (hasNumbers) {
+        return 'Full Name cannot contain numbers';
+      }
+      // Check for special characters (allow only letters, spaces, hyphens, and apostrophes)
+      const validNameRegex = /^[a-zA-Z\s\-']+$/;
+      if (!validNameRegex.test(value)) {
+        return 'Full Name can only contain letters, spaces, hyphens, and apostrophes';
+      }
+    }
+
+    if (field === 'subject' && value.trim().length < 5) {
+      return 'Subject must be at least 5 characters';
+    }
+
+    if (field === 'message' && value.trim().length < 10) {
+      return 'Message must be at least 10 characters';
+    }
+
+    return '';
+  };
+
+  const isFieldValid = (field: keyof typeof formValues): boolean => {
+    return !getFieldError(field);
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const { fullName, email, phoneNumber, location, subject, message } = formValues;
+    
+    // Mark all fields as touched
+    setTouched({
+      fullName: true,
+      email: true,
+      phoneNumber: true,
+      location: true,
+      subject: true,
+      message: true,
+    });
 
-    if (!fullName.trim() || !email.trim() || !phoneNumber.trim() || !location.trim() || !subject.trim() || !message.trim()) {
-      toast.error('Please complete all fields before sending.');
+    // Check if all fields are valid
+    const allFieldsValid = (Object.keys(formValues) as Array<keyof typeof formValues>).every(field => isFieldValid(field));
+
+    if (!allFieldsValid) {
+      toast.error('Please fix the errors in the form before sending.');
       return;
     }
 
     try {
       setIsSubmitting(true);
       await createContactMessage({
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phoneNumber: phoneNumber.trim(),
-        location: location.trim(),
-        subject: subject.trim(),
-        message: message.trim(),
+        fullName: formValues.fullName.trim(),
+        email: formValues.email.trim(),
+        phoneNumber: formValues.phoneNumber.trim(),
+        location: formValues.location.trim(),
+        subject: formValues.subject.trim(),
+        message: formValues.message.trim(),
       });
       toast.success('Message sent! We will get back to you soon.');
       setFormValues({
@@ -261,7 +345,14 @@ export default function ContactPage({
               placeholder="Your full name"
               value={formValues.fullName}
               onChange={handleChange('fullName')}
+              onBlur={handleBlur('fullName')}
+              className={touched.fullName && !isFieldValid('fullName') ? 'border-red-500' : ''}
             />
+            {touched.fullName && !isFieldValid('fullName') && (
+              <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>
+                {getFieldError('fullName')}
+              </p>
+            )}
           </div>
           <div className="form-row">
             <label>Email</label>
@@ -270,7 +361,14 @@ export default function ContactPage({
               placeholder="you@example.com"
               value={formValues.email}
               onChange={handleChange('email')}
+              onBlur={handleBlur('email')}
+              className={touched.email && !isFieldValid('email') ? 'border-red-500' : ''}
             />
+            {touched.email && !isFieldValid('email') && (
+              <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>
+                {getFieldError('email')}
+              </p>
+            )}
           </div>
           <div className="form-row">
             <label>Phone Number</label>
@@ -279,7 +377,14 @@ export default function ContactPage({
               placeholder="Your phone number"
               value={formValues.phoneNumber}
               onChange={handleChange('phoneNumber')}
+              onBlur={handleBlur('phoneNumber')}
+              className={touched.phoneNumber && !isFieldValid('phoneNumber') ? 'border-red-500' : ''}
             />
+            {touched.phoneNumber && !isFieldValid('phoneNumber') && (
+              <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>
+                {getFieldError('phoneNumber')}
+              </p>
+            )}
           </div>
           <div className="form-row">
             <label>Location</label>
@@ -288,7 +393,14 @@ export default function ContactPage({
               placeholder="Your city or location"
               value={formValues.location}
               onChange={handleChange('location')}
+              onBlur={handleBlur('location')}
+              className={touched.location && !isFieldValid('location') ? 'border-red-500' : ''}
             />
+            {touched.location && !isFieldValid('location') && (
+              <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>
+                {getFieldError('location')}
+              </p>
+            )}
           </div>
           <div className="form-row">
             <label>Subject</label>
@@ -297,7 +409,14 @@ export default function ContactPage({
               placeholder="How can we help?"
               value={formValues.subject}
               onChange={handleChange('subject')}
+              onBlur={handleBlur('subject')}
+              className={touched.subject && !isFieldValid('subject') ? 'border-red-500' : ''}
             />
+            {touched.subject && !isFieldValid('subject') && (
+              <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>
+                {getFieldError('subject')}
+              </p>
+            )}
           </div>
           <div className="form-row">
             <label>Message</label>
@@ -306,7 +425,14 @@ export default function ContactPage({
               placeholder="Tell us about your pet and your needs."
               value={formValues.message}
               onChange={handleChange('message')}
+              onBlur={handleBlur('message')}
+              className={touched.message && !isFieldValid('message') ? 'border-red-500' : ''}
             />
+            {touched.message && !isFieldValid('message') && (
+              <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>
+                {getFieldError('message')}
+              </p>
+            )}
           </div>
           <button type="submit" className="btn-primary" disabled={isSubmitting}>
             {isSubmitting ? 'Sending...' : 'Send Message'}

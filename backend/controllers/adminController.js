@@ -238,8 +238,8 @@ const getSystemStats = async (req, res) => {
   try {
     const totalUsers = await User.count();
     const activeUsers = await User.count({ where: { isActive: true } });
-    const petOwners = await User.count({ where: { userType: 'pet_owner' } });
-    const admins = await User.count({ where: { userType: 'admin' } });
+    const petOwners = await User.count({ where: { userType: 'pet_owner', isActive: true } });
+    const admins = await User.count({ where: { userType: 'admin', isActive: true } });
 
     return res.status(200).json({
       success: true,

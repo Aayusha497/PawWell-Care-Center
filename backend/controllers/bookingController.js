@@ -665,14 +665,6 @@ const updateBooking = async (req, res) => {
       booking.end_date = end_date || booking.end_date;
       booking.price = price;
       booking.number_of_days = numberOfDays;
-      
-      // Reset status to pending/unpaid when rescheduling
-      booking.status = toLegacyStatus(BOOKING_STATUS.PENDING);
-      booking.booking_status = BOOKING_STATUS.PENDING;
-      booking.payment_status = PAYMENT_STATUS.UNPAID;
-      booking.payment_method = null;
-      booking.pidx = null;
-      booking.transaction_id = null;
     }
 
     // Update pickup/dropoff details

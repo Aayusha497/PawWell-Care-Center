@@ -1,11 +1,10 @@
 import React, { useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ReviewList from '../components/ReviewList';
+import Footer from '../components/Footer';
 import './About.css';
 
 const About = () => {
-  const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
 
   const whyItems = useMemo(() => ([
@@ -18,11 +17,10 @@ const About = () => {
 
   const handleBookService = () => {
     if (isLoggedIn) {
-      navigate('/booking');
+      window.location.href = '/booking';
       return;
     }
-
-    navigate('/login', { state: { from: '/booking' } });
+    window.location.href = '/login?from=/booking';
   };
 
   const handleContact = () => {
@@ -34,11 +32,11 @@ const About = () => {
 
   const handleAddPet = () => {
     if (isLoggedIn) {
-      navigate('/pets/add');
+      window.location.href = '/pets/add';
       return;
     }
 
-    navigate('/login', { state: { from: '/pets/add' } });
+    window.location.href = '/login?from=/pets/add';
   };
 
   return (
@@ -201,11 +199,12 @@ const About = () => {
         </div>
         <ReviewList limit={3} />
         <div className="reviews-view-all">
-          <Link to="/reviews" className="btn-view-all-reviews">
+          <a href="/reviews" className="btn-view-all-reviews">
             View All Reviews
-          </Link>
+          </a>
         </div>
       </section>
+      <Footer />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { getUserPets, checkAvailability, createBooking } from '../../services/api';
+import { getUserPets, checkAvailability, createBooking, getUserBookings } from '../../services/api';
 import booking from "../../assets/booking.png";
 
 interface Pet {
@@ -186,6 +186,79 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
     return 0;
   };
 
+  const checkBookingConflict = async (): Promise<string> => {
+    try {
+      const userBookings = await getUserBookings();
+      const bookings = Array.isArray(userBookings) ? userBookings : userBookings?.data || [];
+
+      // Helper function to extract date as YYYY-MM-DD string without timezone conversion
+      const extractDateString = (dateInput: string | Date): string => {
+        if (typeof dateInput === 'string') {
+          // If already a date string like "2026-04-10", return as-is
+          if (dateInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            return dateInput;
+          }
+          // If it's a full ISO string or other format, parse it
+          const date = new Date(dateInput);
+          const year = date.getUTCFullYear();
+          const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+          const day = String(date.getUTCDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
+        // Handle Date object
+        const year = dateInput.getUTCFullYear();
+        const month = String(dateInput.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(dateInput.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      // Check if there's a booking for the same pet on the same date with the same service type
+      const conflict = bookings.some((existingBooking: any) => {
+        // Only check non-cancelled bookings - check both status fields
+        const isCancelled = existingBooking.status === 'cancelled' || existingBooking.booking_status === 'cancelled';
+        if (isCancelled) {
+          return false;
+        }
+
+        // Normalize values for comparison
+        const existingPetId = Number(existingBooking.pet_id);
+        const newPetId = Number(formData.pet_id);
+        const existingServiceType = (existingBooking.service_type || '').trim();
+        const newServiceType = (formData.service_type || '').trim();
+
+        // Check if same pet and same service type
+        if (existingPetId !== newPetId || existingServiceType !== newServiceType) {
+          return false;
+        }
+
+        const existingStart = extractDateString(existingBooking.start_date);
+        const newStart = formData.start_date;
+
+        // For Pet Boarding, check date ranges for overlap
+        if (newServiceType === 'Pet Boarding' && existingBooking.end_date) {
+          const existingEnd = extractDateString(existingBooking.end_date);
+          const newEnd = formData.end_date;
+          
+          // Check if date ranges overlap
+          return !(newEnd < existingStart || newStart > existingEnd);
+        }
+
+        // For Daycation/Pet Sitting and Grooming, check if same date
+        return existingStart === newStart;
+      });
+
+      if (conflict) {
+        return `This pet already has a booking for ${formData.service_type} on the selected date.`;
+      }
+
+      return '';
+    } catch (error) {
+      console.error('Error checking booking conflict:', error);
+      // Don't block booking on error, just log it
+      return '';
+    }
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -249,6 +322,14 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
 
     try {
       setSubmitting(true);
+
+      // Check for booking conflicts
+      const conflictMessage = await checkBookingConflict();
+      if (conflictMessage) {
+        toast.error(conflictMessage);
+        setSubmitting(false);
+        return;
+      }
 
       const bookingData: any = {
         pet_id: formData.pet_id,

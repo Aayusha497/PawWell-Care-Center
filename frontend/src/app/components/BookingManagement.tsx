@@ -375,7 +375,7 @@ export default function BookingManagement() {
                 >
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
-                      {booking.pet.photo ? (
+                      {booking.pet?.photo ? (
                         <img
                           src={booking.pet.photo}
                           alt={booking.pet.name}
@@ -387,7 +387,7 @@ export default function BookingManagement() {
                         </div>
                       )}
                       <div>
-                        <p className="font-bold text-black">{booking.pet.name}</p>
+                        <p className="font-bold text-black">{booking.pet?.name || 'N/A'}</p>
                         <p className="text-sm text-gray-500">{booking.service_type}</p>
                       </div>
                     </div>
@@ -401,9 +401,9 @@ export default function BookingManagement() {
                     <div>
                       <p className="text-xs uppercase tracking-wide text-gray-400 mb-1">Owner</p>
                       <p className="font-medium text-black">
-                        {booking.pet.owner.first_name} {booking.pet.owner.last_name}
+                        {booking.pet?.owner?.first_name || 'N/A'} {booking.pet?.owner?.last_name || ''}
                       </p>
-                      <p className="text-gray-500 truncate">{booking.pet.owner.email}</p>
+                      <p className="text-gray-500 truncate">{booking.pet?.owner?.email || 'N/A'}</p>
                     </div>
 
                     <div>
@@ -572,7 +572,7 @@ export default function BookingManagement() {
 
                       <td className="px-5 py-5">
                         <div className="flex items-center gap-3">
-                          {booking.pet.photo ? (
+                          {booking.pet?.photo ? (
                             <img
                               src={booking.pet.photo}
                               alt={booking.pet.name}
@@ -585,10 +585,10 @@ export default function BookingManagement() {
                           )}
                           <div>
                             <p className="font-semibold text-black">
-                              {booking.pet.owner.first_name} {booking.pet.owner.last_name}
+                              {booking.pet?.owner?.first_name || 'N/A'} {booking.pet?.owner?.last_name || ''}
                             </p>
                             <p className="text-xs text-gray-500">
-                              Pet: {booking.pet.name}
+                              Pet: {booking.pet?.name || 'N/A'}
                             </p>
                           </div>
                         </div>
@@ -710,13 +710,13 @@ export default function BookingManagement() {
                   </h4>
                   <div className="space-y-2 text-sm">
                     <p className="text-gray-700">
-                      <span className="font-medium">Name:</span> {selectedBooking.pet.owner.first_name} {selectedBooking.pet.owner.last_name}
+                      <span className="font-medium">Name:</span> {selectedBooking.pet?.owner?.first_name || 'N/A'} {selectedBooking.pet?.owner?.last_name || ''}
                     </p>
                     <p className="text-gray-700">
-                      <span className="font-medium">Email:</span> {selectedBooking.pet.owner.email}
+                      <span className="font-medium">Email:</span> {selectedBooking.pet?.owner?.email || 'N/A'}
                     </p>
                     <p className="text-gray-700">
-                      <span className="font-medium">Phone:</span> {selectedBooking.pet.owner.phone_number}
+                      <span className="font-medium">Phone:</span> {selectedBooking.pet?.owner?.phone_number || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -727,7 +727,7 @@ export default function BookingManagement() {
                     Pet Information
                   </h4>
                   <div className="flex items-center gap-4">
-                    {selectedBooking.pet.photo ? (
+                    {selectedBooking.pet?.photo ? (
                       <img
                         src={selectedBooking.pet.photo}
                         alt={selectedBooking.pet.name}
@@ -741,10 +741,10 @@ export default function BookingManagement() {
 
                     <div className="space-y-2 text-sm">
                       <p className="text-gray-700">
-                        <span className="font-medium">Name:</span> {selectedBooking.pet.name}
+                        <span className="font-medium">Name:</span> {selectedBooking.pet?.name || 'N/A'}
                       </p>
                       <p className="text-gray-700">
-                        <span className="font-medium">Breed:</span> {selectedBooking.pet.breed}
+                        <span className="font-medium">Breed:</span> {selectedBooking.pet?.breed || 'N/A'}
                       </p>
                     </div>
                   </div>

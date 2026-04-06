@@ -24,6 +24,7 @@ import VerifyOTP from './pages/VerifyOTP';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import About from './pages/About';
+import Emergency from './pages/Emergency';
 import ReviewsPage from './pages/ReviewsPage';
 import Booking from './pages/Booking';
 import PetList from './pages/PetList';
@@ -135,6 +136,16 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+
+              {/* Emergency Route - Protected for authenticated users */}
+              <Route 
+                path="/emergency" 
+                element={
+                  <ProtectedRoute>
+                    <Emergency />
                   </ProtectedRoute>
                 } 
               />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getUserBookings, cancelBooking, updateBooking, checkAvailability, initiateKhaltiPayment } from '../../services/api';
+import { AlertCircle } from 'lucide-react';
 
 interface Pet {
   pet_id: number;
@@ -46,6 +47,7 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
   const [editingBooking, setEditingBooking] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [payingBookingId, setPayingBookingId] = useState<number | null>(null);
+  const [cancelConfirmation, setCancelConfirmation] = useState<{ isOpen: boolean; bookingId: number | null }>({ isOpen: false, bookingId: null });
 
   const [editFormData, setEditFormData] = useState({
     start_date: '',
@@ -208,7 +210,7 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
       }
 
       await updateBooking(bookingId, updateData);
-      toast.success('Booking updated successfully! Status reset to pending for admin approval.');
+      toast.success('Booking rescheduled successfully!');
       
       setEditingBooking(null);
       fetchBookings();
@@ -221,15 +223,17 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
     }
   };
 
-  const handleCancelBooking = async (bookingId: number) => {
-    // Confirm cancellation
-    if (!window.confirm('Are you sure you want to cancel this booking?')) {
-      return;
-    }
+  const handleCancelBooking = (bookingId: number) => {
+    setCancelConfirmation({ isOpen: true, bookingId });
+  };
+
+  const confirmCancelBooking = async () => {
+    if (!cancelConfirmation.bookingId) return;
 
     try {
-      await cancelBooking(bookingId);
+      await cancelBooking(cancelConfirmation.bookingId);
       toast.success('Booking cancelled successfully');
+      setCancelConfirmation({ isOpen: false, bookingId: null });
       fetchBookings();
     } catch (error: any) {
       console.error('Error cancelling booking:', error);
@@ -683,6 +687,47 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Cancel Booking Confirmation Modal */}
+        {cancelConfirmation.isOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-sm w-full border border-[#FACC15]/40 shadow-xl">
+              {/* Header */}
+              <div className="p-6 border-b border-[#FACC15]/30 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                  <AlertCircle size={24} className="text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Cancel Booking</h3>
+                  <p className="text-sm text-gray-600">This action cannot be undone</p>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <p className="text-gray-700">
+                  Are you sure you want to cancel this booking? You will need to create a new booking if you change your mind.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="px-6 py-4 border-t border-[#FACC15]/30 flex gap-3 justify-end">
+                <button
+                  onClick={() => setCancelConfirmation({ isOpen: false, bookingId: null })}
+                  className="flex-1 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
+                >
+                  Keep Booking
+                </button>
+                <button
+                  onClick={confirmCancelBooking}
+                  className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition"
+                >
+                  Cancel Booking
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
