@@ -916,9 +916,8 @@ const deleteAccount = async (req, res) => {
     );
     console.log(`✅ Cancelled emergency requests for user ${userId}`);
 
-    // Soft delete user account: Set isActive to false
-    user.isActive = false;
-    await user.save();
+    // Soft delete user account (paranoid mode will set deleted_at timestamp)
+    await user.destroy();
     console.log(`✅ Soft deleted user account ${userId}`);
 
     // Clear authentication cookies

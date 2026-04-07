@@ -129,7 +129,7 @@ const getUserPets = async (req, res) => {
     // Fetch only non-deleted pets (paranoid: true automatically excludes soft-deleted)
     const pets = await Pet.findAll({
       where: whereClause,
-      order: [['created_at', 'DESC']],
+      order: [['pet_id', 'ASC']],
       include: [
         {
           model: User,

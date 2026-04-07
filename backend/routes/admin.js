@@ -86,7 +86,7 @@ router.put('/contact-messages/:contactId/read', authenticate, requireAdmin, cont
  */
 router.get('/emergency-requests', authenticate, requireAdmin, adminController.getEmergencyRequests);
 
-// ====== PET MANAGEMENT ROUTES ======
+//PET MANAGEMENT ROUTES 
 
 /**
  * @route   GET /api/admin/pets
@@ -116,7 +116,7 @@ router.delete('/pets/:petId', authenticate, requireAdmin, adminController.delete
  */
 router.put('/config', authenticate, requireAdmin, adminController.updateSystemConfig);
 
-// ====== ANALYTICS ROUTES ======
+// ANALYTICS ROUTES
 
 /**
  * @route   GET /api/admin/analytics/dashboard

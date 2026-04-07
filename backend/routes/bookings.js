@@ -1,6 +1,5 @@
 /**
- * Booking Routes
- * 
+ * Booking Routes 
  * API endpoints for booking management
  */
 

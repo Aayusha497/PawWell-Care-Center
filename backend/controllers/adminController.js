@@ -161,7 +161,6 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { permanent = false } = req.query;
 
     const user = await User.findByPk(userId);
 
@@ -180,27 +179,25 @@ const deleteUser = async (req, res) => {
       });
     }
 
-    if (permanent === 'true') {
-      // Permanent deletion
-      await user.destroy();
-      return res.status(200).json({
-        success: true,
-        message: 'User permanently deleted'
-      });
-    } else {
-      // Soft delete - deactivate account
-      user.isActive = false;
-      await user.save();
-      return res.status(200).json({
-        success: true,
-        message: 'User account deactivated'
-      });
-    }
+    // Deactivate account (temporary suspension by admin)
+    // Note: For permanent account deletion, only the user themselves can do it via deleteAccount
+    user.isActive = false;
+    await user.save();
+    
+    return res.status(200).json({
+      success: true,
+      message: 'User account deactivated successfully. User will not be able to login.',
+      data: {
+        userId: user.id,
+        email: user.email,
+        isActive: user.isActive
+      }
+    });
   } catch (error) {
     console.error('Delete user error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to delete user',
+      message: 'Failed to deactivate user',
       error: error.message
     });
   }

@@ -4,7 +4,7 @@
  * Handles all booking operations including CRUD, availability checks, and admin actions
  */
 
-const { Booking, Pet, Payment, User } = require('../models');
+const { Booking, Pet, Payment, User, Service } = require('../models');
 const { Op } = require('sequelize');
 const { createNotification } = require('./notificationController');
 const config = require('../config/config');
@@ -307,6 +307,18 @@ const createBooking = async (req, res) => {
     // Calculate price and duration
     const { price, numberOfDays } = calculatePrice(service_type, start_date, end_date);
 
+    // Fetch service_id from services table
+    const service = await Service.findOne({
+      where: { name: service_type }
+    });
+
+    if (!service) {
+      return res.status(400).json({
+        success: false,
+        message: `Service "${service_type}" not found in database. Please ensure services are seeded.`
+      });
+    }
+
     // Generate confirmation code
     const confirmationCode = `BK${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
 
@@ -314,6 +326,7 @@ const createBooking = async (req, res) => {
     const booking = await Booking.create({
       user_id: userId,
       pet_id,
+      service_id: service.service_id,
       service_type,
       start_date,
       end_date: config.requiresDateRange ? end_date : start_date,
@@ -550,7 +563,7 @@ const getBookingById = async (req, res) => {
       });
     }
 
-    // Check if booking belongs to user (or user is admin)
+    // Check if booking belongs to user 
     if (booking.user_id !== userId && req.user.user_type !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -1223,9 +1236,9 @@ const initiateKhaltiPayment = async (req, res) => {
  */
 const verifyKhaltiPayment = async (req, res) => {
   try {
-    console.log('\n═══════════════════════════════════════════════════════');
+    // console.log('\n═══════════════════════════════════════════════════════');
     console.log('🔐 KHALTI PAYMENT VERIFICATION - STARTING');
-    console.log('═══════════════════════════════════════════════════════');
+    // console.log('═══════════════════════════════════════════════════════');
     
     const userId = req.user.id;
     const isAdmin = req.user.userType === 'admin';

@@ -13,40 +13,40 @@ const reviewRoutes = require('./reviews');
 const chatbotRoutes = require('./chatbot');
 const settingsRoutes = require('./settings');
 
-// Mount auth routes
+//  auth routes
 router.use('/accounts', authRoutes);
 
-// Mount admin routes
+//  admin routes
 router.use('/admin', adminRoutes);
 
-// Mount pet routes
+//  pet routes
 router.use('/pets', petRoutes);
 
-// Mount booking routes
+//  booking routes
 router.use('/bookings', bookingRoutes);
 
-// Mount activity log routes
+//  activity log routes
 router.use('/activity-logs', activityLogRoutes);
 
-// Mount contact routes
+//  contact routes
 router.use('/contact', contactRoutes);
 
-// Mount emergency routes
+//  emergency routes
 router.use('/emergency', emergencyRoutes);
 
-// Mount wellness timeline routes
+//  wellness timeline routes
 router.use('/wellness-timeline', wellnessTimelineRoutes);
 
-// Mount notification routes
+//  notification routes
 router.use('/notifications', notificationRoutes);
 
-// Mount review routes
+//  review routes
 router.use('/reviews', reviewRoutes);
 
-// Mount chatbot routes
+//  chatbot routes
 router.use('/chat', chatbotRoutes);
 
-// Mount settings routes
+//  settings routes
 router.use('/settings', settingsRoutes);
 
 // Health check endpoint

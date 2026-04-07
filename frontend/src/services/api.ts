@@ -143,7 +143,7 @@ api.interceptors.response.use(
   }
 );
 
-// ==================== TYPE DEFINITIONS ====================
+//  TYPE DEFINITIONS 
 
 export interface User {
   id: string;
@@ -214,7 +214,7 @@ export interface ApiError {
   errors?: Record<string, string[]>;
 }
 
-// ==================== AUTH API FUNCTIONS ====================
+//  AUTH API FUNCTIONS
 
 /**
  * Register a new user

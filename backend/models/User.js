@@ -204,10 +204,16 @@ const User = sequelize.define('User', {
     set(value) {
       this.setDataValue('backupCodes', value ? JSON.stringify(value) : null);
     }
+  },
+  deletedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'deleted_at'
   }
 }, {
   tableName: 'users',
   timestamps: true,
+  paranoid: true,
   createdAt: 'dateJoined',
   updatedAt: false,
   hooks: {
