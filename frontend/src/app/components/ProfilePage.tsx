@@ -290,7 +290,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
       return;
     }
     
-    // If profile is complete, just cancel editing and reset form
+    // If profile is complete, cancel editing and redirect to user dashboard
     if (user) {
       setFormData({
         firstName: user.firstName || '',
@@ -309,7 +309,12 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
     setFieldErrors({});
     setEditing(false);
     setShowCancelModal(false);
-    console.log('✅ Editing cancelled, returning to view mode');
+    console.log('✅ Editing cancelled, redirecting to user dashboard');
+    
+    // Redirect to user dashboard
+    if (onNavigate) {
+      onNavigate('user-dashboard');
+    }
   };
 
   const handleDeleteAccount = async () => {

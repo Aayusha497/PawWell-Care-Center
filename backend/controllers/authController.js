@@ -780,7 +780,8 @@ const updateProfile = async (req, res) => {
     }
 
     // Check if profile is complete
-    // Required: firstName, lastName, phoneNumber, address, city, emergencyContactName, emergencyContactNumber, profilePicture
+    // Required: firstName, lastName, phoneNumber, address, city, emergencyContactName, emergencyContactNumber
+    // Note: profilePicture is optional
     const isComplete = !!(
       user.firstName && 
       user.lastName && 
@@ -788,8 +789,7 @@ const updateProfile = async (req, res) => {
       user.address && 
       user.city && 
       user.emergencyContactName && 
-      user.emergencyContactNumber && 
-      user.profilePicture
+      user.emergencyContactNumber
     );
     
     user.isProfileComplete = isComplete;

@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import signup from '../../assets/signup.jpg';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { Alert, AlertDescription } from './ui/alert';
 import { toast } from 'sonner';
+import signupp from '../../assets/signupp.jpg';
 import RegistrationSuccessModal from './ui/RegistrationSuccessModal';
 import { Phone, Mail, MapPin } from "lucide-react"; //icon for these useing lucide-react library
 
@@ -20,15 +20,61 @@ interface SignupPageProps {
 }
 
 export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHome, error, fieldErrors, showSignupSuccess, onSignupSuccessClose }: SignupPageProps) {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const STORAGE_KEY = 'pawwell_signup_form';
+
+  // Initialize state from localStorage if available
+  const [firstName, setFirstName] = useState(() => {
+    const saved = sessionStorage.getItem(`${STORAGE_KEY}_firstName`);
+    return saved || '';
+  });
+  const [lastName, setLastName] = useState(() => {
+    const saved = sessionStorage.getItem(`${STORAGE_KEY}_lastName`);
+    return saved || '';
+  });
+  const [email, setEmail] = useState(() => {
+    const saved = sessionStorage.getItem(`${STORAGE_KEY}_email`);
+    return saved || '';
+  });
+  const [password, setPassword] = useState(() => {
+    const saved = sessionStorage.getItem(`${STORAGE_KEY}_password`);
+    return saved || '';
+  });
+  const [confirmPassword, setConfirmPassword] = useState(() => {
+    const saved = sessionStorage.getItem(`${STORAGE_KEY}_confirmPassword`);
+    return saved || '';
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Save form values to sessionStorage whenever they change
+  useEffect(() => {
+    sessionStorage.setItem(`${STORAGE_KEY}_firstName`, firstName);
+    sessionStorage.setItem(`${STORAGE_KEY}_lastName`, lastName);
+    sessionStorage.setItem(`${STORAGE_KEY}_email`, email);
+    sessionStorage.setItem(`${STORAGE_KEY}_password`, password);
+    sessionStorage.setItem(`${STORAGE_KEY}_confirmPassword`, confirmPassword);
+  }, [firstName, lastName, email, password, confirmPassword]);
+
+  // Clear form from sessionStorage on successful signup or fresh page load (no error)
+  useEffect(() => {
+    if (showSignupSuccess) {
+      // Clear on successful signup
+      sessionStorage.removeItem(`${STORAGE_KEY}_firstName`);
+      sessionStorage.removeItem(`${STORAGE_KEY}_lastName`);
+      sessionStorage.removeItem(`${STORAGE_KEY}_email`);
+      sessionStorage.removeItem(`${STORAGE_KEY}_password`);
+      sessionStorage.removeItem(`${STORAGE_KEY}_confirmPassword`);
+    } else if (!error) {
+      // Clear on fresh page load (when there's no error)
+      sessionStorage.removeItem(`${STORAGE_KEY}_firstName`);
+      sessionStorage.removeItem(`${STORAGE_KEY}_lastName`);
+      sessionStorage.removeItem(`${STORAGE_KEY}_email`);
+      sessionStorage.removeItem(`${STORAGE_KEY}_password`);
+      sessionStorage.removeItem(`${STORAGE_KEY}_confirmPassword`);
+    }
+  }, [showSignupSuccess, error]);
 
   const getPasswordStrength = (password: string) => {
     if (!password) return null;
@@ -187,7 +233,7 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
               {/* Full background image */}
               <div className="absolute inset-0 z-0">
                 <img
-                  src={signup}
+                  src={signupp}
                   alt="Cute dog"
                   className="w-full h-full object-cover object-bottom"
                 />
