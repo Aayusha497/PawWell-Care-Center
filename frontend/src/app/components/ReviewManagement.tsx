@@ -153,6 +153,34 @@ const ReviewManagement: React.FC = () => {
     }
   };
 
+  const handleUnfeature = async (reviewId: number) => {
+    try {
+      setProcessing(reviewId);
+      
+      const response = await fetch(`http://localhost:8000/api/reviews/${reviewId}/approve`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          is_approved: true,
+          is_featured: false
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to unfeature review');
+      
+      toast.success('Review removed from featured');
+      await fetchReviews();
+    } catch (error: any) {
+      console.error('Error unfeaturning review:', error);
+      toast.error('Failed to unfeature review');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -397,6 +425,25 @@ const ReviewManagement: React.FC = () => {
                     className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
                   >
                     ⭐ Feature this Review
+                  </button>
+                  <button
+                    onClick={() => handleReject(review.review_id)}
+                    disabled={processing === review.review_id}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
+                  >
+                    Unapprove
+                  </button>
+                </div>
+              )}
+
+              {review.is_approved && review.is_featured && (
+                <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => handleUnfeature(review.review_id)}
+                    disabled={processing === review.review_id}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
+                  >
+                    ✓ Remove from Featured
                   </button>
                   <button
                     onClick={() => handleReject(review.review_id)}

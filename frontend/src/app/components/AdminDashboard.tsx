@@ -1017,8 +1017,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
-              <span>📢</span>
-              Announcements
+              {/* <span>📢</span>
+              Announcements */}
             </button>
           </div>
         </nav>

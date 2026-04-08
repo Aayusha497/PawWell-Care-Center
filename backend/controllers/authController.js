@@ -151,66 +151,18 @@ const register = async (req, res) => {
       console.log('✅ BACKEND VALIDATION PASSED: phoneNumber is valid');
     }
 
-    // Check if user with this email already exists
+    // Check if user with this email already exists (including soft-deleted accounts)
     const existingUser = await User.findOne({
-      where: { email: normalizedEmail }
+      where: { email: normalizedEmail },
+      paranoid: false  // Include soft-deleted records to allow reactivation
     });
 
     if (existingUser) {
-      // If user exists but account is inactive (soft-deleted), reactivate it
-      if (!existingUser.isActive) {
+      // If user exists but account is soft-deleted, reactivate it
+      if (existingUser.deletedAt) {
         console.log('🔄 Reactivating deleted account:', existingUser.email);
         
-        // STEP 1: Hard delete all old data to ensure fresh start
-        console.log('🗑️ Deleting all old data for user:', existingUser.id);
-        
-        // Get all pet IDs (including soft-deleted ones) before deleting
-        const oldPets = await Pet.findAll({
-          where: { user_id: existingUser.id },
-          paranoid: false // Include soft-deleted pets
-        });
-        const oldPetIds = oldPets.map(pet => pet.id);
-        console.log('Found old pets:', oldPetIds.length);
-        
-        // Delete wellness timeline entries for old pets
-        if (oldPetIds.length > 0) {
-          const deletedTimeline = await WellnessTimeline.destroy({
-            where: { pet_id: oldPetIds },
-            force: true
-          });
-          console.log('Deleted wellness timeline entries:', deletedTimeline);
-        }
-        
-        // Hard delete all pets (including soft-deleted ones)
-        const deletedPets = await Pet.destroy({
-          where: { user_id: existingUser.id },
-          force: true,
-          paranoid: false
-        });
-        console.log('Deleted pets:', deletedPets);
-        
-        // Hard delete all bookings
-        const deletedBookings = await Booking.destroy({
-          where: { user_id: existingUser.id },
-          force: true
-        });
-        console.log('Deleted bookings:', deletedBookings);
-        
-        // Hard delete all emergency requests
-        const deletedEmergencies = await EmergencyRequest.destroy({
-          where: { user_id: existingUser.id },
-          force: true
-        });
-        console.log('Deleted emergency requests:', deletedEmergencies);
-        
-        // Hard delete all activity logs
-        const deletedLogs = await ActivityLog.destroy({
-          where: { user_id: existingUser.id },
-          force: true
-        });
-        console.log('Deleted activity logs:', deletedLogs);
-        
-        // STEP 2: Update user with new data and reactivate
+        // Update user with new password and profile info
         existingUser.password = password; // Will be hashed by beforeUpdate hook
         existingUser.firstName = firstName;
         existingUser.lastName = lastName;
@@ -219,19 +171,19 @@ const register = async (req, res) => {
         existingUser.emailVerified = true;
         existingUser.isActive = true;
         existingUser.isProfileComplete = false;
-        existingUser.profilePicture = null; // Reset profile picture
-        existingUser.address = null;
-        existingUser.city = null;
-        existingUser.emergencyContactName = null;
-        existingUser.emergencyContactNumber = null;
         
+        // Save the updated data
         await existingUser.save();
         
+        // Restore from soft-delete (set deletedAt to null)
+        await existingUser.restore();
+        
         console.log('✅ Account reactivated successfully:', existingUser.email);
+        console.log('✅ All related data (pets, bookings, reviews) automatically restored');
         
         return res.status(201).json({
           success: true,
-          message: 'Registration successful! Your account has been reactivated. You can now login.',
+          message: 'Registration successful! Your account has been reactivated. All your previous data is now accessible.',
           email: existingUser.email
         });
       } else {
@@ -341,9 +293,10 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user by email
+    // Find user by email (including soft-deleted accounts)
     const user = await User.findOne({
-      where: { email: email.toLowerCase().trim() }
+      where: { email: email.toLowerCase().trim() },
+      paranoid: false  // Include soft-deleted records to check if account was deleted
     });
 
     if (!user) {
@@ -353,7 +306,15 @@ const login = async (req, res) => {
       });
     }
 
-    // Check if account is active
+    // Check if account is soft-deleted
+    if (user.deletedAt) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been permanently deleted. Please register again if you wish to use PawWell.'
+      });
+    }
+
+    // Check if account is active (deactivated by admin)
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
@@ -880,7 +841,7 @@ const updateProfile = async (req, res) => {
 /**
  * Delete user account
  * @route   DELETE /api/accounts/profile
- * @desc    Soft delete user account and all related data (pets, bookings, emergency requests)
+ * @desc    Soft delete user account (all related data persists for restoration)
  * @access  Private
  */
 const deleteAccount = async (req, res) => {
@@ -896,29 +857,11 @@ const deleteAccount = async (req, res) => {
       });
     }
 
-    // Soft delete user's pets (paranoid mode will set deleted_at)
-    await Pet.destroy({
-      where: { user_id: userId }
-    });
-    console.log(`✅ Soft deleted pets for user ${userId}`);
-
-    // Cancel all user's bookings
-    await Booking.update(
-      { status: 'cancelled' },
-      { where: { user_id: userId, status: ['pending', 'confirmed'] } }
-    );
-    console.log(`✅ Cancelled bookings for user ${userId}`);
-
-    // Cancel all user's emergency requests
-    await EmergencyRequest.update(
-      { status: 'cancelled' },
-      { where: { user_id: userId, status: ['pending', 'in_progress'] } }
-    );
-    console.log(`✅ Cancelled emergency requests for user ${userId}`);
-
     // Soft delete user account (paranoid mode will set deleted_at timestamp)
+    // ⚠️ All related data (pets, bookings, reviews, payments) remains intact
     await user.destroy();
     console.log(`✅ Soft deleted user account ${userId}`);
+    console.log(`💾 All related data (pets, bookings, reviews, payments) retained for potential restoration`);
 
     // Clear authentication cookies
     res.clearCookie('accessToken', {
@@ -934,7 +877,7 @@ const deleteAccount = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Account deleted successfully.'
+      message: 'Account deleted successfully. Your account can be reactivated by registering with the same email.'
     });
   } catch (error) {
     console.error('Delete account error:', error);

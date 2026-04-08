@@ -6,6 +6,8 @@ import { Settings, User as UserIcon, LogOut } from 'lucide-react';
 import SettingsPage from './SettingsPage';
 import { isAdmin } from '../../utils/rbac';
 import NotificationBell from '../../components/NotificationBell';
+import DeleteAccountModal from './ui/DeleteAccountModal';
+import CancelConfirmationModal from './ui/CancelConfirmationModal';
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -25,6 +27,8 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
@@ -272,20 +276,17 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
     }
   };
 
-  const handleCancel = async () => {
+  const handleCancel = () => {
     console.log('🔵 Cancel button clicked');
-    
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = async () => {
     // If profile is incomplete (initial setup), log out the user
     if (!user?.isProfileComplete) {
-      const confirmLogout = window.confirm(
-        'Are you sure you want to cancel? You will be logged out and need to complete your profile setup next time you login.'
-      );
-      
-      if (confirmLogout) {
-        console.log('🚪 Logging out user from profile setup');
-        await onLogout();
-        return;
-      }
+      console.log('🚪 Logging out user from profile setup');
+      setShowCancelModal(false);
+      await onLogout();
       return;
     }
     
@@ -307,28 +308,11 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
     // Clear any field errors
     setFieldErrors({});
     setEditing(false);
+    setShowCancelModal(false);
     console.log('✅ Editing cancelled, returning to view mode');
   };
 
   const handleDeleteAccount = async () => {
-    const confirmDelete = window.confirm(
-      'Are you sure you want to delete your account? This action cannot be undone. All your data including pets, bookings, and activity logs will be permanently deleted.'
-    );
-    
-    if (!confirmDelete) {
-      console.log('❌ Account deletion cancelled by user');
-      return;
-    }
-
-    const confirmAgain = window.confirm(
-      'FINAL CONFIRMATION: Are you absolutely sure? Type YES in your mind and click OK to proceed with account deletion.'
-    );
-
-    if (!confirmAgain) {
-      console.log('❌ Account deletion cancelled at final confirmation');
-      return;
-    }
-
     setDeleting(true);
     
     try {
@@ -336,6 +320,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
       await deleteAccount();
       console.log('✅ Account deleted successfully');
       toast.success('Your account has been deleted successfully. Redirecting...');
+      setShowDeleteModal(false);
       setTimeout(() => {
         onLogout(); // This will sign out the user and redirect to landing page
       }, 2000);
@@ -769,7 +754,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
               {/* Delete Account Button */}
               <div className="mt-8 pt-6 border-t dark:border-gray-700">
                 <button
-                  onClick={handleDeleteAccount}
+                  onClick={() => setShowDeleteModal(true)}
                   disabled={deleting}
                   className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
@@ -782,6 +767,21 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
             </div>
           )}
         </div>
+
+        {/* Delete Account Modal */}
+        <DeleteAccountModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteAccount}
+          isDeleting={deleting}
+        />
+
+        {/* Cancel Confirmation Modal */}
+        <CancelConfirmationModal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={handleConfirmCancel}
+        />
       </main>
     </div>
   );

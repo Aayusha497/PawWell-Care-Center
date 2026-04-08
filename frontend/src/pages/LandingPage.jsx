@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import ReviewList from '../components/ReviewList';
+import FeaturedReviewsCarousel from '../components/FeaturedReviewsCarousel';
 import { getReviews } from '../services/api';
 import './theme.css';
 
@@ -302,8 +302,8 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* Top 3 Reviews */}
-        <ReviewList featured={true} limit={3} />
+        {/* Featured Reviews Carousel */}
+        <FeaturedReviewsCarousel limit={3} />
         
         {/* View All Reviews Button */}
         <div className="ratings-footer">

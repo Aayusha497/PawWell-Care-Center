@@ -6,7 +6,7 @@ import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { Alert, AlertDescription } from './ui/alert';
 import { toast } from 'sonner';
-import SuccessModal from './ui/SuccessModal';
+import RegistrationSuccessModal from './ui/RegistrationSuccessModal';
 import { Phone, Mail, MapPin } from "lucide-react"; //icon for these useing lucide-react library
 
 interface SignupPageProps {
@@ -262,7 +262,9 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                     <p className="text-sm text-red-500 mt-1">{validationErrors.email}</p>
                   )}
                   {fieldErrors?.email && (
-                    <p className="text-sm text-red-500 mt-1">{fieldErrors.email[0]}</p>
+                    <p className="text-sm text-red-500 mt-1">
+                      {fieldErrors.email[0]?.includes('already') ? 'Email already exists' : fieldErrors.email[0]}
+                    </p>
                   )}
                 </div>
 
@@ -520,12 +522,10 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
         </div>
       </footer>
 
-      <SuccessModal
+      <RegistrationSuccessModal
         isOpen={showSignupSuccess || false}
         onClose={onSignupSuccessClose || (() => {})}
-        title="Account Created Successfully"
-        message="Your account has been created successfully. Redirecting to login..."
-        actionText="Continue"
+        userEmail={email}
         autoRedirectSeconds={5}
       />
     </div>

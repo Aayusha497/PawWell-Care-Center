@@ -1,11 +1,33 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ReviewList from '../components/ReviewList';
+import ReviewForm from '../components/ReviewForm';
+import ReviewDisplay from '../components/ReviewDisplay';
 import Footer from '../components/Footer';
 import './About.css';
 
 const About = () => {
   const { isLoggedIn } = useAuth();
+
+  // Test API on mount
+  useEffect(() => {
+    console.log('🧪 About.jsx: Component mounted, testing API');
+    console.log('🧪 API URL should be:', `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews?featured=true&limit=3`);
+    
+    // Test fetch to see if API is accessible
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews?featured=true&limit=3`)
+      .then(res => {
+        console.log('🧪 API Response Status:', res.status);
+        return res.json();
+      })
+      .then(data => {
+        console.log('🧪 API Response Data:', data);
+        console.log('🧪 Featured reviews count:', data.data?.length || 0);
+      })
+      .catch(err => {
+        console.error('🧪 API Test Error:', err);
+      });
+  }, []);
 
   const whyItems = useMemo(() => ([
     'Pet profiles store allergies and medical needs for safer care.',
@@ -192,12 +214,27 @@ const About = () => {
         </form>
       </section>
 
+      {/* Review Submission Section - Outside Contact Grid */}
+      <section className="review-submission-wrapper">
+        <div className="review-submission-section">
+          <h3>Share Your Experience</h3>
+          <p>Leave a review and help other pet parents discover PawWell!</p>
+          <ReviewForm />
+          
+          <div className="submitted-reviews">
+            <h4>Recent Reviews from Pet Parents</h4>
+            <ReviewDisplay limit={6} />
+          </div>
+        </div>
+      </section>
+
       <section className="about-reviews">
         <div className="section-title">
           <h2>What Our Customers Say</h2>
           <p>Real experiences from pet parents who trust PawWell Care Center.</p>
         </div>
-        <ReviewList limit={3} />
+        {console.log('📍 About.jsx: Rendering ReviewList with featured=true, limit=3')}
+        <ReviewList featured={true} limit={3} />
         <div className="reviews-view-all">
           <a href="/reviews" className="btn-view-all-reviews">
             View All Reviews

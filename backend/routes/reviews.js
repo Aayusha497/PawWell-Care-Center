@@ -21,13 +21,6 @@ const {
 } = require('../controllers/reviewController');
 
 /**
- * @route   GET /api/reviews
- * @desc    Get all approved reviews (public)
- * @access  Public
- */
-router.get('/', getReviews);
-
-/**
  * @route   GET /api/reviews/stats
  * @desc    Get review statistics
  * @access  Public
@@ -76,6 +69,20 @@ router.get('/my-reviews', authenticate, getMyReviews);
 router.get('/reviewable-bookings', authenticate, getReviewableBookings);
 
 /**
+ * @route   GET /api/reviews/admin/all
+ * @desc    Get all reviews (including unapproved) - Admin
+ * @access  Private (admin, staff)
+ */
+router.get('/admin/all', authenticate, getAllReviews);
+
+/**
+ * @route   GET /api/reviews
+ * @desc    Get all approved reviews (public)
+ * @access  Public
+ */
+router.get('/', getReviews);
+
+/**
  * @route   POST /api/reviews
  * @desc    Create a new review
  * @access  Private
@@ -100,24 +107,17 @@ router.put(
 );
 
 /**
- * @route   DELETE /api/reviews/:id
- * @desc    Delete a review
- * @access  Private (owner or admin)
- */
-router.delete('/:id', authenticate, deleteReview);
-
-/**
- * @route   GET /api/reviews/admin/all
- * @desc    Get all reviews (including unapproved) - Admin
- * @access  Private (admin, staff)
- */
-router.get('/admin/all', authenticate, getAllReviews);
-
-/**
  * @route   PATCH /api/reviews/:id/approve
  * @desc    Approve/reject or feature a review - Admin
  * @access  Private (admin, staff)
  */
 router.patch('/:id/approve', authenticate, approveReview);
+
+/**
+ * @route   DELETE /api/reviews/:id
+ * @desc    Delete a review
+ * @access  Private (owner or admin)
+ */
+router.delete('/:id', authenticate, deleteReview);
 
 module.exports = router;
