@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Syringe, Calendar, Stethoscope, Plus, Activity, Scissors, Utensils, AlertCircle, Clock, Trash2, Edit, X, LayoutDashboard, LogOut } from 'lucide-react';
+import { Syringe, Calendar, Stethoscope, Plus, Activity, Scissors, Utensils, AlertCircle, Clock, Trash2, Edit, X, LayoutDashboard, LogOut, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { getUserPets, getTimelineEntries, createTimelineEntry, updateTimelineEntry, deleteTimelineEntry } from '../../services/api';
@@ -35,16 +35,18 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isViewing, setIsViewing] = useState(false);
   const [currentEntryId, setCurrentEntryId] = useState<number | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    type: 'Medical Visit',
+    type: '',
     title: '',
     description: '',
     next_due_date: ''
   });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const fetchPets = async () => {
     try {
@@ -100,17 +102,65 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    validateField(field, value);
+  };
+
+  const validateField = (field: string, value: string) => {
+    const newErrors = { ...errors };
+    
+    if (field === 'title') {
+      if (!value.trim()) {
+        newErrors.title = 'Title is required';
+      } else if (!/[a-zA-Z]/.test(value)) {
+        newErrors.title = 'Title must contain letter';
+      } else {
+        delete newErrors.title;
+      }
+    }
+    
+    if (field === 'description') {
+      if (value.trim() && !/[a-zA-Z]/.test(value)) {
+        newErrors.description = 'Description must contain letter';
+      } else {
+        delete newErrors.description;
+      }
+    }
+    
+    setErrors(newErrors);
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+    
+    if (!formData.type || formData.type.trim() === '') {
+      newErrors.type = 'Type is required';
+    }
+    
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
+    } else if (!/[a-zA-Z]/.test(formData.title)) {
+      newErrors.title = 'Title must contain letter';
+    }
+    
+    if (formData.description.trim() && !/[a-zA-Z]/.test(formData.description)) {
+      newErrors.description = 'Description must contain letter';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const resetForm = () => {
     setFormData({
       date: new Date().toISOString().split('T')[0],
-      type: 'Medical Visit',
+      type: '',
       title: '',
       description: '',
       next_due_date: ''
     });
+    setErrors({});
     setIsEditing(false);
+    setIsViewing(false);
     setCurrentEntryId(null);
   };
 
@@ -119,15 +169,48 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
     setIsDialogOpen(true);
   };
 
+  const formatDateForInput = (dateString: string | null | undefined): string => {
+    if (!dateString) return '';
+    try {
+      // If it's already in YYYY-MM-DD format, return as is
+      const datePart = dateString.split('T')[0];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+        return datePart;
+      }
+      // Otherwise parse as date
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '';
+      return date.toISOString().split('T')[0];
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return '';
+    }
+  };
+
   const handleEdit = (entry: TimelineEntry) => {
     setFormData({
-      date: new Date(entry.date).toISOString().split('T')[0],
+      date: formatDateForInput(entry.date),
       type: entry.type,
       title: entry.title,
       description: entry.description || '',
-      next_due_date: entry.next_due_date ? new Date(entry.next_due_date).toISOString().split('T')[0] : ''
+      next_due_date: formatDateForInput(entry.next_due_date)
     });
     setIsEditing(true);
+    setIsViewing(false);
+    setCurrentEntryId(entry.timeline_id);
+    setIsDialogOpen(true);
+  };
+
+  const handleView = (entry: TimelineEntry) => {
+    setFormData({
+      date: formatDateForInput(entry.date),
+      type: entry.type,
+      title: entry.title,
+      description: entry.description || '',
+      next_due_date: formatDateForInput(entry.next_due_date)
+    });
+    setIsViewing(true);
+    setIsEditing(false);
     setCurrentEntryId(entry.timeline_id);
     setIsDialogOpen(true);
   };
@@ -155,6 +238,16 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isViewing) {
+      setIsDialogOpen(false);
+      resetForm();
+      return;
+    }
+    
+    if (!validateForm()) {
+      return;
+    }
     
     if (!selectedPet) {
       toast.error('Please select a pet first');
@@ -253,7 +346,7 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-[500px] p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold leading-none tracking-tight dark:text-gray-100">
-                {isEditing ? 'Edit Entry' : 'Add New Entry'}
+                {isViewing ? 'View Entry' : isEditing ? 'Edit Entry' : 'Add New Entry'}
               </h2>
               <button 
                 onClick={() => setIsDialogOpen(false)}
@@ -271,7 +364,7 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
                   <input 
                     id="date" 
                     type="date" 
-                    required 
+                    disabled={isViewing}
                     value={formData.date}
                     onChange={(e) => handleInputChange('date', e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
@@ -280,10 +373,12 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
                 <div className="space-y-2">
                   <label htmlFor="type" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200">Type</label>
                   <select 
-                    value={formData.type} 
+                    value={formData.type}
+                    disabled={isViewing}
                     onChange={(e) => handleInputChange('type', e.target.value)}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                    className={`flex h-10 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-100 ${errors.type ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                   >
+                    <option value="" disabled>Select Type</option>
                     <option value="Medical Visit">Medical Visit</option>
                     <option value="Vaccination">Vaccination</option>
                     <option value="Activity">Activity</option>
@@ -292,6 +387,7 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
                     <option value="Symptoms">Symptoms</option>
                     <option value="Other">Other</option>
                   </select>
+                  {errors.type && <p className="text-sm text-red-500 dark:text-red-400 flex items-center gap-1"> {errors.type}</p>}
                 </div>
               </div>
 
@@ -300,11 +396,12 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
                 <input 
                   id="title" 
                   placeholder="e.g. Annual Checkup" 
-                  required 
+                  disabled={isViewing}
                   value={formData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
+                  className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 ${errors.title ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                 />
+                {errors.title && <p className="text-sm text-red-500 dark:text-red-400 flex items-center gap-1"> {errors.title}</p>}
               </div>
 
               <div className="space-y-2">
@@ -312,17 +409,20 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
                 <textarea 
                   id="description" 
                   placeholder="Enter details..." 
+                  disabled={isViewing}
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
+                  className={`flex min-h-[80px] w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 ${errors.description ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                 />
+                {errors.description && <p className="text-sm text-red-500 dark:text-red-400 flex items-center gap-1"> {errors.description}</p>}
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="next_due_date" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200">Next Due Date (Optional)</label>
+                <label htmlFor="next_due_date" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200">Next Due Date</label>
                 <input 
                   id="next_due_date" 
                   type="date" 
+                  disabled={isViewing}
                   value={formData.next_due_date}
                   onChange={(e) => handleInputChange('next_due_date', e.target.value)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
@@ -341,7 +441,7 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
                   type="submit" 
                   className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-[#EAB308] hover:bg-[#CA8A04] text-white h-10 px-4 py-2"
                 >
-                  {isEditing ? 'Save Changes' : 'Create Entry'}
+                  {isViewing ? 'Close' : isEditing ? 'Save Changes' : 'Create Entry'}
                 </button>
               </div>
             </form>
@@ -405,9 +505,9 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
             <div key={entry.timeline_id} className={`relative flex items-center justify-between md:justify-center group ${index % 2 === 0 ? 'md:flex-row-reverse' : ''}`}>
               
               {/* Icon */}
-              <div className="absolute left-4 md:left-1/2 transform -translate-x-1/2 flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-gray-900 bg-gray-50 dark:bg-gray-700 shadow-sm z-10 shrink-0">
+              {/* <div className="absolute left-4 md:left-1/2 transform -translate-x-1/2 flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-gray-900 bg-gray-50 dark:bg-gray-700 shadow-sm z-10 shrink-0">
                 {getTypeIcon(entry.type)}
-              </div>
+              </div> */}
               
               {/* Card */}
               <div className={`w-[calc(100%-3.5rem)] md:w-[calc(50%-2rem)] ml-14 md:ml-0 bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 transition-all hover:shadow-md text-left ${index % 2 === 0 ? 'md:mr-auto' : 'md:ml-auto'}`}>
@@ -436,6 +536,9 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
                 )}
 
                 <div className={`flex items-center gap-2 mt-2 pt-2 border-t border-gray-50 dark:border-gray-700 justify-start`}>
+                  <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 px-2" onClick={() => handleView(entry)}>
+                     <Eye className="h-3.5 w-3.5 mr-1" /> View
+                  </button>
                   <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 px-2" onClick={() => handleEdit(entry)}>
                      <Edit className="h-3.5 w-3.5 mr-1" /> Edit
                   </button>

@@ -22,11 +22,19 @@ interface Pet {
   medical_history?: string;
 }
 
+interface DeleteConfirmModal {
+  isOpen: boolean;
+  petId?: number;
+  petName?: string;
+}
+
 export default function PetListingPage({ onBack, onNavigate }: PetListingPageProps) {
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedPetId, setSelectedPetId] = useState<number | undefined>(undefined);
+  const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmModal>({ isOpen: false });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchPets();
@@ -61,19 +69,33 @@ export default function PetListingPage({ onBack, onNavigate }: PetListingPagePro
     setShowEditForm(true);
   };
 
-  const handleDelete = async (pet: Pet) => {
-    if (!window.confirm(`Are you sure you want to delete ${pet.name}'s profile?`)) {
-      return;
-    }
+  const handleDeleteClick = (pet: Pet) => {
+    setDeleteConfirm({
+      isOpen: true,
+      petId: pet.pet_id,
+      petName: pet.name
+    });
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.petId) return;
+    
     try {
-      await deletePet(pet.pet_id);
-      toast.success(`${pet.name}'s profile deleted successfully!`);
+      setIsDeleting(true);
+      await deletePet(deleteConfirm.petId);
+      toast.success(`${deleteConfirm.petName}'s profile has been deleted successfully!`);
+      setDeleteConfirm({ isOpen: false });
       fetchPets();
     } catch (error: any) {
       console.error('Error deleting pet:', error);
       toast.error(error.message || 'Failed to delete pet profile');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirm({ isOpen: false });
   };
 
   const handleAddNew = () => {
@@ -177,7 +199,7 @@ export default function PetListingPage({ onBack, onNavigate }: PetListingPagePro
                           </svg>
                         </button>
                         <button
-                          onClick={() => handleDelete(pet)}
+                          onClick={() => handleDeleteClick(pet)}
                           className="p-2 hover:bg-red-50 rounded-lg transition"
                           title="Delete"
                         >
@@ -220,6 +242,56 @@ export default function PetListingPage({ onBack, onNavigate }: PetListingPagePro
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.isOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform transition-all">
+            {/* Icon */}
+            {/* <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 4v2M6.228 6.228a9 9 0 1112.544 12.544M6.228 6.228l12.544 12.544" />
+                </svg>
+              </div>
+            </div> */}
+            
+            {/* Content */}
+            <h3 className="text-xl font-bold text-center mb-2 dark:text-gray-100">
+              Delete {deleteConfirm.petName}'s Profile?
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+              This action cannot be undone. All information about {deleteConfirm.petName} will be permanently removed from the system.
+            </p>
+            
+            {/* Buttons */}
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={handleCancelDelete}
+                disabled={isDeleting}
+                className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <> Delete</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    
   );
 }

@@ -16,7 +16,7 @@ const { Op } = require('sequelize');
 const createPet = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, breed, age, weight, height, sex, allergies, triggering_point, medical_history } = req.body;
+    const { name, breed, age, weight, height, sex, allergies, triggering_point, medical_history, last_vet_visit } = req.body;
 
     // Check if photo was uploaded
     if (!req.file) {
@@ -28,6 +28,15 @@ const createPet = async (req, res) => {
 
     // Get Cloudinary URL from uploaded file
     const photoUrl = req.file.path;
+
+    // Parse date properly - handle YYYY-MM-DD format
+    let parsedVetDate = null;
+    if (last_vet_visit) {
+      const dateObj = new Date(last_vet_visit + 'T00:00:00');
+      if (!isNaN(dateObj.getTime())) {
+        parsedVetDate = dateObj;
+      }
+    }
 
     // Create pet in database
     const pet = await Pet.create({
@@ -41,6 +50,7 @@ const createPet = async (req, res) => {
       allergies: allergies?.trim() || null,
       triggering_point: triggering_point?.trim() || null,
       medical_history: medical_history?.trim() || null,
+      last_vet_visit: parsedVetDate,
       photo: photoUrl,
     });
 
@@ -241,7 +251,7 @@ const updatePet = async (req, res) => {
   try {
     const userId = req.user.id;
     const petId = parseInt(req.params.petId);
-    const { name, breed, age, weight, height, sex, allergies, triggering_point, medical_history } = req.body;
+    const { name, breed, age, weight, height, sex, allergies, triggering_point, medical_history, last_vet_visit } = req.body;
 
     // Check if pet exists and belongs to user
     const existingPet = await Pet.findByPk(petId);
@@ -272,6 +282,16 @@ const updatePet = async (req, res) => {
     if (allergies !== undefined) updateData.allergies = allergies?.trim() || null;
     if (triggering_point !== undefined) updateData.triggering_point = triggering_point?.trim() || null;
     if (medical_history !== undefined) updateData.medical_history = medical_history?.trim() || null;
+    
+    // Parse date properly - handle YYYY-MM-DD format
+    if (last_vet_visit !== undefined) {
+      if (last_vet_visit) {
+        const dateObj = new Date(last_vet_visit + 'T00:00:00');
+        updateData.last_vet_visit = !isNaN(dateObj.getTime()) ? dateObj : null;
+      } else {
+        updateData.last_vet_visit = null;
+      }
+    }
 
     // Handle photo update if new photo is uploaded
     if (req.file) {

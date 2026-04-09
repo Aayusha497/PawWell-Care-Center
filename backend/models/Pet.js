@@ -66,6 +66,11 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING(500),
       allowNull: false
     },
+    last_vet_visit: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'last_vet_visit'
+    },
     deleted_at: {
       type: DataTypes.DATE,
       allowNull: true,

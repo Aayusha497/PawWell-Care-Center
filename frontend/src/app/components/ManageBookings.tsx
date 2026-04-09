@@ -696,9 +696,9 @@ const ManageBookings: React.FC<ManageBookingsProps> = ({ onBack }) => {
             <div className="bg-white rounded-2xl max-w-sm w-full border border-[#FACC15]/40 shadow-xl">
               {/* Header */}
               <div className="p-6 border-b border-[#FACC15]/30 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                {/* <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
                   <AlertCircle size={24} className="text-red-600" />
-                </div>
+                </div> */}
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">Cancel Booking</h3>
                   <p className="text-sm text-gray-600">This action cannot be undone</p>

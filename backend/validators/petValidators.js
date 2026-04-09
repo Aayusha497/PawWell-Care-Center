@@ -58,8 +58,8 @@ const createPetValidation = [
     .trim()
     .isLength({ max: 1000 })
     .withMessage('Allergies must not exceed 1000 characters')
-    .matches(/^[a-zA-Z0-9\s,.\-()]+$/)
-    .withMessage('Allergies can only contain letters, numbers, spaces, and basic punctuation (,.-())'),
+    .matches(/^[a-zA-Z0-9\s,\.\-():]+$/)
+    .withMessage('Allergies can only contain letters, numbers, spaces, and basic punctuation (,.-():)'),
 
   body('triggering_point')
     .optional({ checkFalsy: true })
@@ -124,8 +124,8 @@ const updatePetValidation = [
     .trim()
     .isLength({ max: 1000 })
     .withMessage('Allergies must not exceed 1000 characters')
-    .matches(/^[a-zA-Z0-9\s,.\-()]+$/)
-    .withMessage('Allergies can only contain letters, numbers, spaces, and basic punctuation (,.-())'),
+    .matches(/^[a-zA-Z0-9\s,.\-():]+$/)
+    .withMessage('Allergies can only contain letters, numbers, spaces, and basic punctuation (,.-():)'),
 
   body('triggering_point')
     .optional({ checkFalsy: true })

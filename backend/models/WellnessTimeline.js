@@ -39,6 +39,11 @@ module.exports = (sequelize) => {
     description: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    next_due_date: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'next_due_date'
     }
   }, {
     tableName: 'wellness_timeline',

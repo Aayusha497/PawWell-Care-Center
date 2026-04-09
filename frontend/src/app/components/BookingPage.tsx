@@ -11,7 +11,7 @@ interface Pet {
 }
 
 interface BookingData {
-  pet_id: number;
+  pet_id: number | string;
   service_type: string;
   start_date: string;
   end_date: string;
@@ -57,7 +57,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
   const [checkingAvailability, setCheckingAvailability] = useState(false);
 
   const [formData, setFormData] = useState<BookingData>({
-    pet_id: 0,
+    pet_id: '',
     service_type: '',
     start_date: '',
     end_date: '',
@@ -355,7 +355,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
       
       // Reset form
       setFormData({
-        pet_id: 0,
+        pet_id: '',
         service_type: '',
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date().toISOString().split('T')[0],
@@ -541,7 +541,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
                 onChange={handleInputChange}
                 className={`w-full px-4 py-3 rounded-lg border ${errors.pet_id ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100`}
               >
-                <option value="">Select your pet</option>
+                <option value="" disabled>Select your pet</option>
                 {pets.map(pet => (
                   <option key={pet.pet_id} value={pet.pet_id}>
                     {pet.name} - {pet.breed}
@@ -561,7 +561,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
               onChange={handleInputChange}
               className={`w-full px-4 py-3 rounded-lg border ${errors.service_type ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100`}
             >
-              <option value="">Pet Sitting</option>
+              <option value="" disabled>Select Service Type</option>
               {SERVICE_TYPES.map(service => (
                 <option key={service} value={service}>{service}</option>
               ))}
@@ -585,7 +585,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
             <div className="flex gap-4">
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1 dark:text-gray-200">
-                  {formData.service_type === 'Pet Boarding' ? 'Start Date (Drop-off)' : 'Service Date'}
+                  {formData.service_type === 'Pet Boarding' ? 'Start Date ' : 'Service Date'}
                 </label>
                 <input
                   type="date"
@@ -600,7 +600,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
 
               {formData.service_type === 'Pet Boarding' && (
                 <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-200">End Date (Pick-up)</label>
+                  <label className="block text-sm font-medium mb-1 dark:text-gray-200">End Date </label>
                   <input
                     type="date"
                     name="end_date"
@@ -674,7 +674,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 rounded-lg border ${errors.pickup_time ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100`}
                   >
-                    <option value="">9:00 am</option>
+                    <option value="" disabled style={{ color: '#999' }}>Select time</option>
                     {TIME_SLOTS.map(slot => (
                       <option key={slot} value={slot}>{slot}</option>
                     ))}
@@ -690,7 +690,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack, onLogout, userFullNam
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 rounded-lg border ${errors.dropoff_time ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} focus:outline-none focus:ring-2 focus:ring-[#FA9884] dark:bg-gray-700 dark:text-gray-100`}
                   >
-                    <option value="">3:00 pm</option>
+                    <option value="" disabled style={{ color: '#999' }}>Select time</option>
                     {TIME_SLOTS.map(slot => (
                       <option key={slot} value={slot}>{slot}</option>
                     ))}

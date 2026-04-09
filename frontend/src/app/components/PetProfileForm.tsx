@@ -44,6 +44,16 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
       if (response.success && response.data) {
         const pet = response.data;
         console.log('Pet data received:', pet);
+        // Format date to YYYY-MM-DD for the date input field
+        const formatDateForInput = (dateString: string | Date | null) => {
+          if (!dateString) return '';
+          const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+        
         setFormData({
           name: pet.name || '',
           breed: pet.breed || '',
@@ -54,7 +64,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
           allergies: pet.allergies || '',
           triggering_point: pet.triggering_point || '',
           medical_history: pet.medical_history || '',
-          last_vet_visit: ''
+          last_vet_visit: formatDateForInput(pet.last_vet_visit)
         });
         if (pet.photo) {
           setPhotoPreview(pet.photo);
@@ -118,7 +128,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
 
     // Breed validation - letters and spaces only
     if (!formData.breed.trim()) {
-      newErrors.breed = 'Breed is required';
+      newErrors.breed ='Breed is required';
     } else if (!/^[a-zA-Z\s]+$/.test(formData.breed)) {
       newErrors.breed = 'Breed can only contain letters (A–Z), no numbers or symbols allowed';
     }
@@ -155,8 +165,24 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
       newErrors.sex = 'Please select a sex';
     }
 
-    // Last Vet Visit Date validation - must be a valid date and not in the future
-    if (formData.last_vet_visit.trim()) {
+    // Allergies validation - required field and must contain at least one letter
+    if (!formData.allergies.trim()) {
+      newErrors.allergies = '⚠️ Allergies field is required';
+    } else if (!/[a-zA-Z]/.test(formData.allergies)) {
+      newErrors.allergies = '⚠️ Allergies must contain text with letters, not just numbers';
+    }
+
+    // Triggering Points validation - required field and must contain at least one letter
+    if (!formData.triggering_point.trim()) {
+      newErrors.triggering_point = '⚠️ Triggering Points field is required';
+    } else if (!/[a-zA-Z]/.test(formData.triggering_point)) {
+      newErrors.triggering_point = '⚠️ Triggering Points must contain text with letters, not just numbers';
+    }
+
+    // Last Vet Visit Date validation - required field and not in future
+    if (!formData.last_vet_visit.trim()) {
+      newErrors.last_vet_visit = 'Last Vet Visit Date is required';
+    } else {
       try {
         const visitDate = new Date(formData.last_vet_visit);
         const today = new Date();
@@ -173,6 +199,11 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
       }
     }
 
+    // Medical History validation - must contain at least one letter if provided
+    if (formData.medical_history.trim() && !/[a-zA-Z]/.test(formData.medical_history)) {
+      newErrors.medical_history = 'Special Care Needs must contain text with letters, not just numbers';
+    }
+
     // Photo validation
     if (!photoFile && !photoPreview && !petId) {
       newErrors.photo = 'Pet photo is required';
@@ -186,7 +217,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Please fix the errors in the form');
+      toast.error('Please fix the mistakes in the form');
       return;
     }
 
@@ -202,6 +233,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
       formDataToSend.append('allergies', formData.allergies);
       formDataToSend.append('triggering_point', formData.triggering_point);
       formDataToSend.append('medical_history', formData.medical_history);
+      formDataToSend.append('last_vet_visit', formData.last_vet_visit);
       
       if (photoFile) {
         formDataToSend.append('photo', photoFile);
@@ -371,37 +403,40 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                 <h3 className="text-xl font-semibold mb-4 dark:text-gray-100">Medical Information</h3>
                 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Allergies</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Allergies <span className="text-red-500">*</span></label>
                   <textarea
                     value={formData.allergies}
                     onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                    className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.allergies ? 'border-red-500' : 'border-gray-300'}`}
                     rows={2}
                     placeholder="Dust mites, certain grass pollens. Develops itchy skin."
                   />
+                  {errors.allergies && <p className="text-red-500 text-sm mt-1"> {errors.allergies}</p>}
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Triggering Points</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Triggering Points <span className="text-red-500">*</span></label>
                   <textarea
                     value={formData.triggering_point}
                     onChange={(e) => setFormData({ ...formData, triggering_point: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                    className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.triggering_point ? 'border-red-500' : 'border-gray-300'}`}
                     rows={2}
                     placeholder="Dust mites, certain grass pollens."
                   />
+                  {errors.triggering_point && <p className="text-red-500 text-sm mt-1"> {errors.triggering_point}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Last Vet Visit Date</label>
+                  <label className="block text-sm font-medium mb-2 dark:text-gray-300">Last Vet Visit Date <span className="text-red-500">*</span></label>
                   <input
                     type="date"
                     value={formData.last_vet_visit}
                     onChange={(e) => handleInputChange('last_vet_visit', e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
                     className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.last_vet_visit ? 'border-red-500' : 'border-gray-300'}`}
                   />
                   {errors.last_vet_visit && (
-                    <p className="text-red-500 text-sm mt-1">{errors.last_vet_visit}</p>
+                    <p className="text-red-500 text-sm mt-1"> {errors.last_vet_visit}</p>
                   )}
                 </div>
               </div>
@@ -411,11 +446,13 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
                 <textarea
                   value={formData.medical_history}
                   onChange={(e) => setFormData({ ...formData, medical_history: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-gray-100"
+                  className={`w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600 ${errors.medical_history ? 'border-red-500' : 'border-gray-300'}`}
                   rows={3}
                   placeholder="Administer allergy medication daily morning."
                 />
+                {errors.medical_history && <p className="text-red-500 text-sm mt-1">⚠️ {errors.medical_history}</p>}
               </div>
+              
 
               <div className="flex justify-center gap-4">
                 <button

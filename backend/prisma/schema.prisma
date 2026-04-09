@@ -112,6 +112,7 @@ model pets {
   sex                String?              @db.VarChar(10)
   allergies          String?
   triggering_point   String?
+  last_vet_visit     DateTime?            @db.Timestamptz(6)
   deleted_at         DateTime?            @db.Timestamp(6)
   activity_logs      activity_logs[]
   bookings           bookings[]

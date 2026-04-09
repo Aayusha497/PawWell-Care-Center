@@ -121,8 +121,8 @@ const PetForm = ({ initialData = null, onSubmit, isLoading = false }) => {
     if (value && value.length > 1000) {
       return 'Allergies must not exceed 1000 characters';
     }
-    if (value && !/^[a-zA-Z0-9\s,.\-()]*$/.test(value)) {
-      return 'Allergies can only contain letters, numbers, spaces, and basic punctuation (,.-())';
+    if (value && !/^[a-zA-Z0-9\s,.\-():]*$/.test(value)) {
+      return 'Allergies can only contain letters, numbers, spaces, and basic punctuation (,.-():)';
     }
     return '';
   };
