@@ -326,7 +326,7 @@ const updateActivityLog = async (req, res) => {
     const userId = req.user.id;
     const userType = req.user.userType;
     const logId = parseInt(req.params.id);
-    const { activity_type, description, notify_owner } = req.body;
+    const { activity_type, detail, notify_owner } = req.body;
 
     // Only admin/staff can update activity logs
     if (userType !== 'admin' && userType !== 'staff') {
@@ -372,8 +372,8 @@ const updateActivityLog = async (req, res) => {
       updateData.activity_type = activity_type;
     }
     
-    if (description !== undefined) {
-      updateData.detail = description.trim() || null;
+    if (detail !== undefined) {
+      updateData.detail = detail.trim() || null;
     }
     
     if (notify_owner !== undefined) {

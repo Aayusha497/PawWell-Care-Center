@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   getPendingBookings, 
-  getAllBookingsAdmin, 
+  getAllBookingsAdmin,
+  getAdminBookingHistory,
   approveBooking, 
   rejectBooking, 
   completeBooking 
@@ -95,10 +96,9 @@ export default function BookingManagement() {
   const fetchHistoryBookings = async () => {
     try {
       setLoadingHistory(true);
-      const response = await getAllBookingsAdmin({});
+      const response = await getAdminBookingHistory({});
       const data = Array.isArray(response.data) ? response.data : [];
-      const nonPendingData = data.filter((b: Booking) => (b.booking_status || b.status) !== 'pending');
-      setAllHistoryBookings(nonPendingData);
+      setAllHistoryBookings(data);
     } catch (error) {
       console.error('Error fetching booking history:', error);
       toast.error('Failed to load booking history');

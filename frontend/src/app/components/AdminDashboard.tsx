@@ -12,7 +12,11 @@ import {
   markAdminContactMessageRead,
   getAdminEmergencyRequests,
   updateEmergencyStatus,
-  getDashboardAnalytics
+  getDashboardAnalytics,
+  markNotificationsByTypeAsRead,
+  markPendingBookingsAsRead,
+  markEmergencyRequestsAsRead,
+  markPendingReviewsAsRead
 } from '../../services/api';
 import { toast } from 'sonner';
 import ActivityLogsManagement from './ActivityLogsManagement';
@@ -134,6 +138,11 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   const [photo, setPhoto] = useState<File | null>(null);
   const [notifyOwner, setNotifyOwner] = useState(false);
   const [submittingLog, setSubmittingLog] = useState(false);
+  const [activityErrors, setActivityErrors] = useState<Record<string, string>>({
+    pet: '',
+    activityType: '',
+    description: ''
+  });
   const [viewingActivityLogs, setViewingActivityLogs] = useState(() => {
     return sessionStorage.getItem('adminViewingActivityLogs') === 'true';
   });
@@ -360,6 +369,25 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
     }
   };
 
+  const handleNotificationClick = async (tab: string, markAsRead?: () => Promise<void>) => {
+    try {
+      // Mark as read if applicable
+      if (markAsRead) {
+        await markAsRead();
+      }
+      // Navigate to tab
+      setActiveTab(tab);
+      setNotificationOpen(false);
+      // Refresh notification summary with a small delay to ensure backend processes
+      setTimeout(() => {
+        fetchNotificationSummary();
+      }, 300);
+    } catch (error: any) {
+      console.error('Error handling notification click:', error);
+      toast.error(error.message || 'Failed to process notification');
+    }
+  };
+
   const handleMarkMessageRead = async (messageId: number) => {
     try {
       setMarkingMessageId(messageId);
@@ -453,14 +481,27 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
 
   const handleCreateActivityLog = async (event: FormEvent) => {
     event.preventDefault();
-
-    if (!selectedPet || !activityType || !description.trim()) {
-      toast.error('Please select a pet, activity type, and add a description.');
-      return;
+    
+    // Validate form
+    const errors: Record<string, string> = {};
+    
+    if (!selectedPet) {
+      errors.pet = 'Please select a pet';
     }
-
-    if (description.trim().length < 5) {
-      toast.error('Description must be at least 5 characters.');
+    
+    if (!activityType) {
+      errors.activityType = 'Please select an activity type';
+    }
+    
+    if (!description.trim()) {
+      errors.description = 'Description is required';
+    } else if (description.trim().length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    }
+    
+    setActivityErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
       return;
     }
 
@@ -485,6 +526,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
       setDescription('');
       setPhoto(null);
       setNotifyOwner(false);
+      setActivityErrors({ pet: '', activityType: '', description: '' });
     } catch (error: any) {
       console.error('Error creating activity log:', error);
       toast.error(error.message || 'Failed to create activity log.');
@@ -871,7 +913,6 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   if (showSettings) {
     return (
       <SettingsPage
-        hideNavbar={true}
         onBack={() => setShowSettings(false)}
         onLogout={onLogout}
         userFullName={user.fullName}
@@ -1068,68 +1109,46 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                       <>
                         <button
                           type="button"
-                          onClick={() => {
-                            setActiveTab('contact-messages');
-                            setNotificationOpen(false);
-                          }}
+                          onClick={() => handleNotificationClick('contact-messages', async () => await markAdminContactMessagesRead())}
                           className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           {notificationSummary.contactMessages} New Contact Messages
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            setActiveTab('booking-management');
-                            setNotificationOpen(false);
-                          }}
+                          onClick={() => handleNotificationClick('booking-management', async () => await markPendingBookingsAsRead())}
                           className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           {notificationSummary.pendingBookings} Pending Booking Approvals
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            setActiveTab('emergency-requests');
-                            setNotificationOpen(false);
-                          }}
+                          onClick={() => handleNotificationClick('emergency-requests', async () => await markEmergencyRequestsAsRead())}
                           className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           {notificationSummary.emergencyRequests} Emergency Requests
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            setActiveTab('reviews');
-                            setNotificationOpen(false);
-                          }}
+                          onClick={() => handleNotificationClick('reviews', async () => await markPendingReviewsAsRead())}
                           className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
                           {notificationSummary.pendingReviews} Pending Reviews
                         </button>
-                        {notificationSummary.newUsers > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveTab('user-management');
-                              setNotificationOpen(false);
-                            }}
-                            className="w-full text-left px-4 py-2.5 text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold"
-                          >
-                            👤 {notificationSummary.newUsers} New User{notificationSummary.newUsers > 1 ? 's' : ''}
-                          </button>
-                        )}
-                        {notificationSummary.newPets > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveTab('pet-management');
-                              setNotificationOpen(false);
-                            }}
-                            className="w-full text-left px-4 py-2.5 text-sm text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 font-semibold"
-                          >
-                            🐾 {notificationSummary.newPets} New Pet{notificationSummary.newPets > 1 ? 's' : ''}
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleNotificationClick('user-management', async () => await markNotificationsByTypeAsRead('user_registered'))}
+                          className="w-full text-left px-4 py-2.5 text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold"
+                        >
+                          {notificationSummary.newUsers} New User{notificationSummary.newUsers > 1 ? 's' : ''}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleNotificationClick('pet-management', async () => await markNotificationsByTypeAsRead('pet_registered'))}
+                          className="w-full text-left px-4 py-2.5 text-sm text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20 font-semibold"
+                        >
+                          {notificationSummary.newPets} New Pet{notificationSummary.newPets > 1 ? 's' : ''}
+                        </button>
                       </>
                     )}
                   </div>
@@ -1490,7 +1509,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
 
               {/* Add Caretaker Modal */}
               {showAddCaretakerModal && (
-                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/30 dark:bg-black/30 flex items-center justify-center z-50 p-4">
                   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
                     <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Add New Caretaker</h3>
@@ -1659,7 +1678,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
 
               {/* Edit Shift Modal */}
               {showEditShiftModal && selectedShiftId && (
-                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/30 dark:bg-black/30 flex items-center justify-center z-50 p-4">
                   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-md w-full">
                     <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Edit Shift</h3>
@@ -1806,7 +1825,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
 
               {/* Delete Confirmation Modal */}
               {showDeleteConfirmation && (
-                <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/30 dark:bg-black/30 flex items-center justify-center z-50 p-4">
                   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-sm w-full">
                     <div className="p-6">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Shift</h3>
@@ -1863,7 +1882,6 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <ActivityLogsManagement 
                     onRefreshLogs={() => {
-                      // Refresh bookings if needed
                       fetchPendingBookings();
                     }}
                   />
@@ -1872,13 +1890,16 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Add New Activity</h2>
 
-                  <form onSubmit={handleCreateActivityLog} className="space-y-4">
+                  <form onSubmit={handleCreateActivityLog} noValidate className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pet</label>
                       <select
                         value={selectedPet}
-                        onChange={(event) => setSelectedPet(event.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        onChange={(event) => {
+                          setSelectedPet(event.target.value);
+                          setActivityErrors({ ...activityErrors, pet: '' });
+                        }}
+                        className={`w-full px-4 py-2 border ${activityErrors.pet ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400`}
                         required
                       >
                         <option value="">Select pet</option>
@@ -1889,14 +1910,20 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                           </option>
                         ))}
                       </select>
+                      {activityErrors.pet && (
+                        <p className="mt-1 text-sm text-red-500">{activityErrors.pet}</p>
+                      )}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Activity Type</label>
                       <select
                         value={activityType}
-                        onChange={(event) => setActivityType(event.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        onChange={(event) => {
+                          setActivityType(event.target.value);
+                          setActivityErrors({ ...activityErrors, activityType: '' });
+                        }}
+                        className={`w-full px-4 py-2 border ${activityErrors.activityType ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400`}
                         required
                       >
                         <option value="">Select activity type</option>
@@ -1906,19 +1933,28 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                           </option>
                         ))}
                       </select>
+                      {activityErrors.activityType && (
+                        <p className="mt-1 text-sm text-red-500">{activityErrors.activityType}</p>
+                      )}
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
                       <textarea
                         value={description}
-                        onChange={(event) => setDescription(event.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        onChange={(event) => {
+                          setDescription(event.target.value);
+                          setActivityErrors({ ...activityErrors, description: '' });
+                        }}
+                        className={`w-full px-4 py-2 border ${activityErrors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400`}
                         rows={4}
-                        minLength={5}
+                        minLength={10}
                         placeholder="Describe the activity and any observations..."
                         required
                       />
+                      {activityErrors.description && (
+                        <p className="mt-1 text-sm text-red-500">{activityErrors.description}</p>
+                      )}
                     </div>
 
                     <div>

@@ -364,6 +364,31 @@ const createBooking = async (req, res) => {
       booking.booking_id
     );
 
+    // Create notification for admins
+    try {
+      const { Notification } = require('../models');
+      const admins = await User.findAll({ where: { userType: 'admin' } });
+      
+      if (admins.length > 0) {
+        const petName = completeBooking.pet?.name || 'A pet';
+        const serviceType = completeBooking.service_type || 'Service';
+        const adminNotifications = admins.map((admin) => ({
+          user_id: admin.id,
+          type: 'booking_created',
+          title: 'New Booking Request',
+          message: `New booking for ${petName} - ${serviceType}`,
+          reference_type: 'booking',
+          reference_id: booking.booking_id,
+          is_read: false
+        }));
+        
+        await Notification.bulkCreate(adminNotifications);
+      }
+    } catch (notificationError) {
+      console.error('Error creating admin booking notification:', notificationError);
+      // Don't throw error - booking was created successfully
+    }
+
     res.status(201).json({
       success: true,
       message: 'Booking created successfully and is pending admin approval',
@@ -472,45 +497,95 @@ const checkAvailabilityInternal = async (service_type, start_date, end_date) => 
  * Get all bookings for logged-in user
  * GET /api/bookings
  */
+/**
+ * Get user bookings - with support for categorization
+ * GET /api/bookings
+ * Query params:
+ *   - category: 'upcoming' | 'history' | 'manage' | 'all' (default: 'all')
+ *   - status: filter by booking_status
+ *   - upcoming: 'true' (legacy, use category=upcoming instead)
+ *   - past: 'true' (legacy, use category=history instead)
+ */
 const getUserBookings = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { status, upcoming, past } = req.query;
+    const { status, upcoming, past, category = 'all' } = req.query;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Determine which category to use (legacy params or new category param)
+    let finalCategory = category;
+    if (upcoming === 'true') finalCategory = 'upcoming';
+    if (past === 'true') finalCategory = 'history';
 
     const whereClause = {
       user_id: userId
     };
 
-    // Filter by status if provided
+    // Apply status filter if provided
     if (status) {
       whereClause.booking_status = status;
     }
 
-    // Filter upcoming bookings (start_date >= today)
-    if (upcoming === 'true') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      whereClause.start_date = {
-        [Op.gte]: today
-      };
+    // Apply category-based filtering
+    switch (finalCategory) {
+      case 'upcoming':
+        // Upcoming: start_date >= today and not cancelled/rejected
+        whereClause.start_date = { [Op.gte]: today };
+        whereClause.booking_status = {
+          [Op.notIn]: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED]
+        };
+        break;
+
+      case 'manage':
+        // Manage: bookings that are pending approval or confirmed (awaiting payment or action)
+        whereClause.$and = [
+          { start_date: { [Op.gte]: today } },
+          {
+            [Op.or]: [
+              { booking_status: BOOKING_STATUS.PENDING },
+              { booking_status: BOOKING_STATUS.APPROVED },
+              { booking_status: BOOKING_STATUS.CONFIRMED }
+            ]
+          }
+        ];
+        break;
+
+      case 'history':
+        // History: past/completed bookings or cancelled/rejected ones
+        whereClause[Op.or] = [
+          { booking_status: BOOKING_STATUS.COMPLETED },
+          { booking_status: BOOKING_STATUS.CANCELLED },
+          { booking_status: BOOKING_STATUS.REJECTED },
+          {
+            [Op.and]: [
+              { end_date: { [Op.lt]: today } },
+              {
+                booking_status: {
+                  [Op.in]: [
+                    BOOKING_STATUS.PENDING,
+                    BOOKING_STATUS.APPROVED,
+                    BOOKING_STATUS.CONFIRMED
+                  ]
+                }
+              }
+            ]
+          }
+        ];
+        break;
+
+      case 'all':
+      default:
+        // All bookings for user
+        break;
     }
 
-    // Filter past bookings (end_date < today OR status = completed/cancelled)
-    if (past === 'true') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      whereClause[Op.or] = [
-        {
-          end_date: {
-            [Op.lt]: today
-          }
-        },
-        {
-          booking_status: {
-            [Op.in]: [BOOKING_STATUS.COMPLETED, BOOKING_STATUS.REJECTED, BOOKING_STATUS.CANCELLED]
-          }
-        }
-      ];
+    // Determine sort order based on category
+    let order = [['created_at', 'DESC']]; // default: most recently created
+    if (finalCategory === 'upcoming' || finalCategory === 'manage') {
+      order = [['start_date', 'DESC']]; // upcoming: latest start dates first
+    } else if (finalCategory === 'history') {
+      order = [['end_date', 'DESC'], ['start_date', 'DESC']]; // history: latest end dates first
     }
 
     const bookings = await Booking.findAll({
@@ -520,11 +595,12 @@ const getUserBookings = async (req, res) => {
         as: 'pet',
         attributes: ['pet_id', 'name', 'breed', 'photo']
       }],
-      order: [['start_date', 'DESC']]
+      order
     });
 
     res.status(200).json({
       success: true,
+      category: finalCategory,
       count: bookings.length,
       data: bookings
     });
@@ -1036,15 +1112,24 @@ const completeBooking = async (req, res) => {
 };
 
 /**
- * Admin: Get all bookings with filters
+ * Admin: Get all bookings with filters and smart sorting
  * GET /api/bookings/admin/all
+ * Query params:
+ *   - status: filter by booking_status
+ *   - payment_status: filter by payment_status
+ *   - service_type: filter by service type
+ *   - date_from: filter from date
+ *   - date_to: filter to date
+ *   - sort_by: 'start_date' | 'end_date' | 'created_date' | 'smart' (default: 'start_date')
+ *   - view: 'history' | 'pending' | 'all' (for smart sorting, default: 'all')
  */
 const getAllBookings = async (req, res) => {
   try {
-    const { status, payment_status, service_type, date_from, date_to } = req.query;
+    const { status, payment_status, service_type, date_from, date_to, sort_by = 'smart', view = 'all' } = req.query;
 
     const whereClause = {};
 
+    // Apply filters
     if (status) {
       whereClause.booking_status = status;
     }
@@ -1067,6 +1152,25 @@ const getAllBookings = async (req, res) => {
       }
     }
 
+    // Determine sort order
+    let order;
+    if (sort_by === 'start_date') {
+      order = [['start_date', 'DESC']];
+    } else if (sort_by === 'end_date') {
+      order = [['end_date', 'DESC'], ['start_date', 'DESC']];
+    } else if (sort_by === 'created_date') {
+      order = [['created_at', 'DESC']];
+    } else if (sort_by === 'smart') {
+      // Smart sorting: for history/completed bookings, sort by end_date; otherwise by start_date
+      if (view === 'history' || status === 'completed' || status === 'cancelled' || status === 'rejected') {
+        order = [['end_date', 'DESC'], ['start_date', 'DESC']];
+      } else {
+        order = [['start_date', 'DESC']];
+      }
+    } else {
+      order = [['start_date', 'DESC']];
+    }
+
     const bookings = await Booking.findAll({
       where: whereClause,
       include: [
@@ -1081,7 +1185,7 @@ const getAllBookings = async (req, res) => {
           }]
         }
       ],
-      order: [['start_date', 'DESC']]
+      order
     });
 
     res.status(200).json({
@@ -1095,6 +1199,85 @@ const getAllBookings = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch bookings',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Admin: Get booking history (completed/cancelled/rejected bookings sorted by latest)
+ * GET /api/bookings/admin/history
+ * Query params:
+ *   - status: filter by booking_status
+ *   - service_type: filter by service type
+ *   - date_from: filter from date
+ *   - date_to: filter to date
+ */
+const getAdminBookingHistory = async (req, res) => {
+  try {
+    const { status, service_type, date_from, date_to } = req.query;
+
+    const whereClause = {
+      booking_status: {
+        [Op.in]: [
+          BOOKING_STATUS.APPROVED,
+          BOOKING_STATUS.CONFIRMED,
+          BOOKING_STATUS.COMPLETED,
+          BOOKING_STATUS.CANCELLED,
+          BOOKING_STATUS.REJECTED
+        ]
+      }
+    };
+
+    // Apply status filter if provided (override with specific status)
+    if (status) {
+      whereClause.booking_status = status;
+    }
+
+    if (service_type) {
+      whereClause.service_type = service_type;
+    }
+
+    // Filter by date range
+    if (date_from || date_to) {
+      whereClause.end_date = whereClause.end_date || {};
+      if (date_from) {
+        whereClause.end_date[Op.gte] = new Date(date_from);
+      }
+      if (date_to) {
+        whereClause.end_date[Op.lte] = new Date(date_to);
+      }
+    }
+
+    // Sort by booking_id DESC (latest bookings first)
+    const bookings = await Booking.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Pet,
+          as: 'pet',
+          attributes: ['pet_id', 'name', 'breed', 'photo'],
+          include: [{
+            model: User,
+            as: 'owner',
+            attributes: ['id', 'first_name', 'last_name', 'email', 'phone_number']
+          }]
+        }
+      ],
+      order: [['booking_id', 'DESC']]
+    });
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings
+    });
+
+  } catch (error) {
+    console.error('Error fetching booking history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch booking history',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
@@ -1540,6 +1723,108 @@ const verifyKhaltiPayment = async (req, res) => {
   }
 };
 
+/**
+ * Get booking summary by categories (upcoming, manage, history)
+ * GET /api/bookings/summary
+ * Returns all three categories in one response, sorted by latest
+ */
+const getBookingsSummary = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Fetch upcoming bookings
+    const upcomingBookings = await Booking.findAll({
+      where: {
+        user_id: userId,
+        start_date: { [Op.gte]: today },
+        booking_status: {
+          [Op.notIn]: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED]
+        }
+      },
+      include: [{
+        model: Pet,
+        as: 'pet',
+        attributes: ['pet_id', 'name', 'breed', 'photo']
+      }],
+      order: [['start_date', 'DESC']]
+    });
+
+    // Fetch bookings needing management (pending, approved, confirmed upcoming)
+    const manageBookings = await Booking.findAll({
+      where: {
+        user_id: userId,
+        start_date: { [Op.gte]: today },
+        $and: [
+          {
+            [Op.or]: [
+              { booking_status: BOOKING_STATUS.PENDING },
+              { booking_status: BOOKING_STATUS.APPROVED }
+            ]
+          }
+        ]
+      },
+      include: [{
+        model: Pet,
+        as: 'pet',
+        attributes: ['pet_id', 'name', 'breed', 'photo']
+      }],
+      order: [['start_date', 'DESC']]
+    });
+
+    // Fetch booking history (past or completed/cancelled)
+    const historyBookings = await Booking.findAll({
+      where: {
+        user_id: userId,
+        [Op.or]: [
+          { booking_status: BOOKING_STATUS.COMPLETED },
+          { booking_status: BOOKING_STATUS.CANCELLED },
+          { booking_status: BOOKING_STATUS.REJECTED },
+          {
+            [Op.and]: [
+              { end_date: { [Op.lt]: today } }
+            ]
+          }
+        ]
+      },
+      include: [{
+        model: Pet,
+        as: 'pet',
+        attributes: ['pet_id', 'name', 'breed', 'photo']
+      }],
+      order: [['booking_id', 'DESC']]
+    });
+
+    res.status(200).json({
+      success: true,
+      summary: {
+        upcoming: {
+          count: upcomingBookings.length,
+          data: upcomingBookings
+        },
+        manage: {
+          count: manageBookings.length,
+          data: manageBookings
+        },
+        history: {
+          count: historyBookings.length,
+          data: historyBookings
+        }
+      },
+      total: upcomingBookings.length + manageBookings.length + historyBookings.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching bookings summary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings summary',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   checkAvailability,
   createBooking,
@@ -1554,6 +1839,8 @@ module.exports = {
   verifyKhaltiPayment,
   completeBooking,
   getAllBookings,
+  getAdminBookingHistory,
+  getBookingsSummary,
   SERVICE_CONFIG,
   BOOKING_STATUS,
   PAYMENT_STATUS

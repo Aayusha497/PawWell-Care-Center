@@ -3,6 +3,8 @@ const { sequelize } = require('../config/database');
 // Import all models
 const User = require('./User');
 const PasswordReset = require('./PasswordReset');
+const EmailVerification = require('./EmailVerification');
+const PendingRegistration = require('./PendingRegistration');
 const Pet = require('./Pet')(sequelize);
 const Service = require('./Service')(sequelize);
 const Booking = require('./Booking')(sequelize);
@@ -23,6 +25,8 @@ const UserSettings = require('./UserSettings');
 const models = {
   User,
   PasswordReset,
+  EmailVerification,
+  PendingRegistration,
   Pet,
   Service,
   Booking,
@@ -54,6 +58,17 @@ User.hasMany(PasswordReset, {
 });
 
 PasswordReset.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
+// Email verification associations
+User.hasMany(EmailVerification, {
+  foreignKey: 'userId',
+  as: 'emailVerifications'
+});
+
+EmailVerification.belongsTo(User, {
   foreignKey: 'userId',
   as: 'user'
 });

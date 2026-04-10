@@ -115,8 +115,16 @@ const ReviewManagement: React.FC = () => {
 
       if (!response.ok) throw new Error('Failed to approve review');
       
+      // Update state directly instead of fetching all reviews
+      setReviews(prevReviews =>
+        prevReviews.map(review =>
+          review.review_id === reviewId
+            ? { ...review, is_approved: true, is_featured: featured }
+            : review
+        )
+      );
+      
       toast.success(featured ? 'Review approved and featured!' : 'Review approved!');
-      await fetchReviews();
     } catch (error: any) {
       console.error('Error approving review:', error);
       toast.error('Failed to approve review');
@@ -143,8 +151,16 @@ const ReviewManagement: React.FC = () => {
 
       if (!response.ok) throw new Error('Failed to reject review');
       
+      // Update state directly instead of fetching all reviews
+      setReviews(prevReviews =>
+        prevReviews.map(review =>
+          review.review_id === reviewId
+            ? { ...review, is_approved: false, is_featured: false }
+            : review
+        )
+      );
+      
       toast.success('Review rejected');
-      await fetchReviews();
     } catch (error: any) {
       console.error('Error rejecting review:', error);
       toast.error('Failed to reject review');
@@ -171,8 +187,16 @@ const ReviewManagement: React.FC = () => {
 
       if (!response.ok) throw new Error('Failed to unfeature review');
       
+      // Update state directly instead of fetching all reviews
+      setReviews(prevReviews =>
+        prevReviews.map(review =>
+          review.review_id === reviewId
+            ? { ...review, is_approved: true, is_featured: false }
+            : review
+        )
+      );
+      
       toast.success('Review removed from featured');
-      await fetchReviews();
     } catch (error: any) {
       console.error('Error unfeaturning review:', error);
       toast.error('Failed to unfeature review');

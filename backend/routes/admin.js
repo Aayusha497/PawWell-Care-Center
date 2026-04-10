@@ -195,4 +195,25 @@ router.get('/analytics/alerts', authenticate, requireAdmin, analyticsController.
  */
 router.get('/analytics/service-types', authenticate, requireAdmin, analyticsController.getAvailableServiceTypes);
 
+/**
+ * @route   PUT /api/admin/bookings/mark-read
+ * @desc    Mark all pending booking notifications as read
+ * @access  Admin only
+ */
+router.put('/bookings/mark-read', authenticate, requireAdmin, adminController.markPendingBookingsAsRead);
+
+/**
+ * @route   PUT /api/admin/emergency/mark-read
+ * @desc    Mark all emergency request notifications as read
+ * @access  Admin only
+ */
+router.put('/emergency/mark-read', authenticate, requireAdmin, adminController.markEmergencyRequestsAsRead);
+
+/**
+ * @route   PUT /api/admin/reviews/mark-read
+ * @desc    Mark all pending review notifications as read
+ * @access  Admin only
+ */
+router.put('/reviews/mark-read', authenticate, requireAdmin, adminController.markPendingReviewsAsRead);
+
 module.exports = router;

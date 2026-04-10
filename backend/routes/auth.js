@@ -28,6 +28,19 @@ router.post(
 );
 
 /**
+ * @route   POST /api/accounts/verify-email-otp
+ * @desc    Verify email OTP during signup
+ * @access  Public
+ */
+router.post(
+  '/verify-email-otp',
+  otpVerificationLimiter,
+  verifyOTPValidation,
+  handleValidationErrors,
+  authController.verifyEmailOTP
+);
+
+/**
  * @route   POST /api/accounts/login
  * @desc    Login user
  * @access  Public

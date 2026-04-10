@@ -11,21 +11,21 @@ const About = () => {
 
   // Test API on mount
   useEffect(() => {
-    console.log('🧪 About.jsx: Component mounted, testing API');
-    console.log('🧪 API URL should be:', `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews?featured=true&limit=3`);
+    console.log(' About.jsx: Component mounted, testing API');
+    console.log(' API URL should be:', `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews?featured=true&limit=3`);
     
     // Test fetch to see if API is accessible
     fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews?featured=true&limit=3`)
       .then(res => {
-        console.log('🧪 API Response Status:', res.status);
+        console.log(' API Response Status:', res.status);
         return res.json();
       })
       .then(data => {
-        console.log('🧪 API Response Data:', data);
-        console.log('🧪 Featured reviews count:', data.data?.length || 0);
+        console.log(' API Response Data:', data);
+        console.log(' Featured reviews count:', data.data?.length || 0);
       })
       .catch(err => {
-        console.error('🧪 API Test Error:', err);
+        console.error(' API Test Error:', err);
       });
   }, []);
 

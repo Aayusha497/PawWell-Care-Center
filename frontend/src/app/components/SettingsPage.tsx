@@ -422,6 +422,7 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
                         }}
                         className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/50 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
                       >
+                        <LogOut size={18} className="text-red-500 dark:text-red-400" />
                         <span className="text-sm font-medium">Logout</span>
                       </button>
                     </div>

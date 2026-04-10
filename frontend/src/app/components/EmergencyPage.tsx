@@ -184,6 +184,7 @@ export default function EmergencyPage({
         phone_number: formValues.phone_number,
         location: ''
       });
+      setTouched({ pet_id: false, emergency_type: false, description: false });
 
       if (response?.data) {
         setRequests((prev) => [response.data, ...prev]);
@@ -422,7 +423,7 @@ export default function EmergencyPage({
                     value={formValues.location}
                     onChange={handleChange('location')}
                     className="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg"
-                    placeholder="Optional"
+                    placeholder="Kamalpokhari, Kathmandu"
                   />
                 </div>
               </div>
@@ -474,6 +475,13 @@ export default function EmergencyPage({
           )}
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 mt-12 py-6">
+        <div className="max-w-7xl mx-auto px-8 text-center text-gray-600 dark:text-gray-400">
+          <p>2025 PawWell. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 }

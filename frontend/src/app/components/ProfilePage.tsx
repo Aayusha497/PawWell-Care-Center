@@ -309,12 +309,10 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
     setFieldErrors({});
     setEditing(false);
     setShowCancelModal(false);
-    console.log('✅ Editing cancelled, redirecting to user dashboard');
+    console.log('✅ Editing cancelled, staying on profile page');
     
-    // Redirect to user dashboard
-    if (onNavigate) {
-      onNavigate('user-dashboard');
-    }
+    // Stay on profile page in view mode
+    // Just reset the editing state above which will trigger re-render to show view mode
   };
 
   const handleDeleteAccount = async () => {

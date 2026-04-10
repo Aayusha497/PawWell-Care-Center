@@ -405,7 +405,7 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="description" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200">Description (Optional)</label>
+                <label htmlFor="description" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200">Description</label>
                 <textarea 
                   id="description" 
                   placeholder="Enter details..." 
@@ -455,7 +455,7 @@ export default function WellnessTimeline({ onBack, onLogout, onSettings }: Welln
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-[400px] p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
+                {/* <AlertCircle className="h-5 w-5" /> */}
                 Confirm Deletion
               </h2>
               <button 

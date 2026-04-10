@@ -116,6 +116,47 @@ const markAllNotificationsAsRead = async (req, res) => {
 };
 
 /**
+ * @route   PATCH /api/notifications/mark-type-read/:type
+ * @desc    Mark all notifications of a specific type as read for the current user
+ */
+const markNotificationsByTypeAsRead = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { type } = req.params;
+
+    if (!type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Notification type is required'
+      });
+    }
+
+    await Notification.update(
+      { is_read: true },
+      {
+        where: {
+          user_id: userId,
+          type: type,
+          is_read: false
+        }
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `All ${type} notifications marked as read`
+    });
+  } catch (error) {
+    console.error('❌ Error marking notifications by type as read:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to mark notifications as read',
+      error: error.message
+    });
+  }
+};
+
+/**
  * @route   DELETE /api/notifications/:id
  * @desc    Delete a notification
  * @access  Private
@@ -188,6 +229,7 @@ module.exports = {
   getUserNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  markNotificationsByTypeAsRead,
   deleteNotification,
   createNotification
 };

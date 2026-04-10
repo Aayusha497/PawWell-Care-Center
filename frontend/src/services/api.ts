@@ -206,6 +206,7 @@ export interface RegisterResponse {
   success: boolean;
   message: string;
   email: string;
+  nextStep?: 'verify-email-otp' | 'login';
 }
 
 export interface ApiError {
@@ -595,12 +596,14 @@ export const createBooking = async (bookingData: {
  */
 export const getUserBookings = async (filters?: {
   status?: string;
-  upcoming?: boolean;
-  past?: boolean;
+  category?: 'upcoming' | 'history' | 'manage' | 'all';
+  upcoming?: boolean;  // Legacy parameter
+  past?: boolean;      // Legacy parameter
 }): Promise<any> => {
   try {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
+    if (filters?.category) params.append('category', filters.category);
     if (filters?.upcoming) params.append('upcoming', 'true');
     if (filters?.past) params.append('past', 'true');
     
@@ -608,6 +611,19 @@ export const getUserBookings = async (filters?: {
     return response.data;
   } catch (error) {
     throw (error as AxiosError).response?.data || { message: 'Failed to fetch bookings' };
+  }
+};
+
+/**
+ * Get booking summary by categories (upcoming, manage, history) - all in one call
+ * @returns {Promise<any>} Bookings organized by category
+ */
+export const getBookingsSummary = async (): Promise<any> => {
+  try {
+    const response = await api.get('/bookings/summary');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch bookings summary' };
   }
 };
 
@@ -784,6 +800,35 @@ export const getAllBookingsAdmin = async (filters?: {
   service_type?: string;
   date_from?: string;
   date_to?: string;
+  sort_by?: 'start_date' | 'end_date' | 'created_date' | 'smart';
+  view?: 'history' | 'pending' | 'all';
+}): Promise<any> => {
+  try {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.service_type) params.append('service_type', filters.service_type);
+    if (filters?.date_from) params.append('date_from', filters.date_from);
+    if (filters?.date_to) params.append('date_to', filters.date_to);
+    if (filters?.sort_by) params.append('sort_by', filters.sort_by);
+    if (filters?.view) params.append('view', filters.view);
+    
+    const response = await api.get(`/bookings/admin/all${params.toString() ? '?' + params.toString() : ''}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch bookings' };
+  }
+};
+
+/**
+ * Admin: Get booking history (completed/cancelled/rejected bookings, sorted by latest)
+ * @param {object} filters - Optional filters
+ * @returns {Promise<any>} Booking history
+ */
+export const getAdminBookingHistory = async (filters?: {
+  status?: string;
+  service_type?: string;
+  date_from?: string;
+  date_to?: string;
 }): Promise<any> => {
   try {
     const params = new URLSearchParams();
@@ -792,10 +837,10 @@ export const getAllBookingsAdmin = async (filters?: {
     if (filters?.date_from) params.append('date_from', filters.date_from);
     if (filters?.date_to) params.append('date_to', filters.date_to);
     
-    const response = await api.get(`/bookings/admin/all${params.toString() ? '?' + params.toString() : ''}`);
+    const response = await api.get(`/bookings/admin/history${params.toString() ? '?' + params.toString() : ''}`);
     return response.data;
   } catch (error) {
-    throw (error as AxiosError).response?.data || { message: 'Failed to fetch bookings' };
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch booking history' };
   }
 };
 
@@ -1009,6 +1054,20 @@ export const getAllActivityLogs = async (filters: {
 };
 
 /**
+ * Get a single activity log by ID
+ * @param {number} activityLogId - Activity log ID
+ * @returns {Promise<any>} Activity log details
+ */
+export const getActivityLogById = async (activityLogId: number): Promise<any> => {
+  try {
+    const response = await api.get(`/activity-logs/${activityLogId}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to fetch activity log' };
+  }
+};
+
+/**
  * Update an activity log
  * @param {number} activityLogId - Activity log ID
  * @param {FormData} formData - Updated activity log data (same format as create)
@@ -1168,6 +1227,59 @@ export const markAllNotificationsAsRead = async (): Promise<any> => {
     return response.data;
   } catch (error) {
     throw (error as AxiosError).response?.data || { message: 'Failed to mark all notifications as read' };
+  }
+};
+
+/**
+ * Mark all notifications of a specific type as read
+ * @param {string} type - Notification type (e.g., 'user_registered', 'pet_registered')
+ * @returns {Promise<any>} Confirmation
+ */
+export const markNotificationsByTypeAsRead = async (type: string): Promise<any> => {
+  try {
+    const response = await api.patch(`/notifications/mark-type-read/${type}`);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: `Failed to mark ${type} notifications as read` };
+  }
+};
+
+/**
+ * Admin: Mark all pending bookings as read
+ * @returns {Promise<any>} Confirmation
+ */
+export const markPendingBookingsAsRead = async (): Promise<any> => {
+  try {
+    const response = await api.put('/admin/bookings/mark-read');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to mark bookings as read' };
+  }
+};
+
+/**
+ * Admin: Mark all emergency requests as read
+ * @returns {Promise<any>} Confirmation
+ */
+export const markEmergencyRequestsAsRead = async (): Promise<any> => {
+  try {
+    const response = await api.put('/admin/emergency/mark-read');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to mark emergency requests as read' };
+  }
+};
+
+/**
+ * Admin: Mark all pending reviews as read
+ * @returns {Promise<any>} Confirmation
+ */
+export const markPendingReviewsAsRead = async (): Promise<any> => {
+  try {
+    const response = await api.put('/admin/reviews/mark-read');
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to mark reviews as read' };
   }
 };
 

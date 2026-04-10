@@ -19,7 +19,9 @@ const {
   initiateKhaltiPayment,
   verifyKhaltiPayment,
   completeBooking,
-  getAllBookings
+  getAllBookings,
+  getAdminBookingHistory,
+  getBookingsSummary
 } = require('../controllers/bookingController');
 
 // Public routes (require authentication)
@@ -65,8 +67,12 @@ router.get('/payment/diagnostic', authenticate, (req, res) => {
 
 router.post('/', authenticate, createBooking);
 
+// Get summary of all booking categories (upcoming, manage, history)
+router.get('/summary', authenticate, getBookingsSummary);
+
 // Admin routes (MUST come before /:bookingId to be properly matched)
 router.get('/admin/pending', authenticate, requireAdmin, getPendingBookings);
+router.get('/admin/history', authenticate, requireAdmin, getAdminBookingHistory);
 router.get('/admin/all', authenticate, requireAdmin, getAllBookings);
 router.put('/admin/:bookingId/approve', authenticate, requireAdmin, approveBooking);
 router.put('/admin/:bookingId/reject', authenticate, requireAdmin, rejectBooking);

@@ -17,6 +17,7 @@ import ContactPage from './components/ContactPage';
 import EmergencyPage from './components/EmergencyPage';
 import PaymentSuccessPage from './components/PaymentSuccessPage';
 import ProfilePage from './components/ProfilePage';
+import EmailOTPVerification from '../components/EmailOTPVerification';
 import { Toaster } from './components/ui/sonner';
 import type { LoginData, RegisterData } from '../services/api';
 
@@ -26,6 +27,7 @@ type Page =
   | 'signup'
   | 'forgot-password'
   | 'verify-otp'
+  | 'verify-email-otp'
   | 'reset-password'
   | 'user-dashboard'
   | 'admin-dashboard'
@@ -87,6 +89,7 @@ export default function App() {
     return (savedTarget as 'booking' | 'add-pet' | 'activity-log' | 'wellness-timeline' | 'settings' | null) || null;
   });
   const [showSignupSuccess, setShowSignupSuccess] = useState(false);
+  const [verifyEmailOtpEmail, setVerifyEmailOtpEmail] = useState('');
 
   // Detect URL changes and switch to payment-success page if needed
   useEffect(() => {
@@ -237,8 +240,24 @@ export default function App() {
       const response = await register(userData);
 
       if (response) {
-        toast.success('Account created successfully!');
-        setShowSignupSuccess(true);
+        // Check if OTP verification is needed
+        if (response.nextStep === 'verify-email-otp') {
+          console.log('📧 OTP verification needed - storing email:', email);
+          setVerifyEmailOtpEmail(email);
+          setCurrentPage('verify-email-otp');
+          toast.success('OTP sent to your email', {
+            description: 'Please check your email for the verification code.',
+            duration: 3000,
+          });
+        } else if (response.nextStep === 'login') {
+          // Account created and verified - redirect to login
+          toast.success('Account created successfully!');
+          setShowSignupSuccess(true);
+        } else {
+          // Fallback for old response format
+          toast.success('Account created successfully!');
+          setShowSignupSuccess(true);
+        }
       }
 
       setError(null);
@@ -421,6 +440,24 @@ export default function App() {
             setCurrentPage('reset-password');
           }}
         />
+      )}
+      {currentPage === 'verify-email-otp' && (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#FFF8E8] to-[#EAB308] dark:from-gray-900 dark:to-gray-800 p-4">
+          <EmailOTPVerification
+            email={verifyEmailOtpEmail}
+            onSuccess={() => {
+              toast.success('Email verified successfully! Please login with your credentials.', {
+                duration: 3000,
+              });
+              setVerifyEmailOtpEmail('');
+              setCurrentPage('login');
+            }}
+            onCancel={() => {
+              setVerifyEmailOtpEmail('');
+              setCurrentPage('signup');
+            }}
+          />
+        </div>
       )}
       {currentPage === 'reset-password' && (
         <ResetPasswordPage

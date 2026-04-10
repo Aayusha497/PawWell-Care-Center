@@ -1,17 +1,19 @@
-const { User, PasswordReset, Pet, Booking, EmergencyRequest, ActivityLog, WellnessTimeline, Notification } = require('../models');
+const { User, PasswordReset, EmailVerification, PendingRegistration, Pet, Booking, EmergencyRequest, ActivityLog, WellnessTimeline, Notification } = require('../models');
 const {
   sendPasswordResetEmail,
   sendPasswordChangedEmail,
-  sendOTPEmail
+  sendOTPEmail,
+  sendEmailVerificationOTP
 } = require('../utils/emailService');
 const { generateTokens, verifyToken, getTokenExpiry } = require('../utils/jwtHelper');
+const { generateOTP, hashOTP } = require('../utils/otpHelper');
 const config = require('../config/config');
 const bcrypt = require('bcrypt');
 const { Op } = require('sequelize');
 
 /**
  * @route   POST /api/accounts/register
- * @desc    Register a new user
+ * @desc    Register a new user Send OTP to email
  * @access  Public
  */
 const register = async (req, res) => {
@@ -108,8 +110,8 @@ const register = async (req, res) => {
       });
     }
 
-    // CHECK FOR SPECIAL CHARACTERS - REJECT IMMEDIATELY
-    if (!/^[A-Za-z]+$/.test(trimmedLastName)) {
+    // CHECK FOR SPECIAL CHARACTERS - REJECT IMMEDIATELY (allow spaces for multi-part names)
+    if (!/^[A-Za-z\s]+$/.test(trimmedLastName)) {
       console.error('❌ BACKEND REJECTED: Invalid characters in lastName:', trimmedLastName);
       return res.status(400).json({
         success: false,
@@ -128,7 +130,6 @@ const register = async (req, res) => {
       
       const cleanedPhoneNumber = phoneNumber.replace(/\s/g, '');
       
-      // CHECK FOR NON-DIGITS - REJECT IMMEDIATELY
       if (!/^\d+$/.test(cleanedPhoneNumber)) {
         console.error('❌ BACKEND REJECTED: Non-digits found in phoneNumber:', phoneNumber);
         return res.status(400).json({
@@ -138,7 +139,6 @@ const register = async (req, res) => {
         });
       }
       
-      // CHECK FOR EXACT 10 DIGITS - REJECT IMMEDIATELY
       if (cleanedPhoneNumber.length !== 10) {
         console.error('❌ BACKEND REJECTED: Phone number not 10 digits:', phoneNumber);
         return res.status(400).json({
@@ -151,41 +151,97 @@ const register = async (req, res) => {
       console.log('✅ BACKEND VALIDATION PASSED: phoneNumber is valid');
     }
 
-    // Check if user with this email already exists (including soft-deleted accounts)
+    // Check if user already exists
     const existingUser = await User.findOne({
       where: { email: normalizedEmail },
-      paranoid: false  // Include soft-deleted records to allow reactivation
+      paranoid: false
     });
 
     if (existingUser) {
-      // If user exists but account is soft-deleted, reactivate it
+      // If user exists but account is soft-deleted, still require OTP verification for reactivation
       if (existingUser.deletedAt) {
-        console.log('🔄 Reactivating deleted account:', existingUser.email);
+        console.log('🔄 Deleted account found - will require OTP verification for reactivation:', existingUser.email);
         
-        // Update user with new password and profile info
-        existingUser.password = password; // Will be hashed by beforeUpdate hook
-        existingUser.firstName = firstName;
-        existingUser.lastName = lastName;
-        existingUser.phoneNumber = phoneNumber || null; // Phone number is optional
-        existingUser.userType = userType || 'pet_owner';
-        existingUser.emailVerified = true;
-        existingUser.isActive = true;
-        existingUser.isProfileComplete = false;
-        
-        // Save the updated data
-        await existingUser.save();
-        
-        // Restore from soft-delete (set deletedAt to null)
-        await existingUser.restore();
-        
-        console.log('✅ Account reactivated successfully:', existingUser.email);
-        console.log('✅ All related data (pets, bookings, reviews) automatically restored');
-        
-        return res.status(201).json({
-          success: true,
-          message: 'Registration successful! Your account has been reactivated. All your previous data is now accessible.',
-          email: existingUser.email
+        // Check if there's already a pending reactivation
+        const existingPending = await PendingRegistration.findOne({
+          where: { email: normalizedEmail }
         });
+
+        if (existingPending) {
+          console.log('⏳ Pending reactivation already exists - resending OTP:', normalizedEmail);
+          // Delete old pending reactivation
+          await existingPending.destroy();
+          console.log('🗑️ Old pending reactivation deleted');
+          // Continue to generate new OTP
+        }
+
+        // Send OTP for reactivation (same flow as new registration)
+        console.log('🔄 Generating OTP for account reactivation...');
+        
+        try {
+          const otp = generateOTP();
+          console.log(`✅ OTP generated: ${otp}`);
+          
+          const otpHash = await hashOTP(otp);
+          console.log('✅ OTP hashed successfully');
+          
+          const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+          console.log(`✅ OTP expires at: ${expiresAt}`);
+
+          // Create a temporary user object for email sending
+          const tempUser = { email: normalizedEmail, firstName: trimmedFirstName };
+
+          // Send OTP email
+          console.log(`📧 Sending OTP email to: ${normalizedEmail}`);
+          const emailSent = await sendEmailVerificationOTP(tempUser, otp);
+          
+          if (!emailSent) {
+            console.error('❌ Failed to send OTP email');
+            return res.status(500).json({
+              success: false,
+              message: 'Failed to send verification email. Please try again.',
+              error: 'Email service unavailable'
+            });
+          }
+
+          console.log(`✅ OTP email sent successfully to: ${normalizedEmail}`);
+
+          // Create pending reactivation record
+          const pendingRegistration = await PendingRegistration.create({
+            email: normalizedEmail,
+            password: password,
+            firstName: trimmedFirstName,
+            lastName: trimmedLastName,
+            phoneNumber: phoneNumber || null,
+            userType: userType || 'pet_owner',
+            otpHash: otpHash,
+            expiresAt: expiresAt,
+            otpAttempts: 0,
+            maxOtpAttempts: 5,
+            isVerified: false
+          });
+
+          console.log(`✅ Pending reactivation created:`, {
+            id: pendingRegistration.id,
+            email: pendingRegistration.email,
+            expiresAt: pendingRegistration.expiresAt
+          });
+
+          return res.status(200).json({
+            success: true,
+            message: 'OTP has been sent to your email. Please verify within 10 minutes to reactivate your account.',
+            email: normalizedEmail,
+            nextStep: 'verify-email-otp'
+          });
+
+        } catch (otpError) {
+          console.error('❌ Error in OTP generation/sending:', otpError.message);
+          return res.status(500).json({
+            success: false,
+            message: 'Error sending verification email. Please try again.',
+            error: otpError.message
+          });
+        }
       } else {
         // User exists and is active - cannot register again
         console.log('❌ Active user already exists:', normalizedEmail);
@@ -199,56 +255,93 @@ const register = async (req, res) => {
       }
     }
 
-    // Create new user if doesn't exist
-    const user = await User.create({
-      email: normalizedEmail,
-      password,
-      firstName,
-      lastName,
-      phoneNumber: phoneNumber || null, // Phone number is optional during signup
-      userType: userType || 'pet_owner',
-      emailVerified: true,
-      isActive: true,
-      isProfileComplete: false
+    // Check if there's already a pending registration
+    const existingPending = await PendingRegistration.findOne({
+      where: { email: normalizedEmail }
     });
 
-    console.log('✅ User created successfully:', user.email);
-
-    // SEND ADMIN NOTIFICATIONS FOR NEW USER REGISTRATION
-    try {
-      const admins = await User.findAll({
-        where: { userType: 'admin' },
-        attributes: ['id']
-      });
-
-      if (admins.length > 0) {
-        for (const admin of admins) {
-          await Notification.create({
-            user_id: admin.id,
-            type: 'user_registered',
-            title: '👤 New User Registered',
-            message: `New user ${firstName} ${lastName} (${email}) has registered as a ${userType || 'pet owner'}.`,
-            reference_type: 'user',
-            reference_id: user.id,
-            is_read: false
-          });
-        }
-        console.log(`✅ Admin notifications sent for new user: ${user.email}`);
-      }
-    } catch (notificationError) {
-      console.error('⚠️ Failed to send admin notifications:', notificationError.message);
-      // Don't fail the registration if notification fails
+    if (existingPending) {
+      console.log('⏳ Pending registration already exists - resending OTP:', normalizedEmail);
+      // Delete old pending registration
+      await existingPending.destroy();
+      console.log('🗑️ Old pending registration deleted');
+      // Continue to generate new OTP
     }
 
-    return res.status(201).json({
-      success: true,
-      message: 'Registration successful! You can now login.',
-      email: user.email
-    });
+    
+    // GENERATE AND SEND OTP (NO USER CREATED YET)
+    
+    try {
+      console.log('🔄 Generating OTP for email verification...');
+      
+      const otp = generateOTP();
+      console.log(`✅ OTP generated: ${otp}`);
+      
+      const otpHash = await hashOTP(otp);
+      console.log('✅ OTP hashed successfully');
+      
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      console.log(`✅ OTP expires at: ${expiresAt}`);
+
+      // Create a temporary user object for email sending
+      const tempUser = { email: normalizedEmail, firstName: trimmedFirstName };
+
+      // Send OTP email
+      console.log(`📧 Sending OTP email to: ${normalizedEmail}`);
+      const emailSent = await sendEmailVerificationOTP(tempUser, otp);
+      
+      if (!emailSent) {
+        console.error('❌ Failed to send OTP email');
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send verification email. Please try again.',
+          error: 'Email service unavailable'
+        });
+      }
+
+      console.log(`✅ OTP email sent successfully to: ${normalizedEmail}`);
+
+      // Create pending registration record (NOT a user yet!)
+      const pendingRegistration = await PendingRegistration.create({
+        email: normalizedEmail,
+        password: password,
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        phoneNumber: phoneNumber || null,
+        userType: userType || 'pet_owner',
+        otpHash: otpHash,
+        expiresAt: expiresAt,
+        otpAttempts: 0,
+        maxOtpAttempts: 5,
+        isVerified: false
+      });
+
+      console.log(`✅ Pending registration created:`, {
+        id: pendingRegistration.id,
+        email: pendingRegistration.email,
+        expiresAt: pendingRegistration.expiresAt
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'OTP has been sent to your email. Please verify within 10 minutes.',
+        email: normalizedEmail,
+        nextStep: 'verify-email-otp'
+      });
+
+    } catch (otpError) {
+      console.error('❌ Error in OTP generation/sending:', otpError.message);
+      console.error('Error stack:', otpError.stack);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send verification email. Please try again.',
+        error: otpError.message
+      });
+    }
+
   } catch (error) {
     console.error('❌ Registration error:', error);
     
-    // Handle Sequelize validation errors
     if (error.name === 'SequelizeValidationError') {
       const errors = {};
       error.errors.forEach(err => {
@@ -261,7 +354,6 @@ const register = async (req, res) => {
       });
     }
     
-    // Handle unique constraint errors (shouldn't happen now, but keep as fallback)
     if (error.name === 'SequelizeUniqueConstraintError') {
       const errors = {};
       error.errors.forEach(err => {
@@ -269,7 +361,7 @@ const register = async (req, res) => {
       });
       return res.status(400).json({
         success: false,
-        message: 'User with this email already exists',
+        message: 'Email already exists',
         errors
       });
     }
@@ -319,6 +411,16 @@ const login = async (req, res) => {
       return res.status(403).json({
         success: false,
         message: 'Your account has been deactivated. Please contact support.'
+      });
+    }
+
+    // Check if email is verified
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email before logging in. Check your email for the verification OTP.',
+        code: 'EMAIL_NOT_VERIFIED',
+        nextStep: 'verify-email-otp'
       });
     }
 
@@ -986,6 +1088,194 @@ const logout = async (req, res) => {
   }
 };
 
+/**
+ * @route   POST /api/accounts/verify-email-otp
+ * @desc    Verify email OTP and CREATE account during signup
+ * @access  Public
+ */
+const verifyEmailOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    console.log(`🔄 Verifying OTP for email: ${normalizedEmail}`);
+
+    // Find pending registration by email
+    const pendingRegistration = await PendingRegistration.findOne({
+      where: { email: normalizedEmail }
+    });
+
+    if (!pendingRegistration) {
+      console.error('❌ No pending registration found:', normalizedEmail);
+      return res.status(404).json({
+        success: false,
+        message: 'No registration found. Please register first.',
+        code: 'NO_REGISTRATION'
+      });
+    }
+
+    console.log('✅ Pending registration found');
+
+    // Check if expired
+    if (pendingRegistration.isExpired()) {
+      console.error('❌ OTP expired for:', normalizedEmail);
+      // Delete expired pending registration
+      await pendingRegistration.destroy();
+      return res.status(400).json({
+        success: false,
+        message: 'OTP has expired. Please register again to get a new OTP.',
+        code: 'OTP_EXPIRED'
+      });
+    }
+
+    console.log('✅ OTP not expired');
+
+    // Check if max attempts reached
+    if (pendingRegistration.otpAttempts >= pendingRegistration.maxOtpAttempts) {
+      console.error('❌ Max attempts exceeded for:', normalizedEmail);
+      // Delete pending registration if max attempts exceeded
+      await pendingRegistration.destroy();
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum OTP verification attempts exceeded. Please register again.',
+        code: 'MAX_ATTEMPTS_EXCEEDED'
+      });
+    }
+
+    console.log('✅ Attempts remaining:', pendingRegistration.maxOtpAttempts - pendingRegistration.otpAttempts);
+
+    // Verify OTP
+    const isOTPValid = await pendingRegistration.verifyOTP(otp);
+
+    if (!isOTPValid) {
+      console.warn('❌ Invalid OTP entered');
+      // Increment attempts
+      await pendingRegistration.incrementAttempts();
+      const remainingAttempts = pendingRegistration.maxOtpAttempts - pendingRegistration.otpAttempts;
+
+      return res.status(400).json({
+        success: false,
+        message: `Invalid OTP. You have ${remainingAttempts} attempt${remainingAttempts !== 1 ? 's' : ''} remaining.`,
+        remainingAttempts: remainingAttempts,
+        code: 'INVALID_OTP'
+      });
+    }
+
+    console.log('✅ OTP is valid!');
+    console.log('🔄 Processing account creation/reactivation...');
+
+    // ✅ Check if this is a reactivation of a deleted account
+    const deletedUser = await User.findOne({
+      where: { email: normalizedEmail },
+      paranoid: false
+    });
+
+    let newUser;
+    try {
+      if (deletedUser && deletedUser.deletedAt) {
+        // REACTIVATE deleted account
+        console.log('🔄 Reactivating deleted account:', normalizedEmail);
+        
+        deletedUser.password = pendingRegistration.password;
+        deletedUser.firstName = pendingRegistration.firstName;
+        deletedUser.lastName = pendingRegistration.lastName;
+        deletedUser.phoneNumber = pendingRegistration.phoneNumber;
+        deletedUser.userType = pendingRegistration.userType;
+        deletedUser.emailVerified = true;
+        deletedUser.isActive = true;
+        deletedUser.isProfileComplete = false;
+        
+        await deletedUser.save();
+        await deletedUser.restore();
+        
+        newUser = deletedUser;
+        console.log('✅ Account reactivated successfully:', newUser.email);
+        console.log('✅ All related data (pets, bookings, reviews) automatically restored');
+      } else {
+        // CREATE new user account
+        console.log('🔄 Creating new user account from pending registration...');
+        
+        newUser = await User.create({
+          email: pendingRegistration.email,
+          password: pendingRegistration.password,
+          firstName: pendingRegistration.firstName,
+          lastName: pendingRegistration.lastName,
+          phoneNumber: pendingRegistration.phoneNumber,
+          userType: pendingRegistration.userType,
+          emailVerified: true,  // ✅ Email is now verified!
+          isActive: true,
+          isProfileComplete: false
+        });
+
+        console.log('✅ New user account created successfully:', newUser.email);
+      }
+    } catch (userError) {
+      console.error('❌ Error creating/reactivating user:', userError.message);
+      console.error('❌ Full error details:', userError);
+      
+      // Extract validation errors if available
+      let errorMessage = 'Failed to create user account. Please try again.';
+      if (userError.errors && Array.isArray(userError.errors)) {
+        errorMessage = userError.errors.map(e => e.message).join(', ');
+      } else if (userError.message) {
+        errorMessage = userError.message;
+      }
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create user account. Please try again.',
+        error: userError.message
+      });
+    }
+
+    // Delete pending registration (no longer needed)
+    await pendingRegistration.destroy();
+    console.log('✅ Pending registration deleted');
+
+    // Send admin notification about new verified registration
+    try {
+      const admins = await User.findAll({
+        where: { userType: 'admin' },
+        attributes: ['id']
+      });
+
+      if (admins.length > 0) {
+        for (const admin of admins) {
+          await Notification.create({
+            user_id: admin.id,
+            type: 'user_registered',
+            title: '👤 New User Verified',
+            message: `${newUser.firstName} ${newUser.lastName} (${newUser.email}) has completed email verification and can now login.`,
+            reference_type: 'user',
+            reference_id: newUser.id,
+            is_read: false
+          });
+        }
+        console.log('✅ Admin notifications sent');
+      }
+    } catch (notificationError) {
+      console.warn('⚠️ Failed to send admin notifications:', notificationError.message);
+    }
+
+    console.log(`✅ Email verified successfully for: ${newUser.email}`);
+
+    // ✅ Return success - tell frontend to redirect to LOGIN (NOT auto-login)
+    return res.status(200).json({
+      success: true,
+      message: 'Email verified successfully! Your account has been created. Please login to continue.',
+      email: newUser.email,
+      nextStep: 'login'  // ✅ Redirect to login page
+    });
+
+  } catch (error) {
+    console.error('❌ Verify email OTP error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'An error occurred while verifying email OTP.',
+      error: error.message
+    });
+  }
+};
 
 
 
@@ -995,6 +1285,7 @@ module.exports = {
   login,
   forgotPassword,
   verifyOTP,
+  verifyEmailOTP,
   resetPassword,
   getProfile,
   updateProfile,

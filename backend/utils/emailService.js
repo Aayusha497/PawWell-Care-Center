@@ -353,6 +353,143 @@ If you didn't request a password reset, please ignore this email and ensure your
 };
 
 /**
+ * Send email verification OTP
+ */
+const sendEmailVerificationOTP = async (user, otp) => {
+  const htmlMessage = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .header {
+                background-color: #4A90E2;
+                color: white;
+                padding: 20px;
+                text-align: center;
+                border-radius: 5px 5px 0 0;
+            }
+            .content {
+                background-color: #f9f9f9;
+                padding: 30px;
+                border: 1px solid #ddd;
+            }
+            .otp-box {
+                background-color: #ffffff;
+                border: 2px dashed #4A90E2;
+                padding: 20px;
+                text-align: center;
+                margin: 20px 0;
+                border-radius: 8px;
+            }
+            .otp-code {
+                font-size: 32px;
+                font-weight: bold;
+                color: #4A90E2;
+                letter-spacing: 5px;
+                font-family: 'Courier New', monospace;
+            }
+            .footer {
+                text-align: center;
+                padding: 20px;
+                font-size: 12px;
+                color: #666;
+            }
+            .success {
+                background-color: #d4edda;
+                padding: 15px;
+                border-left: 4px solid #28a745;
+                margin: 20px 0;
+            }
+            .info {
+                background-color: #d1ecf1;
+                padding: 15px;
+                border-left: 4px solid #17a2b8;
+                margin: 20px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>🐾 PawWell Care Center</h1>
+        </div>
+        <div class="content">
+            <div class="success">
+                <p><strong>✅ Welcome to PawWell Care Center!</strong></p>
+                <p>Thank you for registering. Please verify your email to complete your registration.</p>
+            </div>
+            
+            <p>Hi ${user.firstName},</p>
+            <p>To complete your registration and activate your account, please use the following One-Time Password (OTP):</p>
+            
+            <div class="otp-box">
+                <div class="otp-code">${otp}</div>
+                <p style="margin: 10px 0 0 0; color: #666; font-size: 14px;">Enter this code to verify your email</p>
+            </div>
+            
+            <div class="info">
+                <p><strong>ℹ️ Important Information:</strong></p>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>This OTP is valid for <strong>10 minutes</strong></li>
+                    <li>You have <strong>5 attempts</strong> to enter the correct OTP</li>
+                    <li>Do not share this code with anyone</li>
+                </ul>
+            </div>
+            
+            <p>Once verified, you can log in to your account and start exploring our services for your beloved pets!</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2025 PawWell Care Center. All rights reserved.</p>
+            <p>Taking care of your pets, one paw at a time.</p>
+        </div>
+    </body>
+    </html>
+  `;
+
+  const textMessage = `
+Welcome to PawWell Care Center!
+
+Hi ${user.firstName},
+
+Thank you for registering. Please verify your email to complete your registration.
+
+To complete your registration and activate your account, please use the following One-Time Password (OTP):
+
+OTP: ${otp}
+
+Important Information:
+- This OTP is valid for 10 minutes
+- You have 5 attempts to enter the correct OTP
+- Do not share this code with anyone
+
+Once verified, you can log in to your account and start exploring our services for your beloved pets!
+
+© 2025 PawWell Care Center. All rights reserved.
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: config.email.from,
+      to: user.email,
+      subject: 'Email Verification - PawWell Care Center',
+      text: textMessage,
+      html: htmlMessage
+    });
+    return true;
+  } catch (error) {
+    console.error('Error sending email verification OTP:', error);
+    return false;
+  }
+};
+
+/**
  * Send a generic email
  */
 const sendEmail = async ({ to, subject, text, html }) => {
@@ -375,5 +512,6 @@ module.exports = {
   sendPasswordResetEmail,
   sendPasswordChangedEmail,
     sendOTPEmail,
+    sendEmailVerificationOTP,
     sendEmail
 };

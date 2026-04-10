@@ -134,8 +134,22 @@ export default function ContactPage({
       return 'Subject must be at least 5 characters';
     }
 
+    if (field === 'subject') {
+      const onlyNumbers = /^\d+$/.test(value.trim());
+      if (onlyNumbers) {
+        return 'Subject cannot contain only numbers';
+      }
+    }
+
     if (field === 'message' && value.trim().length < 10) {
       return 'Message must be at least 10 characters';
+    }
+
+    if (field === 'message') {
+      const onlyNumbers = /^\d+$/.test(value.trim());
+      if (onlyNumbers) {
+        return 'Message cannot contain only numbers';
+      }
     }
 
     return '';
@@ -184,6 +198,14 @@ export default function ContactPage({
         location: '',
         subject: '',
         message: '',
+      });
+      setTouched({
+        fullName: false,
+        email: false,
+        phoneNumber: false,
+        location: false,
+        subject: false,
+        message: false,
       });
     } catch (error: any) {
       toast.error(error.message || 'Failed to send message. Please try again.');
@@ -452,6 +474,13 @@ export default function ContactPage({
         </div>
         <Map height="500px" zoom={15} />
       </section>
+
+      {/* Footer */}
+      {/* <footer className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 mt-12 py-6">
+        <div className="max-w-7xl mx-auto px-8 text-center text-gray-600 dark:text-gray-400">
+          <p>2025 PawWell. All rights reserved.</p>
+        </div>
+      </footer> */}
     </div>
   );
 }

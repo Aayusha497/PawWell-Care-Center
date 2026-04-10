@@ -34,16 +34,20 @@ export default function ActivityLogsManagement({ onRefreshLogs }: ActivityLogsMa
   const [loading, setLoading] = useState(true);
   const [selectedPetFilter, setSelectedPetFilter] = useState<string>('all');
   
-  // View modal
+  // View page
   const [viewingLog, setViewingLog] = useState<ActivityLog | null>(null);
   
-  // Edit modal
+  // Edit page
   const [editingLog, setEditingLog] = useState<ActivityLog | null>(null);
   const [editFormData, setEditFormData] = useState({
     activity_type: '',
     detail: '',
     photo: null as File | null
   });
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  
+  // Delete confirmation modal
+  const [deletingLogId, setDeletingLogId] = useState<number | null>(null);
 
   const activityTypes = [
     { value: 'feeding', label: 'Feeding' },
@@ -69,25 +73,19 @@ export default function ActivityLogsManagement({ onRefreshLogs }: ActivityLogsMa
     try {
       setLoading(true);
       const response = await getAllActivityLogs();
-      console.log('Activity logs response:', response);
-      
-      // Response structure from backend: { success, count, data: [...] }
       const logsArray = response.data || response.logs || [];
       
       if (Array.isArray(logsArray)) {
-        // Sort by timestamp (newest first)
         const sorted = logsArray.sort(
           (a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
         setLogs(sorted);
       } else {
-        console.warn('logs array is not an array:', logsArray);
         setLogs([]);
       }
     } catch (error: any) {
       console.error('Error fetching activity logs:', error);
-      console.error('Error details:', error.response || error.message);
-      toast.error(`Failed to load activity logs: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to load activity logs`);
       setLogs([]);
     } finally {
       setLoading(false);
@@ -127,20 +125,27 @@ export default function ActivityLogsManagement({ onRefreshLogs }: ActivityLogsMa
     return activityTypes.find(t => t.value === value)?.label || value;
   };
 
-  const handleDeleteLog = async (activityId: number) => {
-    if (!window.confirm('Are you sure you want to delete this activity log?')) {
-      return;
-    }
+  const handleDeleteLog = (activityId: number) => {
+    setDeletingLogId(activityId);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingLogId === null) return;
 
     try {
-      await deleteActivityLog(activityId);
+      await deleteActivityLog(deletingLogId);
       toast.success('Activity log deleted successfully');
+      setDeletingLogId(null);
       fetchLogs();
       if (onRefreshLogs) onRefreshLogs();
     } catch (error: any) {
       console.error('Error deleting activity log:', error);
       toast.error(error.message || 'Failed to delete activity log');
     }
+  };
+
+  const handleViewClick = (log: ActivityLog) => {
+    setViewingLog(log);
   };
 
   const handleEditClick = (log: ActivityLog) => {
@@ -163,9 +168,10 @@ export default function ActivityLogsManagement({ onRefreshLogs }: ActivityLogsMa
     }
 
     try {
+      setEditSubmitting(true);
       const formData = new FormData();
       formData.append('activity_type', editFormData.activity_type);
-      formData.append('description', editFormData.detail);
+      formData.append('detail', editFormData.detail);
       if (editFormData.photo) {
         formData.append('photo', editFormData.photo);
       }
@@ -178,6 +184,8 @@ export default function ActivityLogsManagement({ onRefreshLogs }: ActivityLogsMa
     } catch (error: any) {
       console.error('Error updating activity log:', error);
       toast.error(error.message || 'Failed to update activity log');
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -228,7 +236,7 @@ export default function ActivityLogsManagement({ onRefreshLogs }: ActivityLogsMa
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setViewingLog(log)}
+                    onClick={() => handleViewClick(log)}
                     className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                     title="View details"
                   >
@@ -267,161 +275,227 @@ export default function ActivityLogsManagement({ onRefreshLogs }: ActivityLogsMa
         </div>
       )}
 
-      {/* View Modal */}
+      {/* View Activity Log - Full Page */}
       {viewingLog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Activity Details</h3>
-              <button
-                onClick={() => setViewingLog(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
-              >
-                ×
-              </button>
+        <div className="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
+          <div className="min-h-screen flex flex-col">
+            {/* Header with Close Button */}
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Activity Details</h1>
+                <button
+                  onClick={() => setViewingLog(null)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-3xl leading-none"
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pet</label>
-                <p className="text-gray-900 dark:text-gray-100 font-semibold">{viewingLog.pet?.name || 'Unknown'}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activity Type</label>
-                <p className="text-gray-900 dark:text-gray-100">{getActivityLabel(viewingLog.activity_type)}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date & Time</label>
-                <p className="text-gray-900 dark:text-gray-100">{formatDate(viewingLog.timestamp)}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{viewingLog.detail}</p>
-              </div>
-              
-              {viewingLog.photo && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Photo</label>
-                  <img
-                    src={viewingLog.photo}
-                    alt="Activity"
-                    className="max-w-full h-auto rounded-lg"
-                  />
+            {/* Content */}
+            <div className="flex-1">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 p-8">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pet</label>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{viewingLog.pet?.name || 'Unknown'}</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Activity Type</label>
+                      <div className="inline-block">
+                        <span className="px-4 py-2 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400 rounded-full text-sm font-medium">
+                          {getActivityLabel(viewingLog.activity_type)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date & Time</label>
+                      <p className="text-gray-900 dark:text-gray-100">{formatDate(viewingLog.timestamp)}</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                      <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{viewingLog.detail}</p>
+                    </div>
+
+                    {viewingLog.photo && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Photo</label>
+                        <img
+                          src={viewingLog.photo}
+                          alt="Activity"
+                          className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-600"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-8 flex gap-3 justify-end pt-6 border-t border-gray-200 dark:border-gray-600">
+                    <button
+                      onClick={() => setViewingLog(null)}
+                      className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            <div className="mt-6 flex gap-3 justify-end">
-              <button
-                onClick={() => setViewingLog(null)}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-              >
-                Close
-              </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit Modal */}
+      {/* Edit Activity Log - Full Page */}
       {editingLog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Edit Activity Log</h3>
-              <button
-                onClick={() => setEditingLog(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
-              >
-                ×
-              </button>
+        <div className="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
+          <div className="min-h-screen flex flex-col">
+            {/* Header with Close Button */}
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Edit Activity Log</h1>
+                <button
+                  onClick={() => setEditingLog(null)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-3xl leading-none"
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pet</label>
-                <input
-                  type="text"
-                  value={editingLog.pet?.name || 'Unknown'}
-                  disabled
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
-                />
-              </div>
+            {/* Content */}
+            <div className="flex-1">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 p-8">
+                  <form onSubmit={handleEditSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pet</label>
+                      <input
+                        type="text"
+                        value={editingLog.pet?.name || 'Unknown'}
+                        disabled
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                      />
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Activity Type</label>
-                <select
-                  value={editFormData.activity_type}
-                  onChange={(e) => setEditFormData({ ...editFormData, activity_type: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                  required
-                >
-                  <option value="">Select activity type</option>
-                  {activityTypes.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Activity Type</label>
+                      <select
+                        value={editFormData.activity_type}
+                        onChange={(e) => setEditFormData({ ...editFormData, activity_type: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        required
+                      >
+                        <option value="">Select activity type</option>
+                        {activityTypes.map(type => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
-                <textarea
-                  value={editFormData.detail}
-                  onChange={(e) => setEditFormData({ ...editFormData, detail: e.target.value })}
-                  rows={6}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                  required
-                />
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                      <textarea
+                        value={editFormData.detail}
+                        onChange={(e) => setEditFormData({ ...editFormData, detail: e.target.value })}
+                        rows={6}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        required
+                      />
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Update Photo (optional)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    const file = e.target.files?.[0] || null;
-                    setEditFormData({ ...editFormData, photo: file });
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                />
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Update Photo (optional)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                          const file = e.target.files?.[0] || null;
+                          setEditFormData({ ...editFormData, photo: file });
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      />
+                    </div>
 
-              {editingLog.photo && !editFormData.photo && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Photo</label>
-                  <img
-                    src={editingLog.photo}
-                    alt="Current"
-                    className="h-32 w-32 object-cover rounded-lg"
-                  />
+                    {editingLog.photo && !editFormData.photo && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Photo</label>
+                        <img
+                          src={editingLog.photo}
+                          alt="Current"
+                          className="h-32 w-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+                        />
+                      </div>
+                    )}
+
+                    {editFormData.photo && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Photo Preview</label>
+                        <img
+                          src={URL.createObjectURL(editFormData.photo)}
+                          alt="Preview"
+                          className="h-32 w-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 justify-end pt-6 border-t border-gray-200 dark:border-gray-600">
+                      <button
+                        type="button"
+                        onClick={() => setEditingLog(null)}
+                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={editSubmitting}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={editSubmitting}
+                      >
+                        {editSubmitting ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              )}
-
-              <div className="flex gap-3 justify-end pt-4">
-                <button
-                  type="button"
-                  onClick={() => setEditingLog(null)}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-yellow-300 hover:bg-yellow-400 text-gray-900 rounded-lg font-semibold transition-colors"
-                >
-                  Update Log
-                </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingLogId !== null && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-sm p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Delete Activity Log</h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">Are you sure you want to delete this activity log? This action cannot be undone.</p>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeletingLogId(null)}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+

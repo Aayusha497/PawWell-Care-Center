@@ -108,13 +108,14 @@ const getAdmins = async () => {
   }
 };
 
-const createAdminNotifications = async (adminIds, message) => {
+const createAdminNotifications = async (adminIds, message, type = 'emergency_created') => {
   if (!adminIds.length) {
     return [];
   }
 
   const createPayload = adminIds.map((adminId) => ({
     user_id: adminId,
+    type: type,
     message,
     is_read: false,
     created_at: new Date()

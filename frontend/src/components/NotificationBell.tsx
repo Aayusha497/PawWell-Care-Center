@@ -212,9 +212,9 @@ const NotificationBell = ({ userId }: NotificationBellProps) => {
                   >
                     <div className="flex items-start gap-3">
                       {/* Icon */}
-                      <span className="text-2xl flex-shrink-0">
+                      {/* <span className="text-2xl flex-shrink-0">
                         {getNotificationIcon(notification.type)}
-                      </span>
+                      </span> */}
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">

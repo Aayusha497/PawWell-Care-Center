@@ -32,6 +32,8 @@ import AddPet from './pages/AddPet';
 import EditPet from './pages/EditPet';
 import ViewPet from './pages/ViewPet';
 import ActivityLog from './pages/ActivityLog';
+import ViewActivityLog from './pages/ViewActivityLog';
+import EditActivityLog from './pages/EditActivityLog';
 import Profile from './pages/Profile';
 
 import { useLocation } from 'react-router-dom';
@@ -120,9 +122,33 @@ function AppContent() {
                 } 
               />
               
-              {/* Activity Log Route */}
+              {/* Activity Log Routes */}
               <Route 
                 path="/activity-log" 
+                element={
+                  <ProtectedRoute>
+                    <ActivityLog />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/activity-logs/view/:id" 
+                element={
+                  <ProtectedRoute>
+                    <ViewActivityLog />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/activity-logs/edit/:id" 
+                element={
+                  <ProtectedRoute>
+                    <EditActivityLog />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/activity-logs" 
                 element={
                   <ProtectedRoute>
                     <ActivityLog />

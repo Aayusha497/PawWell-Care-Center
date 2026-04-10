@@ -40,9 +40,9 @@ const User = sequelize.define('User', {
         if (/\d/.test(value)) {
           throw new Error('First name cannot contain numbers');
         }
-        // Check for special characters
-        if (!/^[A-Za-z]+$/.test(value)) {
-          throw new Error('First name can only contain letters');
+        // Check for special characters - allow spaces
+        if (!/^[A-Za-z\s]+$/.test(value)) {
+          throw new Error('First name can only contain letters and spaces');
         }
       }
     }
@@ -64,9 +64,9 @@ const User = sequelize.define('User', {
         if (/\d/.test(value)) {
           throw new Error('Last name cannot contain numbers');
         }
-        // Check for special characters
-        if (!/^[A-Za-z]+$/.test(value)) {
-          throw new Error('Last name can only contain letters');
+        // Check for special characters - allow spaces
+        if (!/^[A-Za-z\s]+$/.test(value)) {
+          throw new Error('Last name can only contain letters and spaces');
         }
       }
     }

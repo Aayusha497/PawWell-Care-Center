@@ -1,4 +1,4 @@
-const { User, Booking, EmergencyRequest, ContactMessage, Pet } = require('../models');
+const { User, Booking, EmergencyRequest, ContactMessage, Pet, Notification } = require('../models');
 const { Op } = require('sequelize');
 
 /**
@@ -297,10 +297,10 @@ const getNotificationSummary = async (req, res) => {
     const adminId = req.user.id;
     
     const [pendingBookings, unreadMessages, openEmergency, pendingReviews, newUserNotifications, newPetNotifications] = await Promise.all([
-      Booking.count({ where: { booking_status: 'pending' } }),
+      Notification.count({ where: { user_id: adminId, type: 'booking_created', is_read: false } }),
       ContactMessage.count({ where: { status: 'unread' } }),
-      EmergencyRequest.count({ where: { status: { [Op.in]: ['pending', 'in_progress'] } } }),
-      Review.count({ where: { is_approved: false } }),
+      Notification.count({ where: { user_id: adminId, type: 'emergency_created', is_read: false } }),
+      Notification.count({ where: { user_id: adminId, type: 'review', is_read: false } }),
       Notification.count({ where: { user_id: adminId, type: 'user_registered', is_read: false } }),
       Notification.count({ where: { user_id: adminId, type: 'pet_registered', is_read: false } })
     ]);
@@ -502,6 +502,108 @@ const deletePet = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Mark all pending bookings as read
+ * @route   PUT /api/admin/bookings/mark-read
+ * @access  Admin only
+ */
+const markPendingBookingsAsRead = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    
+    await Notification.update(
+      { is_read: true },
+      {
+        where: {
+          user_id: adminId,
+          type: 'booking_created',
+          is_read: false
+        }
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Pending booking notifications marked as read'
+    });
+  } catch (error) {
+    console.error('Mark pending bookings as read error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to mark bookings as read',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Mark all emergency requests as read
+ * @route   PUT /api/admin/emergency/mark-read
+ * @access  Admin only
+ */
+const markEmergencyRequestsAsRead = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    
+    await Notification.update(
+      { is_read: true },
+      {
+        where: {
+          user_id: adminId,
+          type: 'emergency_created',
+          is_read: false
+        }
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Emergency request notifications marked as read'
+    });
+  } catch (error) {
+    console.error('Mark emergency requests as read error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to mark emergency requests as read',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Mark all pending reviews as read
+ * @route   PUT /api/admin/reviews/mark-read
+ * @access  Admin only
+ */
+const markPendingReviewsAsRead = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    
+    await Notification.update(
+      { is_read: true },
+      {
+        where: {
+          user_id: adminId,
+          type: 'review',
+          is_read: false
+        }
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Review notifications marked as read'
+    });
+  } catch (error) {
+    console.error('Mark pending reviews as read error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to mark reviews as read',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -514,5 +616,8 @@ module.exports = {
   getEmergencyRequests,
   getAllPets,
   getPetById,
-  deletePet
+  deletePet,
+  markPendingBookingsAsRead,
+  markEmergencyRequestsAsRead,
+  markPendingReviewsAsRead
 };

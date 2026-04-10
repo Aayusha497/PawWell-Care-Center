@@ -1,7 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { Settings, User as UserIcon, LogOut } from 'lucide-react';
 import NotificationBell from '../../components/NotificationBell';
-import Footer from '../../components/Footer';
 import '../../pages/About.css';
 
 interface User {
@@ -333,6 +332,13 @@ export default function AboutPage({
           </article> */}
         </div>
       </section>
+
+      {/* Footer */}
+      {/* <footer className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 mt-12 py-6">
+        <div className="max-w-7xl mx-auto px-8 text-center text-gray-600 dark:text-gray-400">
+          <p>2025 PawWell. All rights reserved.</p>
+        </div>
+      </footer> */}
     </div>
   );
 }

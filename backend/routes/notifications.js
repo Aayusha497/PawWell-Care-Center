@@ -5,6 +5,7 @@ const {
   getUserNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  markNotificationsByTypeAsRead,
   deleteNotification
 } = require('../controllers/notificationController');
 
@@ -16,15 +17,20 @@ router.use(authenticate);
 // @access  Private
 router.get('/', getUserNotifications);
 
-//  @route   PATCH /api/notifications/:id/read
-// @desc    Mark a notification as read
-// @access  Private
-router.patch('/:id/read', markNotificationAsRead);
-
 // @route   PATCH /api/notifications/mark-all-read
 // @desc    Mark all notifications as read
 // @access  Private
 router.patch('/mark-all-read', markAllNotificationsAsRead);
+
+// @route   PATCH /api/notifications/mark-type-read/:type
+// @desc    Mark all notifications of a specific type as read
+// @access  Private
+router.patch('/mark-type-read/:type', markNotificationsByTypeAsRead);
+
+//  @route   PATCH /api/notifications/:id/read
+// @desc    Mark a notification as read
+// @access  Private
+router.patch('/:id/read', markNotificationAsRead);
 
 // @route   DELETE /api/notifications/:id
 // @desc    Delete a notification
