@@ -402,7 +402,7 @@ const login = async (req, res) => {
     if (user.deletedAt) {
       return res.status(403).json({
         success: false,
-        message: 'Your account has been permanently deleted. Please register again if you wish to use PawWell.'
+        message: 'Your account has been deleted. Please register again if you wish to use PawWell.'
       });
     }
 

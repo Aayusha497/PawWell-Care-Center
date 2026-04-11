@@ -1,10 +1,15 @@
 /**
  * Review Controller
  * 
- * Handles review and rating operations for completed bookings
+ * Handles review and rating operations for completed and paid bookings
+ * Requirements:
+ * - Booking must be confirmed
+ * - Payment must be made
+ * - Service must be completed
+ * - Admin approval required before public display
  */
 
-const { Review, Booking, Pet, User } = require('../models');
+const { Review, Booking, Pet, User, Payment } = require('../models');
 const { Op } = require('sequelize');
 
 /**
@@ -16,40 +21,42 @@ const createReview = async (req, res) => {
     const userId = req.user.id;
     const {
       booking_id,
-      rating_service,
-      rating_staff,
-      rating_cleanliness,
-      rating_value,
-      rating_communication,
-      rating_pet_condition,
-      review_text
+      rating,
+      comment
     } = req.body;
 
+    console.log('📝 Creating review:', { booking_id, rating, comment: comment?.substring(0, 50) });
+
     // Validate required fields
-    if (!booking_id || !rating_service || !rating_staff || !rating_cleanliness || 
-        !rating_value || !rating_communication || !rating_pet_condition) {
+    if (!booking_id) {
       return res.status(400).json({
         success: false,
-        message: 'All rating fields are required',
+        message: 'Booking ID is required',
       });
     }
 
-    // Validate rating values (1-5)
-    const ratings = [
-      rating_service, rating_staff, rating_cleanliness, 
-      rating_value, rating_communication, rating_pet_condition
-    ];
-    
-    if (ratings.some(r => r < 1 || r > 5)) {
+    if (!rating) {
       return res.status(400).json({
         success: false,
-        message: 'All ratings must be between 1 and 5',
+        message: 'Rating is required',
+      });
+    }
+
+    // Validate rating value (1-5)
+    const ratingNum = parseInt(rating);
+    if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rating must be a number between 1 and 5',
       });
     }
 
     // Check if booking exists
     const booking = await Booking.findByPk(booking_id, {
-      include: [{ model: Pet, as: 'pet' }]
+      include: [
+        { model: Pet, as: 'pet' },
+        { model: User, as: 'user' }
+      ]
     });
 
     if (!booking) {
@@ -67,16 +74,42 @@ const createReview = async (req, res) => {
       });
     }
 
-    // Check if booking is completed
-    if (booking.status !== 'completed') {
+    // ❌ CHECK 1: Booking must be confirmed
+    if (booking.status !== 'confirmed' && booking.status !== 'completed') {
       return res.status(400).json({
         success: false,
-        message: 'You can only review completed bookings',
+        message: `Booking must be confirmed to review. Current status: ${booking.status}`,
       });
     }
 
-    // Check if review already exists for this booking
-    const existingReview = await Review.findOne({ where: { booking_id } });
+    // ❌ CHECK 2: Service must be completed
+    if (booking.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'You can only review completed bookings. Service is not yet completed.',
+      });
+    }
+
+    // ❌ CHECK 3: Payment must be made
+    const payment = await Payment.findOne({
+      where: {
+        booking_id: booking_id,
+        payment_status: 'completed'
+      }
+    });
+
+    if (!payment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment must be completed before submitting a review',
+      });
+    }
+
+    // ❌ CHECK 4: Prevent duplicate reviews
+    const existingReview = await Review.findOne({
+      where: { booking_id }
+    });
+
     if (existingReview) {
       return res.status(400).json({
         success: false,
@@ -84,37 +117,20 @@ const createReview = async (req, res) => {
       });
     }
 
-    // Calculate overall rating
-    const overall_rating = (
-      parseInt(rating_service) + 
-      parseInt(rating_staff) + 
-      parseInt(rating_cleanliness) + 
-      parseInt(rating_value) + 
-      parseInt(rating_communication) + 
-      parseInt(rating_pet_condition)
-    ) / 6.0;
-
-    // Get photo URL if uploaded
-    const photoUrl = req.file ? req.file.path : null;
-
-    // Create review
+    // ✅ All validations passed - Create review
     const review = await Review.create({
       booking_id: parseInt(booking_id),
       user_id: userId,
       pet_id: booking.pet_id,
       service_type: booking.service_type,
-      rating_service: parseInt(rating_service),
-      rating_staff: parseInt(rating_staff),
-      rating_cleanliness: parseInt(rating_cleanliness),
-      rating_value: parseInt(rating_value),
-      rating_communication: parseInt(rating_communication),
-      rating_pet_condition: parseInt(rating_pet_condition),
-      overall_rating: overall_rating.toFixed(1),
-      review_text: review_text?.trim() || null,
-      photos: photoUrl,
-      is_verified: true,
-      is_approved: true, // Auto-approved - no admin approval needed
+      rating: ratingNum,
+      comment: comment?.trim() || null,
+      is_approved: false,  // ⚠️ Requires admin approval
+      is_featured: false,
+      rejection_reason: null
     });
+
+    console.log(`✅ Review #${review.review_id} created (pending approval)`);
 
     // Fetch created review with associations
     const createdReview = await Review.findByPk(review.review_id, {
@@ -132,69 +148,61 @@ const createReview = async (req, res) => {
         {
           model: Booking,
           as: 'booking',
-          attributes: ['booking_id', 'service_type', 'start_date'],
+          attributes: ['booking_id', 'service_type', 'start_date', 'end_date'],
         },
       ],
     });
 
-    // Create notification for user
+    // 📧 Notify user that review is submitted and awaiting approval
     try {
       const { Notification } = require('../models');
       await Notification.create({
         user_id: userId,
-        type: 'review',
-        title: 'Thank You for Your Review!',
-        message: `Thank you for your review! Your feedback has been posted and is now visible to other customers.`,
+        type: 'review_submitted',
+        title: 'Review Submitted',
+        message: 'Thank you for submitting your review! It is now pending admin approval and will be visible to other customers once approved.',
         reference_type: 'review',
         reference_id: review.review_id,
         is_read: false,
       });
-      console.log(`✅ Created user notification for review #${review.review_id}`);
+      console.log(`📧 User notification created for review #${review.review_id}`);
     } catch (notifError) {
-      console.error('❌ Error creating user notification:', notifError);
-      // Don't fail the request if notification creation fails
+      console.error('❌ Error creating user notification:', notifError.message);
     }
 
-    // Create notification for admin
+    // 📧 Notify admins about new pending review
     try {
       const { Notification } = require('../models');
-      const { User } = require('../models');
-      
-      // Get all admin users
       const adminUsers = await User.findAll({
         where: { userType: 'admin' },
         attributes: ['id']
       });
 
-      console.log(`📧 Found ${adminUsers.length} admin users for notifications`);
+      if (adminUsers.length > 0) {
+        const adminNotifications = adminUsers.map(admin => ({
+          user_id: admin.id,
+          type: 'new_review',
+          title: 'New Review Pending Approval',
+          message: `New review submitted by ${booking.user.first_name} ${booking.user.last_name} for ${booking.service_type} service. Rating: ${ratingNum}/5. Please review and approve/reject.`,
+          reference_type: 'review',
+          reference_id: review.review_id,
+          is_read: false,
+        }));
 
-      // Create notification for each admin
-      const adminNotifications = adminUsers.map(admin => ({
-        user_id: admin.id,
-        type: 'review',
-        title: 'New Review Posted',
-        message: `New review posted by ${createdReview.user.first_name} ${createdReview.user.last_name} for ${createdReview.service_type} service. Review is now live on the landing page.`,
-        reference_type: 'review',
-        reference_id: review.review_id,
-        is_read: false,
-      }));
-
-      if (adminNotifications.length > 0) {
         await Notification.bulkCreate(adminNotifications);
-        console.log(`✅ Created ${adminNotifications.length} admin notifications for review #${review.review_id}`);
+        console.log(`📧 Admin notifications created for review #${review.review_id}`);
       }
     } catch (notifError) {
-      console.error('❌ Error creating admin notifications:', notifError);
-      // Don't fail the request if notification creation fails
+      console.error('❌ Error creating admin notifications:', notifError.message);
     }
 
     res.status(201).json({
       success: true,
-      message: 'Review submitted successfully and is now visible to other customers.',
+      message: 'Review submitted successfully! It is awaiting admin approval.',
       data: createdReview,
     });
   } catch (error) {
-    console.error('Error creating review:', error);
+    console.error('❌ Error creating review:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to create review',
@@ -204,48 +212,23 @@ const createReview = async (req, res) => {
 };
 
 /**
- * Get all approved reviews (public)
- * GET /api/reviews
+ * Get approved and featured reviews (public display)
+ * GET /api/reviews/featured
  */
-const getReviews = async (req, res) => {
+const getFeaturedReviews = async (req, res) => {
   try {
-    const { 
-      service_type, 
-      min_rating, 
-      page = 1, 
-      limit = 10,
-      featured,
-    } = req.query;
+    const { page = 1, limit = 10, service_type } = req.query;
 
-    console.log('📊 getReviews called with params:', { service_type, min_rating, page, limit, featured });
+    console.log('📊 Fetching featured reviews:', { service_type, page, limit });
 
-    // First, let's check what reviews exist in the database
-    const totalReviews = await Review.count();
-    const approvedReviews = await Review.count({ where: { is_approved: true } });
-    const featuredReviews = await Review.count({ where: { is_approved: true, is_featured: true } });
-    
-    console.log('📊 Database stats:', {
-      total: totalReviews,
-      auto_approved: approvedReviews,
-      featured: featuredReviews
-    });
+    const whereClause = {
+      is_approved: true,   // ✅ Must be approved
+      is_featured: true    // ✅ Must be featured
+    };
 
-    // Build where clause - all reviews are auto-approved
-    const whereClause = { is_approved: true };
-    
     if (service_type) {
       whereClause.service_type = service_type;
     }
-    
-    if (min_rating) {
-      whereClause.overall_rating = { [Op.gte]: parseFloat(min_rating) };
-    }
-
-    if (featured === 'true') {
-      whereClause.is_featured = true;
-    }
-
-    console.log('📊 WHERE clause:', whereClause);
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -260,7 +243,69 @@ const getReviews = async (req, res) => {
         {
           model: Pet,
           as: 'pet',
-          attributes: ['pet_id', 'name', 'breed', 'photo'],
+          attributes: ['pet_id', 'name', 'breed'],
+        },
+      ],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: offset,
+    });
+
+    console.log(`✅ Found ${count} featured reviews`);
+
+    res.status(200).json({
+      success: true,
+      count: count,
+      totalPages: Math.ceil(count / parseInt(limit)),
+      currentPage: parseInt(page),
+      data: reviews,
+    });
+  } catch (error) {
+    console.error('❌ Error fetching featured reviews:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch reviews',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Get all approved reviews (public display with filters)
+ * GET /api/reviews
+ */
+const getApprovedReviews = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, service_type, min_rating } = req.query;
+
+    console.log('📊 Fetching approved reviews:', { service_type, min_rating, page, limit });
+
+    const whereClause = {
+      is_approved: true   // ✅ Only approved reviews
+    };
+
+    if (service_type) {
+      whereClause.service_type = service_type;
+    }
+
+    if (min_rating) {
+      whereClause.rating = { [Op.gte]: parseInt(min_rating) };
+    }
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const { count, rows: reviews } = await Review.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'first_name', 'last_name', 'profile_picture'],
+        },
+        {
+          model: Pet,
+          as: 'pet',
+          attributes: ['pet_id', 'name', 'breed'],
         },
       ],
       order: [
@@ -271,13 +316,7 @@ const getReviews = async (req, res) => {
       offset: offset,
     });
 
-    console.log(`📊 Found ${count} reviews matching criteria, returning ${reviews.length} reviews`);
-    console.log(`📊 Reviews:`, reviews.map(r => ({ 
-      id: r.review_id, 
-      approved: r.is_approved, 
-      featured: r.is_featured,
-      service: r.service_type 
-    })));
+    console.log(`✅ Found ${count} approved reviews`);
 
     res.status(200).json({
       success: true,
@@ -287,7 +326,7 @@ const getReviews = async (req, res) => {
       data: reviews,
     });
   } catch (error) {
-    console.error('❌ Error fetching reviews:', error);
+    console.error('❌ Error fetching approved reviews:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch reviews',
@@ -297,46 +336,53 @@ const getReviews = async (req, res) => {
 };
 
 /**
- * Get review statistics
+ * Get review statistics (only for approved reviews)
  * GET /api/reviews/stats
  */
 const getReviewStats = async (req, res) => {
   try {
-    const stats = await Review.findAll({
+    const stats = await Review.findOne({
       where: { is_approved: true },
       attributes: [
-        [sequelize.fn('AVG', sequelize.col('rating_service')), 'avg_service'],
-        [sequelize.fn('AVG', sequelize.col('rating_staff')), 'avg_staff'],
-        [sequelize.fn('AVG', sequelize.col('rating_cleanliness')), 'avg_cleanliness'],
-        [sequelize.fn('AVG', sequelize.col('rating_value')), 'avg_value'],
-        [sequelize.fn('AVG', sequelize.col('rating_communication')), 'avg_communication'],
-        [sequelize.fn('AVG', sequelize.col('rating_pet_condition')), 'avg_pet_condition'],
-        [sequelize.fn('AVG', sequelize.col('overall_rating')), 'avg_overall'],
-        [sequelize.fn('COUNT', sequelize.col('review_id')), 'total_reviews'],
+        ['rating', 'avg_rating'],
+        ['review_id', 'total_count'],
       ],
       raw: true,
     });
 
-    // Get rating distribution
-    const distribution = await Review.findAll({
+    // Calculate average rating from approved reviews
+    const approvedReviews = await Review.findAll({
       where: { is_approved: true },
-      attributes: [
-        [sequelize.fn('FLOOR', sequelize.col('overall_rating')), 'rating'],
-        [sequelize.fn('COUNT', sequelize.col('review_id')), 'count'],
-      ],
-      group: [sequelize.fn('FLOOR', sequelize.col('overall_rating'))],
+      attributes: ['rating'],
       raw: true,
     });
+
+    const avgRating = approvedReviews.length > 0
+      ? (approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length).toFixed(1)
+      : 0;
+
+    const totalCount = approvedReviews.length;
+
+    // Get rating distribution
+    const distribution = await Review.count({
+      where: { is_approved: true },
+      group: ['rating'],
+      raw: true,
+      subQuery: false,
+    });
+
+    console.log(`📊 Review stats: avg=${avgRating}, total=${totalCount}`);
 
     res.status(200).json({
       success: true,
       data: {
-        averages: stats[0],
+        averageRating: avgRating,
+        totalReviews: totalCount,
         distribution: distribution,
       },
     });
   } catch (error) {
-    console.error('Error fetching review stats:', error);
+    console.error('❌ Error fetching review stats:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch review statistics',
@@ -346,12 +392,14 @@ const getReviewStats = async (req, res) => {
 };
 
 /**
- * Get user's reviews
+ * Get user's own reviews
  * GET /api/reviews/my-reviews
  */
 const getMyReviews = async (req, res) => {
   try {
     const userId = req.user.id;
+
+    console.log(`📋 Fetching reviews for user ${userId}`);
 
     const reviews = await Review.findAll({
       where: { user_id: userId },
@@ -364,11 +412,13 @@ const getMyReviews = async (req, res) => {
         {
           model: Booking,
           as: 'booking',
-          attributes: ['booking_id', 'service_type', 'start_date'],
+          attributes: ['booking_id', 'service_type', 'start_date', 'end_date'],
         },
       ],
       order: [['created_at', 'DESC']],
     });
+
+    console.log(`✅ Found ${reviews.length} reviews for user`);
 
     res.status(200).json({
       success: true,
@@ -376,7 +426,7 @@ const getMyReviews = async (req, res) => {
       data: reviews,
     });
   } catch (error) {
-    console.error('Error fetching user reviews:', error);
+    console.error('❌ Error fetching user reviews:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch your reviews',
@@ -386,28 +436,16 @@ const getMyReviews = async (req, res) => {
 };
 
 /**
- * Get completed bookings that can be reviewed
+ * Get reviewable bookings for current user
  * GET /api/reviews/reviewable-bookings
  */
 const getReviewableBookings = async (req, res) => {
   try {
-    console.log('📋 getReviewableBookings called');
-    console.log('👤 User from req.user:', req.user);
-    console.log('🍪 Cookies:', req.cookies);
-    console.log('📨 Headers:', req.headers.authorization);
-    
-    if (!req.user || !req.user.id) {
-      console.error('❌ No user found in request');
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required',
-      });
-    }
-    
     const userId = req.user.id;
-    console.log('✅ User ID:', userId);
 
-    // Get completed bookings without reviews
+    console.log(`📋 Fetching reviewable bookings for user ${userId}`);
+
+    // Get completed bookings with payment made, without reviews
     const bookings = await Booking.findAll({
       where: {
         user_id: userId,
@@ -424,16 +462,24 @@ const getReviewableBookings = async (req, res) => {
           as: 'review',
           required: false,
         },
+        {
+          model: Payment,
+          as: 'payments',
+          where: { payment_status: 'completed' },
+          required: false,
+        },
       ],
       order: [['end_date', 'DESC']],
     });
 
-    console.log(`📊 Found ${bookings.length} completed bookings for user ${userId}`);
+    console.log(`📋 Found ${bookings.length} completed bookings`);
 
-    // Filter out bookings that already have reviews
-    const reviewableBookings = bookings.filter(booking => !booking.review);
-    
-    console.log(`✅ ${reviewableBookings.length} bookings are reviewable (without existing reviews)`);
+    // Filter: only bookings without reviews AND with completed payment
+    const reviewableBookings = bookings.filter(
+      booking => !booking.review && booking.payments && booking.payments.length > 0
+    );
+
+    console.log(`✅ ${reviewableBookings.length} bookings are reviewable`);
 
     res.status(200).json({
       success: true,
@@ -451,22 +497,16 @@ const getReviewableBookings = async (req, res) => {
 };
 
 /**
- * Update review (user can update their own review)
+ * Update review (user can update their own review if not yet approved)
  * PUT /api/reviews/:id
  */
 const updateReview = async (req, res) => {
   try {
     const userId = req.user.id;
     const reviewId = parseInt(req.params.id);
-    const {
-      rating_service,
-      rating_staff,
-      rating_cleanliness,
-      rating_value,
-      rating_communication,
-      rating_pet_condition,
-      review_text
-    } = req.body;
+    const { rating, comment } = req.body;
+
+    console.log(`📝 Updating review #${reviewId}`);
 
     const review = await Review.findByPk(reviewId);
 
@@ -485,79 +525,46 @@ const updateReview = async (req, res) => {
       });
     }
 
-    // Prepare update data
+    // Can't update if already approved
+    if (review.is_approved) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot update an approved review',
+      });
+    }
+
     const updateData = {};
-    
-    if (rating_service) {
-      updateData.rating_service = parseInt(rating_service);
-    }
-    if (rating_staff) {
-      updateData.rating_staff = parseInt(rating_staff);
-    }
-    if (rating_cleanliness) {
-      updateData.rating_cleanliness = parseInt(rating_cleanliness);
-    }
-    if (rating_value) {
-      updateData.rating_value = parseInt(rating_value);
-    }
-    if (rating_communication) {
-      updateData.rating_communication = parseInt(rating_communication);
-    }
-    if (rating_pet_condition) {
-      updateData.rating_pet_condition = parseInt(rating_pet_condition);
-    }
-    if (review_text !== undefined) {
-      updateData.review_text = review_text?.trim() || null;
+
+    if (rating !== undefined) {
+      const ratingNum = parseInt(rating);
+      if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+        return res.status(400).json({
+          success: false,
+          message: 'Rating must be between 1 and 5',
+        });
+      }
+      updateData.rating = ratingNum;
     }
 
-    // Recalculate overall rating if any rating changed
-    if (Object.keys(updateData).some(key => key.startsWith('rating_'))) {
-      const ratings = {
-        rating_service: updateData.rating_service || review.rating_service,
-        rating_staff: updateData.rating_staff || review.rating_staff,
-        rating_cleanliness: updateData.rating_cleanliness || review.rating_cleanliness,
-        rating_value: updateData.rating_value || review.rating_value,
-        rating_communication: updateData.rating_communication || review.rating_communication,
-        rating_pet_condition: updateData.rating_pet_condition || review.rating_pet_condition,
-      };
-
-      const overall_rating = (
-        ratings.rating_service + 
-        ratings.rating_staff + 
-        ratings.rating_cleanliness + 
-        ratings.rating_value + 
-        ratings.rating_communication + 
-        ratings.rating_pet_condition
-      ) / 6.0;
-
-      updateData.overall_rating = overall_rating.toFixed(1);
-      updateData.is_approved = false; // Require re-approval after edit
-    }
-
-    // Handle photo update
-    if (req.file) {
-      updateData.photos = req.file.path;
+    if (comment !== undefined) {
+      updateData.comment = comment?.trim() || null;
     }
 
     await review.update(updateData);
 
-    // Fetch updated review with associations
+    console.log(`✅ Review #${reviewId} updated`);
+
     const updatedReview = await Review.findByPk(reviewId, {
       include: [
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'first_name', 'last_name', 'profile_picture'],
+          attributes: ['id', 'first_name', 'last_name'],
         },
         {
           model: Pet,
           as: 'pet',
           attributes: ['pet_id', 'name', 'breed'],
-        },
-        {
-          model: Booking,
-          as: 'booking',
-          attributes: ['booking_id', 'service_type', 'start_date'],
         },
       ],
     });
@@ -568,7 +575,7 @@ const updateReview = async (req, res) => {
       data: updatedReview,
     });
   } catch (error) {
-    console.error('Error updating review:', error);
+    console.error('❌ Error updating review:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update review',
@@ -578,7 +585,7 @@ const updateReview = async (req, res) => {
 };
 
 /**
- * Delete review
+ * Delete review (user can delete if not approved, admin can delete anytime)
  * DELETE /api/reviews/:id
  */
 const deleteReview = async (req, res) => {
@@ -586,6 +593,8 @@ const deleteReview = async (req, res) => {
     const userId = req.user.id;
     const userType = req.user.userType;
     const reviewId = parseInt(req.params.id);
+
+    console.log(`🗑️ Deleting review #${reviewId}`);
 
     const review = await Review.findByPk(reviewId);
 
@@ -596,7 +605,7 @@ const deleteReview = async (req, res) => {
       });
     }
 
-    // Only owner or admin can delete
+    // User can only delete if not approved; admin can delete anytime
     if (review.user_id !== userId && userType !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -604,14 +613,23 @@ const deleteReview = async (req, res) => {
       });
     }
 
+    if (review.user_id === userId && review.is_approved && userType !== 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete an approved review',
+      });
+    }
+
     await review.destroy();
+
+    console.log(`✅ Review #${reviewId} deleted`);
 
     res.status(200).json({
       success: true,
       message: 'Review deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting review:', error);
+    console.error('❌ Error deleting review:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete review',
@@ -621,7 +639,7 @@ const deleteReview = async (req, res) => {
 };
 
 /**
- * Admin: Get all reviews (including unapproved)
+ * Admin: Get all reviews (both approved and pending)
  * GET /api/reviews/admin/all
  */
 const getAllReviews = async (req, res) => {
@@ -635,7 +653,9 @@ const getAllReviews = async (req, res) => {
       });
     }
 
-    const { page = 1, limit = 100, status } = req.query;
+    const { page = 1, limit = 10, status } = req.query;
+
+    console.log(`📊 Admin fetching reviews with status: ${status || 'all'}`);
 
     const whereClause = {};
     if (status === 'pending') {
@@ -657,7 +677,7 @@ const getAllReviews = async (req, res) => {
         {
           model: Pet,
           as: 'pet',
-          attributes: ['pet_id', 'name', 'breed', 'photo'],
+          attributes: ['pet_id', 'name', 'breed'],
         },
         {
           model: Booking,
@@ -670,6 +690,8 @@ const getAllReviews = async (req, res) => {
       offset: offset,
     });
 
+    console.log(`✅ Found ${count} reviews for admin`);
+
     res.status(200).json({
       success: true,
       count: count,
@@ -678,7 +700,7 @@ const getAllReviews = async (req, res) => {
       data: reviews,
     });
   } catch (error) {
-    console.error('Error fetching all reviews:', error);
+    console.error('❌ Error fetching all reviews:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch reviews',
@@ -688,16 +710,110 @@ const getAllReviews = async (req, res) => {
 };
 
 /**
- * Admin: Approve/reject review
+ * Admin: Approve or reject a review
  * PATCH /api/reviews/:id/approve
  */
 const approveReview = async (req, res) => {
   try {
     const userType = req.user.userType;
     const reviewId = parseInt(req.params.id);
-    const { is_approved, is_featured, admin_response } = req.body;
+    const { is_approved, rejection_reason } = req.body;
 
-    console.log(`📝 Approve review request:`, { reviewId, is_approved, is_featured, admin_response, userType });
+    console.log(`📝 Admin approval request for review #${reviewId}:`, { is_approved, rejection_reason });
+
+    if (userType !== 'admin' && userType !== 'staff') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin or staff access required',
+      });
+    }
+
+    const review = await Review.findByPk(reviewId, {
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'first_name', 'last_name', 'email'],
+        },
+      ],
+    });
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: 'Review not found',
+      });
+    }
+
+    const updateData = {
+      is_approved: is_approved === true,
+    };
+
+    if (is_approved === false) {
+      updateData.rejection_reason = rejection_reason || 'Review does not meet our guidelines';
+    } else {
+      updateData.rejection_reason = null;
+    }
+
+    await review.update(updateData);
+
+    console.log(`✅ Review #${reviewId} ${is_approved ? 'APPROVED' : 'REJECTED'}`);
+
+    // 📧 Notify user about approval/rejection
+    try {
+      const { Notification } = require('../models');
+      await Notification.create({
+        user_id: review.user_id,
+        type: is_approved ? 'review_approved' : 'review_rejected',
+        title: is_approved ? 'Your Review is Approved!' : 'Your Review Was Rejected',
+        message: is_approved
+          ? 'Congratulations! Your review has been approved and is now visible to other customers.'
+          : `Your review was not approved. Reason: ${updateData.rejection_reason}`,
+        reference_type: 'review',
+        reference_id: review.review_id,
+        is_read: false,
+      });
+      console.log(`📧 Notification sent to user ${review.user_id}`);
+    } catch (notifError) {
+      console.error('❌ Error creating notification:', notifError.message);
+    }
+
+    const updatedReview = await Review.findByPk(reviewId, {
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'first_name', 'last_name'],
+        },
+      ],
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Review ${is_approved ? 'approved' : 'rejected'} successfully`,
+      data: updatedReview,
+    });
+  } catch (error) {
+    console.error('❌ Error approving review:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update review',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Admin: Feature/unfeature a review
+ * PATCH /api/reviews/:id/feature
+ */
+const featureReview = async (req, res) => {
+  try {
+    const userType = req.user.userType;
+    const reviewId = parseInt(req.params.id);
+    const { is_featured } = req.body;
+
+    console.log(`⭐ Featured update for review #${reviewId}:`, { is_featured });
 
     if (userType !== 'admin' && userType !== 'staff') {
       return res.status(403).json({
@@ -715,53 +831,27 @@ const approveReview = async (req, res) => {
       });
     }
 
-    console.log(`📝 Current review state:`, { 
-      id: review.review_id, 
-      is_approved: review.is_approved, 
-      is_featured: review.is_featured 
-    });
-
-    const updateData = {};
-    if (is_approved !== undefined) {
-      updateData.is_approved = is_approved;
-    }
-    if (is_featured !== undefined) {
-      updateData.is_featured = is_featured;
-    }
-    if (admin_response) {
-      updateData.admin_response = admin_response;
-      updateData.admin_response_date = new Date();
+    // Can only feature approved reviews
+    if (!review.is_approved) {
+      return res.status(400).json({
+        success: false,
+        message: 'Can only feature approved reviews',
+      });
     }
 
-    console.log(`📝 Updating review with:`, updateData);
+    await review.update({ is_featured: is_featured === true });
 
-    await review.update(updateData);
+    console.log(`⭐ Review #${reviewId} ${is_featured ? 'FEATURED' : 'UNFEATURED'}`);
 
-    console.log(`✅ Review #${reviewId} updated successfully`);
-
-    const updatedReview = await Review.findByPk(reviewId, {
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'first_name', 'last_name', 'email'],
-        },
-      ],
-    });
-
-    console.log(`📝 Updated review state:`, { 
-      id: updatedReview.review_id, 
-      is_approved: updatedReview.is_approved, 
-      is_featured: updatedReview.is_featured 
-    });
+    const updatedReview = await Review.findByPk(reviewId);
 
     res.status(200).json({
       success: true,
-      message: 'Review updated successfully',
+      message: `Review ${is_featured ? 'featured' : 'unfeatured'} successfully`,
       data: updatedReview,
     });
   } catch (error) {
-    console.error('❌ Error approving review:', error);
+    console.error('❌ Error featuring review:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update review',
@@ -770,12 +860,10 @@ const approveReview = async (req, res) => {
   }
 };
 
-// Import sequelize for stats query
-const { sequelize } = require('../config/database');
-
 module.exports = {
   createReview,
-  getReviews,
+  getApprovedReviews,
+  getFeaturedReviews,
   getReviewStats,
   getMyReviews,
   getReviewableBookings,
@@ -783,4 +871,5 @@ module.exports = {
   deleteReview,
   getAllReviews,
   approveReview,
+  featureReview,
 };

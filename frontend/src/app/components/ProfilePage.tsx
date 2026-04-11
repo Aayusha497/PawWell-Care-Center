@@ -319,9 +319,9 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
     setDeleting(true);
     
     try {
-      console.log('🗑️ Deleting account...');
+      console.log('Deleting account...');
       await deleteAccount();
-      console.log('✅ Account deleted successfully');
+      console.log('Account deleted successfully');
       toast.success('Your account has been deleted successfully. Redirecting...');
       setShowDeleteModal(false);
       setTimeout(() => {
@@ -764,7 +764,7 @@ export default function ProfilePage({ onBack, onLogout, userFullName, onNavigate
                   {deleting ? 'Deleting...' : 'Delete Account'}
                 </button>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  Warning: This action cannot be undone. All your data will be permanently deleted.
+                  Warning: This action cannot be undone.
                 </p>
               </div>
             </div>

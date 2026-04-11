@@ -2,6 +2,7 @@
  * Review Model
  * 
  * Represents customer reviews and ratings for completed bookings
+ * Requires: booking confirmed, payment made, service completed
  */
 
 const { DataTypes } = require('sequelize');
@@ -47,80 +48,19 @@ module.exports = (sequelize) => {
       allowNull: false,
       field: 'service_type'
     },
-    rating_service: {
+    rating: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'rating_service',
+      field: 'rating',
       validate: {
         min: 1,
         max: 5
       }
     },
-    rating_staff: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      field: 'rating_staff',
-      validate: {
-        min: 1,
-        max: 5
-      }
-    },
-    rating_cleanliness: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      field: 'rating_cleanliness',
-      validate: {
-        min: 1,
-        max: 5
-      }
-    },
-    rating_value: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      field: 'rating_value',
-      validate: {
-        min: 1,
-        max: 5
-      }
-    },
-    rating_communication: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      field: 'rating_communication',
-      validate: {
-        min: 1,
-        max: 5
-      }
-    },
-    rating_pet_condition: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      field: 'rating_pet_condition',
-      validate: {
-        min: 1,
-        max: 5
-      }
-    },
-    overall_rating: {
-      type: DataTypes.DECIMAL(2, 1),
-      allowNull: false,
-      field: 'overall_rating'
-    },
-    review_text: {
+    comment: {
       type: DataTypes.TEXT,
       allowNull: true,
-      field: 'review_text'
-    },
-    photos: {
-      type: DataTypes.STRING(1000),
-      allowNull: true,
-      field: 'photos'
-    },
-    is_verified: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-      field: 'is_verified'
+      field: 'comment'
     },
     is_approved: {
       type: DataTypes.BOOLEAN,
@@ -134,21 +74,10 @@ module.exports = (sequelize) => {
       defaultValue: false,
       field: 'is_featured'
     },
-    admin_response: {
+    rejection_reason: {
       type: DataTypes.TEXT,
       allowNull: true,
-      field: 'admin_response'
-    },
-    admin_response_date: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      field: 'admin_response_date'
-    },
-    helpful_count: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-      field: 'helpful_count'
+      field: 'rejection_reason'
     }
   }, {
     tableName: 'reviews',

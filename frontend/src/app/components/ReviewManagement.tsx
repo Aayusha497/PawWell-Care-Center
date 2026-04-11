@@ -16,26 +16,28 @@ interface User {
   profile_picture?: string;
 }
 
+interface Booking {
+  booking_id: number;
+  service_type: string;
+  start_date: string;
+  end_date: string;
+}
+
 interface Review {
   review_id: number;
   booking_id: number;
   user_id: number;
   pet_id: number;
   service_type: string;
-  rating_service: number;
-  rating_staff: number;
-  rating_cleanliness: number;
-  rating_value: number;
-  rating_communication: number;
-  rating_pet_condition: number;
-  overall_rating: number;
-  review_text?: string;
-  photos?: string;
+  rating: number;
+  comment?: string;
   is_approved: boolean;
   is_featured: boolean;
+  rejection_reason?: string;
   created_at: string;
   user?: User;
   pet?: Pet;
+  booking?: Booking;
 }
 
 const ReviewManagement: React.FC = () => {
@@ -45,6 +47,7 @@ const ReviewManagement: React.FC = () => {
   const [processing, setProcessing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [rejectionReasons, setRejectionReasons] = useState<{ [key: number]: string }>({});
   const reviewsPerPage = 2;
 
   useEffect(() => {
@@ -57,40 +60,26 @@ const ReviewManagement: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      console.log('Fetching reviews from:', 'http://localhost:8000/api/reviews/admin/all');
-      
-      const response = await fetch('http://localhost:8000/api/reviews/admin/all', {
-        credentials: 'include', // Important: sends cookies with the request
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `http://localhost:8000/api/reviews/admin/all?status=${filter}`,
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
-      });
-
-      console.log('Response status:', response.status);
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Error response:', errorData);
-        const errorMsg = errorData.message || 'Failed to fetch reviews';
-        setError(errorMsg);
-        throw new Error(errorMsg);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
       }
-      
+
       const data = await response.json();
-      console.log('Reviews data:', data);
-      
-      let reviewData = data.data || data.reviews || data || [];
-      
-      // Filter based on status
-      if (filter === 'pending') {
-        reviewData = reviewData.filter((r: Review) => !r.is_approved);
-      } else if (filter === 'approved') {
-        reviewData = reviewData.filter((r: Review) => r.is_approved);
-      }
-      
-      setReviews(Array.isArray(reviewData) ? reviewData : []);
+      const reviewData = Array.isArray(data.data) ? data.data : [];
+      setReviews(reviewData);
     } catch (error: any) {
-      console.error('Error fetching reviews:', error);
       const errorMsg = error.message || 'Failed to load reviews';
       setError(errorMsg);
       toast.error(errorMsg);
@@ -100,131 +89,155 @@ const ReviewManagement: React.FC = () => {
     }
   };
 
-  const handleApprove = async (reviewId: number, featured: boolean = false) => {
+  const handleApprove = async (reviewId: number) => {
     try {
       setProcessing(reviewId);
-      
-      const response = await fetch(`http://localhost:8000/api/reviews/${reviewId}/approve`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          is_approved: true,
-          is_featured: featured
-        })
-      });
 
-      if (!response.ok) throw new Error('Failed to approve review');
-      
-      // Update state directly instead of fetching all reviews
-      setReviews(prevReviews =>
-        prevReviews.map(review =>
-          review.review_id === reviewId
-            ? { ...review, is_approved: true, is_featured: featured }
-            : review
-        )
+      const response = await fetch(
+        `http://localhost:8000/api/reviews/${reviewId}/approve`,
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            is_approved: true,
+          }),
+        }
       );
-      
-      toast.success(featured ? 'Review approved and featured!' : 'Review approved!');
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to approve review');
+      }
+
+      toast.success('Review approved!');
+      await fetchReviews();
     } catch (error: any) {
-      console.error('Error approving review:', error);
-      toast.error('Failed to approve review');
+      toast.error(error.message || 'Failed to approve review');
     } finally {
       setProcessing(null);
     }
   };
 
   const handleReject = async (reviewId: number) => {
+    const reason = rejectionReasons[reviewId] || 'Review does not meet guidelines';
+
     try {
       setProcessing(reviewId);
-      
-      const response = await fetch(`http://localhost:8000/api/reviews/${reviewId}/approve`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          is_approved: false,
-          is_featured: false
-        })
-      });
 
-      if (!response.ok) throw new Error('Failed to reject review');
-      
-      // Update state directly instead of fetching all reviews
-      setReviews(prevReviews =>
-        prevReviews.map(review =>
-          review.review_id === reviewId
-            ? { ...review, is_approved: false, is_featured: false }
-            : review
-        )
+      const response = await fetch(
+        `http://localhost:8000/api/reviews/${reviewId}/approve`,
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            is_approved: false,
+            rejection_reason: reason,
+          }),
+        }
       );
-      
-      toast.success('Review rejected');
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to reject review');
+      }
+
+      toast.success('Review rejected!');
+      setRejectionReasons((prev) => ({ ...prev, [reviewId]: '' }));
+      await fetchReviews();
     } catch (error: any) {
-      console.error('Error rejecting review:', error);
-      toast.error('Failed to reject review');
+      toast.error(error.message || 'Failed to reject review');
     } finally {
       setProcessing(null);
     }
   };
 
-  const handleUnfeature = async (reviewId: number) => {
+  const handleFeature = async (reviewId: number, isFeatured: boolean) => {
     try {
       setProcessing(reviewId);
-      
-      const response = await fetch(`http://localhost:8000/api/reviews/${reviewId}/approve`, {
-        method: 'PATCH',
+
+      const response = await fetch(
+        `http://localhost:8000/api/reviews/${reviewId}/feature`,
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            is_featured: !isFeatured,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to update review');
+      }
+
+      toast.success(`Review ${!isFeatured ? 'featured' : 'unfeatured'}!`);
+      await fetchReviews();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update review');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleDelete = async (reviewId: number) => {
+    if (!window.confirm('Are you sure you want to delete this review?')) return;
+
+    try {
+      setProcessing(reviewId);
+
+      const response = await fetch(`http://localhost:8000/api/reviews/${reviewId}`, {
+        method: 'DELETE',
         credentials: 'include',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          is_approved: true,
-          is_featured: false
-        })
       });
 
-      if (!response.ok) throw new Error('Failed to unfeature review');
-      
-      // Update state directly instead of fetching all reviews
-      setReviews(prevReviews =>
-        prevReviews.map(review =>
-          review.review_id === reviewId
-            ? { ...review, is_approved: true, is_featured: false }
-            : review
-        )
-      );
-      
-      toast.success('Review removed from featured');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete review');
+      }
+
+      toast.success('Review deleted!');
+      await fetchReviews();
     } catch (error: any) {
-      console.error('Error unfeaturning review:', error);
-      toast.error('Failed to unfeature review');
+      toast.error(error.message || 'Failed to delete review');
     } finally {
       setProcessing(null);
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      hour: 'numeric',
+      minute: '2-digit',
     });
   };
 
-  const StarDisplay = ({ rating }: { rating: number }) => {
+  const getInitials = (first?: string, last?: string) => {
+    return `${first?.[0] || ''}${last?.[0] || ''}`.toUpperCase() || 'U';
+  };
+
+  const StarDisplay = ({ rating, size = 'text-base' }: { rating: number; size?: string }) => {
     return (
       <div className="flex gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
           <span
             key={star}
-            className={`text-lg ${star <= rating ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`}
+            className={`${size} leading-none ${star <= rating ? 'text-[#E0A106]' : 'text-gray-300'}`}
           >
             ★
           </span>
@@ -233,262 +246,258 @@ const ReviewManagement: React.FC = () => {
     );
   };
 
-  // Calculate pagination
+  const InfoRating = ({ label, rating }: { label: string; rating: number }) => (
+    <div>
+      <p className="text-sm text-gray-600 mb-2">{label}</p>
+      <StarDisplay rating={rating} />
+    </div>
+  );
+
+  const startIndex = (currentPage - 1) * reviewsPerPage;
+  const endIndex = startIndex + reviewsPerPage;
+  const paginatedReviews = reviews.slice(startIndex, endIndex);
   const totalPages = Math.ceil(reviews.length / reviewsPerPage);
-  const startIdx = (currentPage - 1) * reviewsPerPage;
-  const paginatedReviews = reviews.slice(startIdx, startIdx + reviewsPerPage);
 
   return (
-    <div className="space-y-6">
-      {/* Header Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Reviews</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{reviews.length}</p>
+    <div className="min-h-screen bg-[#f8f8f8] py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Review Management</h1>
+          <p className="text-gray-500">Manage and moderate customer reviews</p>
         </div>
-        <div className="bg-yellow-50 dark:bg-yellow-900/30 rounded-xl p-4 shadow-sm border border-yellow-200 dark:border-yellow-800">
-          <p className="text-sm text-yellow-800 dark:text-yellow-400 mb-1">Pending Approval</p>
-          <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-300">
-            {reviews.filter(r => !r.is_approved).length}
-          </p>
-        </div>
-        <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-4 shadow-sm border border-green-200 dark:border-green-800">
-          <p className="text-sm text-green-800 dark:text-green-400 mb-1">Approved</p>
-          <p className="text-2xl font-bold text-green-900 dark:text-green-300">
-            {reviews.filter(r => r.is_approved).length}
-          </p>
-        </div>
-      </div>
 
-      {/* Filter Buttons */}
-      <div className="flex gap-3">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg font-medium transition ${
-            filter === 'all'
-              ? 'bg-gray-900 dark:bg-gray-700 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-          }`}
-        >
-          All Reviews
-        </button>
-        <button
-          onClick={() => setFilter('pending')}
-          className={`px-4 py-2 rounded-lg font-medium transition ${
-            filter === 'pending'
-              ? 'bg-yellow-500 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-          }`}
-        >
-          Pending Approval
-        </button>
-        <button
-          onClick={() => setFilter('approved')}
-          className={`px-4 py-2 rounded-lg font-medium transition ${
-            filter === 'approved'
-              ? 'bg-green-500 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-          }`}
-        >
-          Approved
-        </button>
-      </div>
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <p className="text-sm text-gray-500 mb-2">All Reviews</p>
+            <p className="text-4xl font-bold text-[#0f172a]">{reviews.length}</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-[#E8D28E] p-6">
+            <p className="text-sm text-gray-500 mb-2">Pending Approval</p>
+            <p className="text-4xl font-bold text-[#0f172a]">
+              {reviews.filter((r) => !r.is_approved).length}
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl border border-[#BCE8C8] p-6">
+            <p className="text-sm text-gray-500 mb-2">Approved</p>
+            <p className="text-4xl font-bold text-[#0f172a]">
+              {reviews.filter((r) => r.is_approved).length}
+            </p>
+          </div>
+        </div>
 
-      {/* Reviews List */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-gray-100"></div>
-        </div>
-      ) : error ? (
-        <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-8 text-center shadow-sm border-2 border-red-200 dark:border-red-800">
-          <div className="text-red-600 dark:text-red-400 text-4xl mb-3">⚠️</div>
-          <h3 className="text-red-800 dark:text-red-300 font-semibold text-lg mb-2">Error Loading Reviews</h3>
-          <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
-          <button
-            onClick={fetchReviews}
-            className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition"
-          >
-            Try Again
-          </button>
-        </div>
-      ) : reviews.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center shadow-sm">
-          <p className="text-gray-500 dark:text-gray-400">
-            {filter === 'pending' ? 'No pending reviews' : 
-             filter === 'approved' ? 'No approved reviews yet' : 
-             'No reviews yet'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {paginatedReviews.map((review) => (
-            <div
-              key={review.review_id}
-              className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 transition ${
-                review.is_approved
-                  ? 'border-green-200 dark:border-green-800'
-                  : 'border-yellow-200 dark:border-yellow-800'
+        {/* Filter */}
+        <div className="mb-6 flex gap-3">
+          {(['all', 'pending', 'approved'] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-5 py-2.5 rounded-xl font-semibold transition ${
+                filter === status
+                  ? 'bg-[#0f172a] text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
               }`}
             >
-              {/* Review Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start gap-4">
-                  {review.pet?.photo && (
-                    <img
-                      src={review.pet.photo}
-                      alt={review.pet.name}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                  )}
-                  <div>
-                    <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-                      {review.user?.first_name} {review.user?.last_name}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Pet: {review.pet?.name} • Service: {review.service_type}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      {formatDate(review.created_at)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-yellow-600">
-                      {review.overall_rating}
-                    </span>
-                    <StarDisplay rating={Math.round(review.overall_rating)} />
-                  </div>
-                  {review.is_approved ? (
-                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                      ✓ Approved
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full">
-                      ⏳ Pending
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Detailed Ratings */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Service Quality</p>
-                  <StarDisplay rating={review.rating_service} />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Staff</p>
-                  <StarDisplay rating={review.rating_staff} />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Cleanliness</p>
-                  <StarDisplay rating={review.rating_cleanliness} />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Value</p>
-                  <StarDisplay rating={review.rating_value} />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Communication</p>
-                  <StarDisplay rating={review.rating_communication} />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Pet Condition</p>
-                  <StarDisplay rating={review.rating_pet_condition} />
-                </div>
-              </div>
-
-              {/* Review Text */}
-              {review.review_text && (
-                <div className="mb-4">
-                  <p className="text-gray-700 dark:text-gray-300 italic">"{review.review_text}"</p>
-                </div>
-              )}
-
-              {/* Review Photo */}
-              {review.photos && (
-                <div className="mb-4">
-                  <img
-                    src={review.photos}
-                    alt="Review"
-                    className="rounded-lg max-w-md max-h-64 object-cover"
-                  />
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              {!review.is_approved && (
-                <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={() => handleApprove(review.review_id, false)}
-                    disabled={processing === review.review_id}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
-                  >
-                    {processing === review.review_id ? 'Processing...' : '✓ Approve'}
-                  </button>
-                  <button
-                    onClick={() => handleReject(review.review_id)}
-                    disabled={processing === review.review_id}
-                    className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
-                  >
-                    ✗ Reject
-                  </button>
-                </div>
-              )}
-
-              {review.is_approved && !review.is_featured && (
-                <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={() => handleReject(review.review_id)}
-                    disabled={processing === review.review_id}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
-                  >
-                    Unapprove
-                  </button>
-                </div>
-              )}
-
-              {review.is_approved && review.is_featured && (
-                <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={() => handleReject(review.review_id)}
-                    disabled={processing === review.review_id}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
-                  >
-                    Unapprove
-                  </button>
-                </div>
-              )}
-            </div>
+              {status === 'all' && 'All Reviews'}
+              {status === 'pending' && 'Pending Approval'}
+              {status === 'approved' && 'Approved'}
+            </button>
           ))}
+        </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Page {currentPage} of {totalPages}
-              </p>
-              <div className="flex gap-2">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E0A106]"></div>
+          </div>
+        ) : reviews.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
+            <p className="text-gray-500 text-lg">No reviews found</p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-5">
+              {paginatedReviews.map((review) => (
+                <div
+                  key={review.review_id}
+                  className={`bg-white rounded-2xl border p-6 shadow-sm ${
+                    review.is_approved ? 'border-[#BCE8C8]' : 'border-[#E8D28E]'
+                  }`}
+                >
+                  {/* Header */}
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5 mb-5">
+                    <div className="flex items-start gap-4">
+                      <div className="shrink-0">
+                        {review.pet?.photo ? (
+                          <img
+                            src={review.pet.photo}
+                            alt={review.pet.name}
+                            className="w-14 h-14 rounded-xl object-cover border border-gray-200"
+                          />
+                        ) : review.user?.profile_picture ? (
+                          <img
+                            src={review.user.profile_picture}
+                            alt={`${review.user.first_name} ${review.user.last_name}`}
+                            className="w-14 h-14 rounded-xl object-cover border border-gray-200"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-xl bg-[#F3E8C4] text-[#0f172a] font-bold flex items-center justify-center">
+                            {getInitials(review.user?.first_name, review.user?.last_name)}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <h3 className="text-[30px] leading-none font-bold text-[#1f2937] mb-2">
+                          {review.user?.first_name} {review.user?.last_name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Pet: {review.pet?.name || '-'} • Service:{' '}
+                          {review.booking?.service_type || review.service_type}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">{formatDate(review.created_at)}</p>
+                      </div>
+                    </div>
+
+                    <div className="lg:text-right">
+                      <div className="flex lg:justify-end items-center gap-2 mb-3">
+                        <span className="text-[18px] font-bold text-[#E0A106]">
+                          {review.rating.toFixed(1)}
+                        </span>
+                        <StarDisplay rating={review.rating} size="text-lg" />
+                      </div>
+
+                      <div className="flex lg:justify-end gap-2 flex-wrap">
+                        {review.is_featured && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-[#EEE4FF] text-[#7C3AED]">
+                            Featured
+                          </span>
+                        )}
+                        {review.is_approved && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-[#DDF8E6] text-[#16A34A]">
+                            Approved
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ratings grid */}
+                  <div className="bg-[#f8f8f8] rounded-2xl p-5 grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-5 mb-5">
+                    <div className="space-y-4">
+                      <InfoRating label="Service Quality" rating={review.rating} />
+                      <InfoRating label="Value" rating={review.rating} />
+                    </div>
+                    <div className="space-y-4">
+                      <InfoRating label="Staff" rating={review.rating} />
+                      <InfoRating label="Communication" rating={review.rating} />
+                    </div>
+                    <div className="space-y-4">
+                      <InfoRating label="Cleanliness" rating={review.rating} />
+                      <InfoRating label="Pet Condition" rating={review.rating} />
+                    </div>
+                  </div>
+
+                  {/* Comment */}
+                  {review.comment && (
+                    <div className="mb-5">
+                      <p className="text-[28px] italic text-[#475569] leading-relaxed">
+                        "{review.comment}"
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="border-t border-gray-200 pt-4">
+                    {review.is_approved ? (
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          onClick={() => handleFeature(review.review_id, review.is_featured)}
+                          disabled={processing === review.review_id}
+                          className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-[#475569] hover:bg-[#334155] text-white"
+                        >
+                          {review.is_featured ? 'Remove from Featured' : 'Feature'}
+                        </button>
+                        <button
+                          onClick={() => handleReject(review.review_id)}
+                          disabled={processing === review.review_id}
+                          className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          Unapprove
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <textarea
+                          value={rejectionReasons[review.review_id] || ''}
+                          onChange={(e) =>
+                            setRejectionReasons((prev) => ({
+                              ...prev,
+                              [review.review_id]: e.target.value,
+                            }))
+                          }
+                          placeholder="Rejection reason (optional)..."
+                          className="w-full mb-3 p-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E0A106] focus:outline-none"
+                          rows={2}
+                        />
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            onClick={() => handleApprove(review.review_id)}
+                            disabled={processing === review.review_id}
+                            className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-[#16A34A] hover:bg-[#15803d] text-white"
+                          >
+                            ✓ Approve
+                          </button>
+                          <button
+                            onClick={() => handleReject(review.review_id)}
+                            disabled={processing === review.review_id}
+                            className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-red-600 hover:bg-red-700 text-white"
+                          >
+                            ✕ Reject
+                          </button>
+                          <button
+                            onClick={() => handleDelete(review.review_id)}
+                            disabled={processing === review.review_id}
+                            className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-gray-200 hover:bg-gray-300 text-gray-800"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-center gap-3">
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                 >
                   Previous
                 </button>
+                <span className="text-gray-700 font-semibold">
+                  Page {currentPage} of {totalPages}
+                </span>
                 <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                 >
                   Next
                 </button>
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

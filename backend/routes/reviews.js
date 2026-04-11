@@ -2,15 +2,21 @@
  * Review Routes
  * 
  * Defines all routes for review and rating management
+ * Flow:
+ * 1. User submits review (confirmed + completed + paid booking) → is_approved = false
+ * 2. Admin approves/rejects → is_approved = true/false
+ * 3. Admin can feature → is_featured = true
+ * 4. Public sees only approved + featured reviews
  */
 
 const express = require('express');
 const router = express.Router();
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 const { upload } = require('../config/cloudinary');
 const {
   createReview,
-  getReviews,
+  getApprovedReviews,
+  getFeaturedReviews,
   getReviewStats,
   getMyReviews,
   getReviewableBookings,
@@ -18,106 +24,94 @@ const {
   deleteReview,
   getAllReviews,
   approveReview,
+  featureReview,
 } = require('../controllers/reviewController');
+
+//  PUBLIC ROUTES 
 
 /**
  * @route   GET /api/reviews/stats
- * @desc    Get review statistics
+ * @desc    Get review statistics (only approved reviews)
  * @access  Public
  */
 router.get('/stats', getReviewStats);
 
 /**
- * @route   GET /api/reviews/debug/counts
- * @desc    Get review counts for debugging (total, approved, featured)
+ * @route   GET /api/reviews/featured
+ * @desc    Get featured reviews for landing page
  * @access  Public
  */
-router.get('/debug/counts', async (req, res) => {
-  try {
-    const { Review } = require('../models');
-    const total = await Review.count();
-    const approved = await Review.count({ where: { is_approved: true } });
-    const featured = await Review.count({ where: { is_approved: true, is_featured: true } });
-    const pending = await Review.count({ where: { is_approved: false } });
-    
-    res.json({
-      success: true,
-      counts: {
-        total,
-        approved,
-        featured,
-        pending
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+router.get('/featured', getFeaturedReviews);
+
+/**
+ * @route   GET /api/reviews
+ * @desc    Get all approved reviews with filters
+ * @access  Public
+ */
+router.get('/', getApprovedReviews);
+
+// ========== PRIVATE ROUTES (User) ==========
+
+/**
+ * @route   POST /api/reviews
+ * @desc    Create a new review (requires confirmed + completed + paid booking)
+ * @access  Private
+ */
+router.post(
+  '/',
+  authenticate,
+  createReview
+);
 
 /**
  * @route   GET /api/reviews/my-reviews
- * @desc    Get current user's reviews
+ * @desc    Get current user's reviews (both pending and approved)
  * @access  Private
  */
 router.get('/my-reviews', authenticate, getMyReviews);
 
 /**
  * @route   GET /api/reviews/reviewable-bookings
- * @desc    Get completed bookings that can be reviewed
+ * @desc    Get completed and paid bookings eligible for review
  * @access  Private
  */
 router.get('/reviewable-bookings', authenticate, getReviewableBookings);
 
 /**
+ * @route   PUT /api/reviews/:id
+ * @desc    Update a review (only if not approved yet)
+ * @access  Private (owner only)
+ */
+router.put('/:id', authenticate, updateReview);
+
+/**
+ * @route   DELETE /api/reviews/:id
+ * @desc    Delete a review (owner can delete pending, admin can delete any)
+ * @access  Private (owner or admin)
+ */
+router.delete('/:id', authenticate, deleteReview);
+
+// ========== ADMIN ROUTES ==========
+
+/**
  * @route   GET /api/reviews/admin/all
- * @desc    Get all reviews (including unapproved) - Admin
- * @access  Private (admin, staff)
+ * @desc    Get all reviews (pending + approved)
+ * @access  Private (admin/staff only)
  */
 router.get('/admin/all', authenticate, getAllReviews);
 
 /**
- * @route   GET /api/reviews
- * @desc    Get all approved reviews (public)
- * @access  Public
- */
-router.get('/', getReviews);
-
-/**
- * @route   POST /api/reviews
- * @desc    Create a new review
- * @access  Private
- */
-router.post(
-  '/',
-  authenticate,
-  upload.single('photo'),
-  createReview
-);
-
-/**
- * @route   PUT /api/reviews/:id
- * @desc    Update a review
- * @access  Private (owner only)
- */
-router.put(
-  '/:id',
-  authenticate,
-  upload.single('photo'),
-  updateReview
-);
-
-/**
  * @route   PATCH /api/reviews/:id/approve
- * @desc    Approve/reject or feature a review - Admin
- * @access  Private (admin, staff)
+ * @desc    Approve or reject a review
+ * @access  Private (admin/staff only)
  */
 router.patch('/:id/approve', authenticate, approveReview);
 
 /**
- * @route   DELETE /api/reviews/:id
- * @desc    Delete a review
- * @access  Private (owner or admin)
+ * @route   PATCH /api/reviews/:id/feature
+ * @desc    Feature or unfeature an approved review
+ * @access  Private (admin/staff only)
  */
-router.delete('/:id', authenticate, deleteReview);
+router.patch('/:id/feature', authenticate, featureReview);
 
 module.exports = router;

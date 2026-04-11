@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import heroImage from '../../assets/hero-dogs.png';
 import daycare from "../../assets/daycare.jpg";
 import boarding from "../../assets/boarding.jpg";
@@ -7,15 +8,59 @@ import about from "../../assets/about.png";
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
-import { Phone, Mail, MapPin } from "lucide-react"; //icon for these useing lucide-react library
+import { Phone, Mail, MapPin } from "lucide-react";
+
+interface Review {
+  review_id: number;
+  rating: number;
+  comment: string;
+  user?: {
+    first_name: string;
+    last_name: string;
+  };
+  pet?: {
+    name: string;
+  };
+}
 
 interface LandingPageProps {
   onNavigateToLogin: () => void;
   onNavigateToSignup: () => void;
 }
 
-
 export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: LandingPageProps) {
+  const [featuredReviews, setFeaturedReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchFeaturedReviews();
+  }, []);
+
+  const fetchFeaturedReviews = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:8000/api/reviews/featured', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const reviews = Array.isArray(data.data) ? data.data : [];
+        setFeaturedReviews(reviews);
+      } else {
+        console.error('Failed to fetch featured reviews');
+        setFeaturedReviews([]);
+      }
+    } catch (error) {
+      console.error('Error fetching featured reviews:', error);
+      setFeaturedReviews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-[#FFF8E8] dark:bg-gray-900">
       {/* Navigation */}
@@ -306,11 +351,59 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToSignup }: L
       </section>
 
       {/* Ratings section*/}
-      <section id="ratings" className="px-8 py-16">
+      <section id="ratings" className="px-8 py-16 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl text-center mb-12 dark:text-gray-100">What Our Customers Say</h2>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-2 dark:text-gray-100">What Our Customers Say</h2>
+            <p className="text-gray-600 dark:text-gray-400">Real experiences from pet parents who trust PawWell</p>
+          </div>
 
-          {/* fetch ratings and reciew from the cutomer posted ratings an reviews in the database and display here */}
+          {/* Featured Reviews Carousel */}
+          {loading ? (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg">
+              <div className="text-center py-12">
+                <p className="text-gray-500 dark:text-gray-400">Loading customer reviews...</p>
+                <div className="mt-4 inline-block">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FA9884]"></div>
+                </div>
+              </div>
+            </div>
+          ) : featuredReviews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {featuredReviews.map((review) => (
+                <div key={review.review_id} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border-l-4 border-[#F5B041] hover:shadow-xl transition">
+                  {/* Review Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-900 dark:text-white">
+                        {review.user?.first_name} {review.user?.last_name}
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        🐾 {review.pet?.name}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-[#F5B041]">{review.rating}.0</div>
+                      <div className="flex justify-end gap-1 mt-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span key={star} className={star <= review.rating ? 'text-[#F5B041]' : 'text-gray-300'}>
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Review Comment */}
+                  <p className="text-gray-700 dark:text-gray-300 italic">"{review.comment}"</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg text-center">
+              <p className="text-gray-500 dark:text-gray-400">No featured reviews yet. Check back soon!</p>
+            </div>
+          )}
         </div>
       </section>
 

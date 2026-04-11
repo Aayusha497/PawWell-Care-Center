@@ -48,7 +48,7 @@ export default function DeleteAccountModal({
 
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0">
-                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                {/* <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" /> */}
               </div>
               <div>
                 <h2 className="text-lg font-bold text-red-600 dark:text-red-400">
@@ -64,11 +64,11 @@ export default function DeleteAccountModal({
           {/* Content */}
           <div className="px-6 py-6 space-y-4">
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              Are you absolutely sure you want to delete your account? This will permanently erase:
+              Are you absolutely sure you want to delete your account?
             </p>
 
             {/* Data that will be deleted */}
-            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 space-y-2">
+            {/* <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 space-y-2">
               <div className="flex items-start gap-2">
                 <span className="text-red-500 dark:text-red-400 mt-1">•</span>
                 <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -99,7 +99,7 @@ export default function DeleteAccountModal({
                   All wellness timeline data
                 </span>
               </div>
-            </div>
+            </div> */}
 
             {/* Confirmation Checkbox */}
             <div className="flex items-start gap-3 pt-2">
@@ -115,7 +115,7 @@ export default function DeleteAccountModal({
                 htmlFor="understand"
                 className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
               >
-                I understand that this action is <strong>permanent and irreversible</strong>. Delete my account.
+                I understand that this action is <strong> irreversible</strong>. Delete my account.
               </label>
             </div>
           </div>
