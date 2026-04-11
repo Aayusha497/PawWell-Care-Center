@@ -495,9 +495,9 @@ export default function Analytics() {
       </div>
 
       {/* Peak Hours & Days */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"> */}
         {/* Peak Hours */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        {/* <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Peak Booking Hours</h3>
           {peakHours.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
@@ -512,10 +512,10 @@ export default function Analytics() {
           ) : (
             <p className="text-center text-gray-500 py-8">No data available</p>
           )}
-        </div>
+        </div> */}
 
         {/* Peak Days */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        {/* <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Peak Booking Days</h3>
           {peakDays.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
@@ -531,7 +531,7 @@ export default function Analytics() {
             <p className="text-center text-gray-500 py-8">No data available</p>
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* Top Services */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">

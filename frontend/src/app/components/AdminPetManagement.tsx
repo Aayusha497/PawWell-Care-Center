@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, Trash2, AlertCircle } from 'lucide-react';
-import { getAdminPets, getAdminPetById, deleteAdminPet } from '../../services/api';
+import { Search, Eye, Edit, Trash2, AlertCircle } from 'lucide-react';
+import { getAdminPets, getAdminPetById, updateAdminPet, deleteAdminPet } from '../../services/api';
 import { toast } from 'sonner';
 
 interface User {
@@ -33,10 +33,25 @@ interface PetDetailsModal {
   pet: Pet | null;
 }
 
+interface EditModal {
+  isOpen: boolean;
+  pet: Pet | null;
+  formData: Partial<Pet>;
+}
+
 interface DeleteConfirmation {
   isOpen: boolean;
   petId: number | null;
   petName: string;
+}
+
+interface ValidationErrors {
+  name?: string;
+  breed?: string;
+  age?: string;
+  weight?: string;
+  height?: string;
+  sex?: string;
 }
 
 export default function AdminPetManagement() {
@@ -49,7 +64,10 @@ export default function AdminPetManagement() {
   const [totalPets, setTotalPets] = useState(0);
 
   const [detailsModal, setDetailsModal] = useState<PetDetailsModal>({ isOpen: false, pet: null });
+  const [editModal, setEditModal] = useState<EditModal>({ isOpen: false, pet: null, formData: {} });
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmation>({ isOpen: false, petId: null, petName: '' });
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -87,6 +105,85 @@ export default function AdminPetManagement() {
     } catch (error: any) {
       console.error('Error fetching pet details:', error);
       toast.error('Failed to load pet details');
+    }
+  };
+
+  const handleEditClick = (pet: Pet) => {
+    setEditModal({
+      isOpen: true,
+      pet,
+      formData: { ...pet }
+    });
+    setValidationErrors({});
+  };
+
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+
+    if (!editModal.formData.name || !editModal.formData.name.trim()) {
+      errors.name = 'Pet name is required';
+    } else if (editModal.formData.name.trim().length < 2) {
+      errors.name = 'Pet name must be at least 2 characters long';
+    } else if (/^\d+$/.test(editModal.formData.name.trim())) {
+      errors.name = 'Pet name cannot contain only numbers';
+    }
+
+    if (!editModal.formData.breed || !editModal.formData.breed.trim()) {
+      errors.breed = 'Breed is required';
+    } else if (editModal.formData.breed.trim().length < 2) {
+      errors.breed = 'Breed must be at least 2 characters long';
+    } else if (/^\d+$/.test(editModal.formData.breed.trim())) {
+      errors.breed = 'Breed cannot contain only numbers';
+    }
+
+    if (!editModal.formData.age && editModal.formData.age !== 0) {
+      errors.age = 'Age is required';
+    } else if (editModal.formData.age) {
+      if (isNaN(Number(editModal.formData.age)) || editModal.formData.age < 0) {
+        errors.age = 'Age must be a valid positive number';
+      }
+    }
+
+    if (!editModal.formData.weight && editModal.formData.weight !== 0) {
+      errors.weight = 'Weight is required';
+    } else if (editModal.formData.weight) {
+      if (isNaN(Number(editModal.formData.weight)) || editModal.formData.weight < 0) {
+        errors.weight = 'Weight must be a valid positive number';
+      }
+    }
+
+    if (!editModal.formData.height && editModal.formData.height !== 0) {
+      errors.height = 'Height is required';
+    } else if (editModal.formData.height) {
+      if (isNaN(Number(editModal.formData.height)) || editModal.formData.height < 0) {
+        errors.height = 'Height must be a valid positive number';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleUpdatePet = async () => {
+    if (!editModal.pet) return;
+
+    if (!validateForm()) {
+      toast.error('Please fix the errors in the form before updating');
+      return;
+    }
+
+    try {
+      setUpdatingId(editModal.pet.pet_id);
+      await updateAdminPet(editModal.pet.pet_id, editModal.formData);
+      toast.success('Pet updated successfully!');
+      setEditModal({ isOpen: false, pet: null, formData: {} });
+      setValidationErrors({});
+      fetchPets();
+    } catch (error: any) {
+      console.error('Error updating pet:', error);
+      toast.error(error.message || 'Failed to update pet');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -238,6 +335,14 @@ export default function AdminPetManagement() {
                         </button>
 
                         <button
+                          onClick={() => handleEditClick(pet)}
+                          className="text-[#F59E0B] hover:text-[#D97706] transition"
+                          title="Edit"
+                        >
+                          <Edit size={18} />
+                        </button>
+
+                        <button
                           onClick={() => handleDeleteClick(pet)}
                           className="p-2 rounded-xl border border-[#FACC15]/50 text-black hover:bg-[#FACC15]/10 transition"
                           title="Delete"
@@ -283,7 +388,7 @@ export default function AdminPetManagement() {
 
       {/* View Details Modal - Full Page */}
       {detailsModal.isOpen && detailsModal.pet && (
-        <div className="fixed inset-0 z-50 overflow-auto bg-white dark:bg-gray-900">
+        <div className="absolute inset-0 z-50 bg-white dark:bg-gray-900 overflow-visible">
           <div className="min-h-screen p-8 bg-white dark:bg-gray-900">
             <div className="max-w-4xl mx-auto">
               {/* Header */}
@@ -439,14 +544,170 @@ export default function AdminPetManagement() {
         </div>
       )}
 
+      {/* Edit Modal */}
+      
+      {editModal.isOpen && editModal.pet && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full border border-[#FACC15]/40 max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-[#FACC15]/30 sticky top-0 bg-white z-10">
+              <h3 className="text-lg font-bold text-black">Edit Pet</h3>
+            </div>
+
+            <div className="p-6 space-y-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">Pet Name</label>
+                <input
+                  type="text"
+                  value={editModal.formData.name || ''}
+                  onChange={(e) => {
+                    setEditModal({ ...editModal, formData: { ...editModal.formData, name: e.target.value } });
+                    if (validationErrors.name) setValidationErrors({ ...validationErrors, name: undefined });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
+                    validationErrors.name
+                      ? 'border-red-500 focus:ring-red-400'
+                      : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
+                  }`}
+                />
+                {validationErrors.name && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.name}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">Breed</label>
+                <input
+                  type="text"
+                  value={editModal.formData.breed || ''}
+                  onChange={(e) => {
+                    setEditModal({ ...editModal, formData: { ...editModal.formData, breed: e.target.value } });
+                    if (validationErrors.breed) setValidationErrors({ ...validationErrors, breed: undefined });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
+                    validationErrors.breed
+                      ? 'border-red-500 focus:ring-red-400'
+                      : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
+                  }`}
+                />
+                {validationErrors.breed && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.breed}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">Age</label>
+                <input
+                  type="number"
+                  value={editModal.formData.age || ''}
+                  onChange={(e) => {
+                    setEditModal({ ...editModal, formData: { ...editModal.formData, age: Number(e.target.value) || undefined } });
+                    if (validationErrors.age) setValidationErrors({ ...validationErrors, age: undefined });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
+                    validationErrors.age
+                      ? 'border-red-500 focus:ring-red-400'
+                      : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
+                  }`}
+                />
+                {validationErrors.age && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.age}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">Weight (kg)</label>
+                <input
+                  type="number"
+                  value={editModal.formData.weight || ''}
+                  onChange={(e) => {
+                    setEditModal({ ...editModal, formData: { ...editModal.formData, weight: Number(e.target.value) || undefined } });
+                    if (validationErrors.weight) setValidationErrors({ ...validationErrors, weight: undefined });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
+                    validationErrors.weight
+                      ? 'border-red-500 focus:ring-red-400'
+                      : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
+                  }`}
+                />
+                {validationErrors.weight && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.weight}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">Height (cm)</label>
+                <input
+                  type="number"
+                  value={editModal.formData.height || ''}
+                  onChange={(e) => {
+                    setEditModal({ ...editModal, formData: { ...editModal.formData, height: Number(e.target.value) || undefined } });
+                    if (validationErrors.height) setValidationErrors({ ...validationErrors, height: undefined });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
+                    validationErrors.height
+                      ? 'border-red-500 focus:ring-red-400'
+                      : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
+                  }`}
+                />
+                {validationErrors.height && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.height}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">Sex</label>
+                <select
+                  value={editModal.formData.sex || ''}
+                  onChange={(e) => setEditModal({ ...editModal, formData: { ...editModal.formData, sex: e.target.value } })}
+                  className="w-full px-3 py-2 border border-[#FACC15]/50 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-[#FACC15]"
+                >
+                  <option value="">Select sex</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-[#FACC15]/30 flex justify-end gap-3 sticky bottom-0 bg-white">
+              <button
+                onClick={() => {
+                  setEditModal({ isOpen: false, pet: null, formData: {} });
+                  setValidationErrors({});
+                }}
+                className="px-4 py-2 border border-[#FACC15]/50 rounded-xl hover:bg-[#FACC15]/10 transition text-black"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdatePet}
+                disabled={updatingId === editModal.pet?.pet_id}
+                className="px-4 py-2 bg-[#FACC15] text-black rounded-xl hover:bg-[#EAB308] disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold"
+              >
+                {updatingId === editModal.pet?.pet_id ? 'Updating...' : 'Update'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirm.isOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-sm w-full border border-[#FACC15]/40 dark:border-gray-700">
-            <div className="p-6 border-b border-[#FACC15]/30 dark:border-gray-700 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#FACC15] flex items-center justify-center">
+          <div className="bg-white rounded-2xl max-w-sm w-full border border-[#FACC15]/40">
+            <div className="p-6 border-b border-[#FACC15]/30 flex items-center gap-4">
+              {/* <div className="w-12 h-12 rounded-xl bg-[#FACC15] flex items-center justify-center">
                 <AlertCircle size={24} className="text-black" />
-              </div>
+              </div> */}
               <div>
                 <h3 className="text-lg font-bold text-black dark:text-gray-100">Delete Pet?</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{deleteConfirm.petName}</p>
@@ -459,7 +720,7 @@ export default function AdminPetManagement() {
               </p>
             </div>
 
-            <div className="p-6 border-t border-[#FACC15]/30 dark:border-gray-700 flex justify-end gap-3">
+            <div className="p-6 border-t border-[#FACC15]/30 flex justify-end gap-3">
               <button
                 onClick={() => setDeleteConfirm({ isOpen: false, petId: null, petName: '' })}
                 className="p-2 rounded-xl border border-[#FACC15]/50 hover:bg-[#FACC15]/10 transition"

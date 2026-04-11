@@ -1953,6 +1953,21 @@ export const getAdminPetById = async (petId: number): Promise<any> => {
 };
 
 /**
+ * Update pet information
+ * @param {number} petId - Pet ID
+ * @param {object} petData - Updated pet data
+ * @returns {Promise<any>} Updated pet details
+ */
+export const updateAdminPet = async (petId: number, petData: any): Promise<any> => {
+  try {
+    const response = await api.patch(`/admin/pets/${petId}`, petData);
+    return response.data;
+  } catch (error) {
+    throw (error as AxiosError).response?.data || { message: 'Failed to update pet' };
+  }
+};
+
+/**
  * Delete pet (soft delete by default)
  * @param {number} petId - Pet ID
  * @param {boolean} permanent - Whether to permanently delete (hard delete)

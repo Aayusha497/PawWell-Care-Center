@@ -103,6 +103,13 @@ router.get('/pets', authenticate, requireAdmin, adminController.getAllPets);
 router.get('/pets/:petId', authenticate, requireAdmin, adminController.getPetById);
 
 /**
+ * @route   PATCH /api/admin/pets/:petId
+ * @desc    Update pet information
+ * @access  Admin only
+ */
+router.patch('/pets/:petId', authenticate, requireAdmin, adminController.updatePet);
+
+/**
  * @route   DELETE /api/admin/pets/:petId
  * @desc    Delete/soft delete pet
  * @access  Admin only

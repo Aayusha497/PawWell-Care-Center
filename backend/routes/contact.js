@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const contactController = require('../controllers/contactController');
+const { optionalAuthenticate } = require('../middleware/auth');
 
 /**
  * @route   POST /api/contact
  * @desc    Submit a contact message
- * @access  Public
+ * @access  Public (optional authentication)
  */
-router.post('/', contactController.createContactMessage);
+router.post('/', optionalAuthenticate, contactController.createContactMessage);
 
 module.exports = router;

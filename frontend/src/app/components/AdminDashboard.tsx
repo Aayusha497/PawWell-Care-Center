@@ -2075,7 +2075,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
               )}
 
               {selectedMessage && (
-                <div className="fixed inset-0 z-50 overflow-auto bg-white dark:bg-gray-900">
+                <div className="absolute inset-0 z-50 bg-white dark:bg-gray-900 overflow-visible">
                   <div className="min-h-screen p-8 bg-white dark:bg-gray-900">
                     <div className="max-w-4xl mx-auto">
                       {/* Header */}
@@ -2133,7 +2133,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
                                 <div className="mt-2 flex items-center gap-2">
                                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${selectedMessage.status === 'read' ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400'}`}>
-                                    {selectedMessage.status === 'read' ? '✓ Read' : '● Unread'}
+                                    {selectedMessage.status === 'read' ? 'Read' : 'Unread'}
                                   </span>
                                 </div>
                               </div>
@@ -2241,7 +2241,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
               )}
 
               {selectedEmergencyRequest && (
-                <div className="fixed inset-0 z-50 overflow-auto bg-white dark:bg-gray-900">
+                <div className="absolute inset-0 z-50 bg-white dark:bg-gray-900 overflow-visible">
                   <div className="min-h-screen p-8 bg-white dark:bg-gray-900">
                     <div className="max-w-4xl mx-auto">
                       {/* Header */}

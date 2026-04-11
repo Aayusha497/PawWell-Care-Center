@@ -1,8 +1,12 @@
-const { ContactMessage, User } = require('../models');
+const { ContactMessage, User, Notification } = require('../models');
 
 const createContactMessage = async (req, res) => {
   try {
     const { fullName, email, phoneNumber, location, subject, message } = req.body;
+    console.log('📨 [Create Contact Message] User info:', {
+      user_id: req.user?.id || 'Not authenticated',
+      email: req.user?.email || email
+    });
 
     if (!fullName || !email || !phoneNumber || !location || !subject || !message) {
       return res.status(400).json({
@@ -23,9 +27,31 @@ const createContactMessage = async (req, res) => {
 
     if (req.user && req.user.id) {
       payload.user_id = req.user.id;
+      console.log('✅ [Create Contact Message] user_id will be saved:', req.user.id);
     }
 
     const contactMessage = await ContactMessage.create(payload);
+    console.log('✅ [Create Contact Message] Contact message created with:', {
+      contact_id: contactMessage.contact_id,
+      user_id: contactMessage.user_id
+    });
+
+    // Send notification to user if authenticated
+    if (req.user && req.user.id) {
+      try {
+        const notification = await Notification.create({
+          user_id: req.user.id,
+          type: 'contact_message_received',
+          title: 'Message Received',
+          message: 'Your contact message has been received. We will review it and get back to you soon.',
+          is_read: false
+        });
+        console.log('✅ [Create Contact Message] Notification created for user:', req.user.id);
+      } catch (notificationError) {
+        console.error('❌ [Create Contact Message] Error creating notification:', notificationError);
+        // Don't fail the request if notification creation fails
+      }
+    }
 
     return res.status(201).json({
       success: true,
@@ -33,7 +59,7 @@ const createContactMessage = async (req, res) => {
       data: contactMessage
     });
   } catch (error) {
-    console.error('Create contact message error:', error);
+    console.error('❌ [Create Contact Message] Error:', error);
     return res.status(500).json({
       success: false,
       message: 'Failed to submit contact message.',
@@ -111,7 +137,14 @@ const markAllContactMessagesRead = async (req, res) => {
 const markContactMessageRead = async (req, res) => {
   try {
     const { contactId } = req.params;
+    console.log('🔍 [Mark Contact Message Read] contactId:', contactId);
+    
     const message = await ContactMessage.findByPk(contactId);
+    console.log('📨 [Mark Contact Message Read] Message found:', {
+      contact_id: message?.contact_id,
+      user_id: message?.user_id,
+      status: message?.status
+    });
 
     if (!message) {
       return res.status(404).json({
@@ -123,6 +156,27 @@ const markContactMessageRead = async (req, res) => {
     if (message.status !== 'read') {
       message.status = 'read';
       await message.save();
+      console.log('✅ [Mark Contact Message Read] Message marked as read');
+
+      // Send notification to user if they submitted the message while authenticated
+      if (message.user_id) {
+        console.log('📢 [Mark Contact Message Read] Creating notification for user:', message.user_id);
+        try {
+          const notification = await Notification.create({
+            user_id: message.user_id,
+            type: 'contact_message_read',
+            title: 'Message Read',
+            message: 'Your message has been read. We will get back to you soon. Check your email for updates.',
+            is_read: false
+          });
+          console.log('✅ [Mark Contact Message Read] Notification created:', notification.notification_id);
+        } catch (notificationError) {
+          console.error('❌ [Mark Contact Message Read] Error creating notification:', notificationError);
+          // Don't fail the request if notification creation fails
+        }
+      } else {
+        console.log('⚠️ [Mark Contact Message Read] No user_id found for contact message');
+      }
     }
 
     return res.status(200).json({
@@ -131,7 +185,7 @@ const markContactMessageRead = async (req, res) => {
       data: message
     });
   } catch (error) {
-    console.error('Mark contact message read error:', error);
+    console.error('❌ [Mark Contact Message Read] Error:', error);
     return res.status(500).json({
       success: false,
       message: 'Failed to update contact message.',

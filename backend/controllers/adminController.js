@@ -477,26 +477,97 @@ const deletePet = async (req, res) => {
       });
     }
 
+    const petName = pet.name;
+    const petOwnerId = pet.user_id;
+
     if (permanent === 'true') {
       // Permanent deletion (force destroy for paranoid model)
       await pet.destroy({ force: true });
-      return res.status(200).json({
-        success: true,
-        message: 'Pet permanently deleted'
-      });
     } else {
       // Soft delete via paranoid model (sets deleted_at)
       await pet.destroy();
-      return res.status(200).json({
-        success: true,
-        message: 'Pet deleted successfully'
+    }
+
+    // Create notification for the pet owner
+    if (petOwnerId) {
+      await Notification.create({
+        user_id: petOwnerId,
+        type: 'pet_deleted',
+        title: 'Pet Deleted',
+        message: `Your pet ${petName} has been deleted by an administrator.`,
+        isRead: false
       });
     }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Pet deleted successfully'
+    });
   } catch (error) {
     console.error('Delete pet error:', error);
     return res.status(500).json({
       success: false,
       message: 'Failed to delete pet',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * @desc    Update pet information (Admin)
+ * @route   PATCH /api/admin/pets/:petId
+ * @access  Admin only
+ */
+const updatePet = async (req, res) => {
+  try {
+    const { petId } = req.params;
+    const { name, breed, age, weight, height, sex, allergies, triggering_point, medical_history } = req.body;
+
+    const pet = await Pet.findByPk(petId);
+
+    if (!pet) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pet not found'
+      });
+    }
+
+    // Prepare update data
+    const updateData = {};
+
+    if (name !== undefined) updateData.name = name ? name.trim() : pet.name;
+    if (breed !== undefined) updateData.breed = breed ? breed.trim() : pet.breed;
+    if (age !== undefined) updateData.age = age ? parseInt(age) : pet.age;
+    if (weight !== undefined) updateData.weight = weight ? parseFloat(weight) : pet.weight;
+    if (height !== undefined) updateData.height = height ? parseFloat(height) : pet.height;
+    if (sex !== undefined) updateData.sex = sex ? sex.trim() : pet.sex;
+    if (allergies !== undefined) updateData.allergies = allergies?.trim() || null;
+    if (triggering_point !== undefined) updateData.triggering_point = triggering_point?.trim() || null;
+    if (medical_history !== undefined) updateData.medical_history = medical_history?.trim() || null;
+
+    // Update the pet
+    await pet.update(updateData);
+
+    const updatedPet = await Pet.findByPk(petId, {
+      include: [
+        {
+          model: User,
+          as: 'owner',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber']
+        }
+      ]
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Pet updated successfully',
+      data: updatedPet
+    });
+  } catch (error) {
+    console.error('Update pet error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update pet',
       error: error.message
     });
   }
@@ -616,6 +687,7 @@ module.exports = {
   getEmergencyRequests,
   getAllPets,
   getPetById,
+  updatePet,
   deletePet,
   markPendingBookingsAsRead,
   markEmergencyRequestsAsRead,

@@ -83,13 +83,13 @@ export default function AdminUserManagement() {
 
       let userData = response.data || [];
       const paginationData = response.pagination || {};
-      
+
       if (filterStatus === 'active') {
         userData = userData.filter((u: User) => u.isActive);
       } else if (filterStatus === 'inactive') {
         userData = userData.filter((u: User) => !u.isActive);
       }
-      
+
       setUsers(Array.isArray(userData) ? userData : []);
       const totalCount = filterStatus ? userData.length : paginationData.total || 0;
       setTotalUsers(totalCount);
@@ -125,7 +125,6 @@ export default function AdminUserManagement() {
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
 
-    // First name validation
     if (!editModal.formData.firstName || !editModal.formData.firstName.trim()) {
       errors.firstName = 'First name is required';
     } else if (editModal.formData.firstName.trim().length < 2) {
@@ -134,7 +133,6 @@ export default function AdminUserManagement() {
       errors.firstName = 'First name should contain only letters and spaces';
     }
 
-    // Last name validation
     if (!editModal.formData.lastName || !editModal.formData.lastName.trim()) {
       errors.lastName = 'Last name is required';
     } else if (editModal.formData.lastName.trim().length < 2) {
@@ -143,15 +141,15 @@ export default function AdminUserManagement() {
       errors.lastName = 'Last name should contain only letters (no spaces or special characters)';
     }
 
-    // Email validation
     if (!editModal.formData.email || !editModal.formData.email.trim()) {
       errors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editModal.formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
 
-    // Phone number validation (optional but if provided must be 10 digits)
-    if (editModal.formData.phoneNumber) {
+    if (!editModal.formData.phoneNumber || !editModal.formData.phoneNumber.trim()) {
+      errors.phoneNumber = 'Phone number is required';
+    } else {
       const cleaned = editModal.formData.phoneNumber.replace(/\s/g, '');
       if (!/^\d+$/.test(cleaned)) {
         errors.phoneNumber = 'Phone number should contain only digits';
@@ -176,7 +174,7 @@ export default function AdminUserManagement() {
     if (!editModal.user) return;
 
     if (!validateForm()) {
-      toast.error('Please fix the errors above');
+      toast.error('Please fix the errors in the form before submitting');
       return;
     }
 
@@ -393,9 +391,9 @@ export default function AdminUserManagement() {
         </div>
       )}
 
-      {/* View Details Modal */}
+      {/* View Details */}
       {detailsModal.isOpen && detailsModal.user && (
-        <div className="fixed inset-0 z-50 overflow-auto bg-white">
+        <div className="absolute inset-0 z-50 bg-white overflow-visible">
           <div className="min-h-screen p-8 bg-white">
             <div className="max-w-4xl mx-auto">
               {/* Header */}
@@ -425,7 +423,6 @@ export default function AdminUserManagement() {
 
               {/* Main Content Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                {/* Left Column - Personal Info */}
                 <div className="space-y-6">
                   <div className="bg-white p-6 rounded-2xl border border-[#FACC15]/50">
                     <h2 className="text-lg font-semibold text-black mb-4">Personal Information</h2>
@@ -454,7 +451,6 @@ export default function AdminUserManagement() {
                   </div>
                 </div>
 
-                {/* Right Column - Account Info */}
                 <div className="space-y-6">
                   <div className="bg-white p-6 rounded-2xl border border-[#FACC15]/50">
                     <h2 className="text-lg font-semibold text-black mb-4">Account Information</h2>
@@ -484,11 +480,11 @@ export default function AdminUserManagement() {
                       <div>
                         <p className="text-sm text-gray-500">Registered Date</p>
                         <p className="text-black font-medium">
-                          {detailsModal.user.dateJoined 
-                            ? new Date(detailsModal.user.dateJoined).toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric',
+                          {detailsModal.user.dateJoined
+                            ? new Date(detailsModal.user.dateJoined).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric', 
                                 hour: '2-digit',
                                 minute: '2-digit'
                               })
@@ -498,7 +494,7 @@ export default function AdminUserManagement() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Email Verified</p>
-                        <p className="text-black font-medium">{detailsModal.user.emailVerified ? '✓ Yes' : '✗ No'}</p>
+                        <p className="text-black font-medium">{detailsModal.user.emailVerified ? 'Yes' : 'No'}</p>
                       </div>
                     </div>
                   </div>
@@ -513,9 +509,9 @@ export default function AdminUserManagement() {
                     <div>
                       <p className="text-sm text-gray-500">Last Login</p>
                       <p className="text-black">
-                        {new Date(detailsModal.user.lastLogin).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
+                        {new Date(detailsModal.user.lastLogin).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
@@ -538,19 +534,19 @@ export default function AdminUserManagement() {
                   {detailsModal.user.isProfileComplete !== undefined && (
                     <div>
                       <p className="text-sm text-gray-500">Profile Complete</p>
-                      <p className="text-black font-medium">{detailsModal.user.isProfileComplete ? '✓ Yes' : '✗ No'}</p>
+                      <p className="text-black font-medium">{detailsModal.user.isProfileComplete ? 'Yes' : 'No'}</p>
                     </div>
                   )}
                   {detailsModal.user.twoFactorEnabled !== undefined && (
                     <div>
                       <p className="text-sm text-gray-500">Two Factor Enabled</p>
-                      <p className="text-black font-medium">{detailsModal.user.twoFactorEnabled ? '✓ Yes' : '✗ No'}</p>
+                      <p className="text-black font-medium">{detailsModal.user.twoFactorEnabled ? 'Yes' : 'No'}</p>
                     </div>
                   )}
                   {detailsModal.user.isStaff !== undefined && (
                     <div>
                       <p className="text-sm text-gray-500">Is Staff</p>
-                      <p className="text-black font-medium">{detailsModal.user.isStaff ? '✓ Yes' : '✗ No'}</p>
+                      <p className="text-black font-medium">{detailsModal.user.isStaff ? 'Yes' : 'No'}</p>
                     </div>
                   )}
                 </div>
@@ -576,9 +572,9 @@ export default function AdminUserManagement() {
                             </div>
                           </div>
                           {pet.photo && (
-                            <img 
-                              src={pet.photo} 
-                              alt={pet.name} 
+                            <img
+                              src={pet.photo}
+                              alt={pet.name}
                               className="w-16 h-16 rounded-lg object-cover border border-[#FACC15]/50"
                             />
                           )}
@@ -623,14 +619,14 @@ export default function AdminUserManagement() {
                     if (validationErrors.firstName) setValidationErrors({ ...validationErrors, firstName: undefined });
                   }}
                   className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
-                    validationErrors.firstName 
-                      ? 'border-red-500 focus:ring-red-400' 
+                    validationErrors.firstName
+                      ? 'border-red-500 focus:ring-red-400'
                       : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
                   }`}
                 />
                 {validationErrors.firstName && (
-                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                    <span className="text-lg">⚠</span> {validationErrors.firstName}
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.firstName}
                   </p>
                 )}
               </div>
@@ -644,14 +640,14 @@ export default function AdminUserManagement() {
                     if (validationErrors.lastName) setValidationErrors({ ...validationErrors, lastName: undefined });
                   }}
                   className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
-                    validationErrors.lastName 
-                      ? 'border-red-500 focus:ring-red-400' 
+                    validationErrors.lastName
+                      ? 'border-red-500 focus:ring-red-400'
                       : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
                   }`}
                 />
                 {validationErrors.lastName && (
-                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                    <span className="text-lg">⚠</span> {validationErrors.lastName}
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.lastName}
                   </p>
                 )}
               </div>
@@ -665,14 +661,14 @@ export default function AdminUserManagement() {
                     if (validationErrors.email) setValidationErrors({ ...validationErrors, email: undefined });
                   }}
                   className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
-                    validationErrors.email 
-                      ? 'border-red-500 focus:ring-red-400' 
+                    validationErrors.email
+                      ? 'border-red-500 focus:ring-red-400'
                       : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
                   }`}
                 />
                 {validationErrors.email && (
-                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                    <span className="text-lg">⚠</span> {validationErrors.email}
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.email}
                   </p>
                 )}
               </div>
@@ -687,14 +683,14 @@ export default function AdminUserManagement() {
                     if (validationErrors.phoneNumber) setValidationErrors({ ...validationErrors, phoneNumber: undefined });
                   }}
                   className={`w-full px-3 py-2 border rounded-xl bg-white text-black focus:outline-none focus:ring-2 ${
-                    validationErrors.phoneNumber 
-                      ? 'border-red-500 focus:ring-red-400' 
+                    validationErrors.phoneNumber
+                      ? 'border-red-500 focus:ring-red-400'
                       : 'border-[#FACC15]/50 focus:ring-[#FACC15]'
                   }`}
                 />
                 {validationErrors.phoneNumber && (
-                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                    <span className="text-lg">⚠</span> {validationErrors.phoneNumber}
+                  <p className="text-red-500 text-sm mt-1">
+                    {validationErrors.phoneNumber}
                   </p>
                 )}
                 <p className="text-gray-500 text-xs mt-1">Must be exactly 10 digits</p>
@@ -750,9 +746,9 @@ export default function AdminUserManagement() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full border border-[#FACC15]/40">
             <div className="p-6 border-b border-[#FACC15]/30 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#FACC15] flex items-center justify-center">
-                <AlertCircle size={24} className="text-black" />
-              </div>
+              {/* <div className="w-12 h-12 rounded-xl bg-[#FACC15] flex items-center justify-center"> */}
+                {/* <AlertCircle size={24} className="text-black" /> */}
+              {/* </div> */}
               <div>
                 <h3 className="text-lg font-bold text-black">Deactivate User?</h3>
                 <p className="text-sm text-gray-600">{deleteConfirm.userName}</p>

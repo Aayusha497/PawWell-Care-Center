@@ -44,9 +44,12 @@ const ReviewManagement: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('pending');
   const [processing, setProcessing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const reviewsPerPage = 2;
 
   useEffect(() => {
     fetchReviews();
+    setCurrentPage(1);
   }, [filter]);
 
   const fetchReviews = async () => {
@@ -230,6 +233,11 @@ const ReviewManagement: React.FC = () => {
     );
   };
 
+  // Calculate pagination
+  const totalPages = Math.ceil(reviews.length / reviewsPerPage);
+  const startIdx = (currentPage - 1) * reviewsPerPage;
+  const paginatedReviews = reviews.slice(startIdx, startIdx + reviewsPerPage);
+
   return (
     <div className="space-y-6">
       {/* Header Stats */}
@@ -313,7 +321,7 @@ const ReviewManagement: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {reviews.map((review) => (
+          {paginatedReviews.map((review) => (
             <div
               key={review.review_id}
               className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 transition ${
@@ -351,11 +359,6 @@ const ReviewManagement: React.FC = () => {
                     </span>
                     <StarDisplay rating={Math.round(review.overall_rating)} />
                   </div>
-                  {review.is_featured && (
-                    <span className="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
-                      ⭐ Featured
-                    </span>
-                  )}
                   {review.is_approved ? (
                     <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
                       ✓ Approved
@@ -425,13 +428,6 @@ const ReviewManagement: React.FC = () => {
                     {processing === review.review_id ? 'Processing...' : '✓ Approve'}
                   </button>
                   <button
-                    onClick={() => handleApprove(review.review_id, true)}
-                    disabled={processing === review.review_id}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
-                  >
-                    {processing === review.review_id ? 'Processing...' : '⭐ Approve & Feature'}
-                  </button>
-                  <button
                     onClick={() => handleReject(review.review_id)}
                     disabled={processing === review.review_id}
                     className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
@@ -443,13 +439,6 @@ const ReviewManagement: React.FC = () => {
 
               {review.is_approved && !review.is_featured && (
                 <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={() => handleApprove(review.review_id, true)}
-                    disabled={processing === review.review_id}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
-                  >
-                    ⭐ Feature this Review
-                  </button>
                   <button
                     onClick={() => handleReject(review.review_id)}
                     disabled={processing === review.review_id}
@@ -463,13 +452,6 @@ const ReviewManagement: React.FC = () => {
               {review.is_approved && review.is_featured && (
                 <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
-                    onClick={() => handleUnfeature(review.review_id)}
-                    disabled={processing === review.review_id}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
-                  >
-                    ✓ Remove from Featured
-                  </button>
-                  <button
                     onClick={() => handleReject(review.review_id)}
                     disabled={processing === review.review_id}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300 dark:disabled:bg-gray-600"
@@ -480,6 +462,31 @@ const ReviewManagement: React.FC = () => {
               )}
             </div>
           ))}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Page {currentPage} of {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
