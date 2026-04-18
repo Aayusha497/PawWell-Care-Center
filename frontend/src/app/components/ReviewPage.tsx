@@ -321,7 +321,7 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
 
             {/* Approval Notice */}
             <div className="mb-8 p-4 bg-amber-50 dark:bg-amber-900/30 rounded-lg border border-amber-200 dark:border-amber-800 flex items-start gap-3">
-              <span className="text-2xl mt-1">ℹ️</span>
+              {/* <span className="text-2xl mt-1">ℹ️</span> */}
               <div>
                 <p className="font-semibold text-amber-900 dark:text-amber-100">
                   Review Pending Approval

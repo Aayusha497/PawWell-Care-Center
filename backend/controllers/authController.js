@@ -18,7 +18,7 @@ const { Op } = require('sequelize');
  */
 const register = async (req, res) => {
   try {
-    console.log('📥 Registration request received:', {
+    console.log('Registration request received:', {
       email: req.body.email,
       firstName: req.body.firstName,
       lastName: req.body.lastName,
@@ -28,13 +28,13 @@ const register = async (req, res) => {
     const { email, password, firstName, lastName, phoneNumber, userType } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-    // ============================================
+  
     // STRICT BACKEND VALIDATION FOR FIRSTNAME
-    // ============================================
-    console.log('🔒 BACKEND VALIDATION: Checking firstName...');
+  
+    console.log('BACKEND VALIDATION: Checking firstName...');
     
     if (!firstName || !firstName.trim()) {
-      console.error('❌ BACKEND REJECTED: firstName is empty');
+      console.error('BACKEND REJECTED: firstName is empty');
       return res.status(400).json({
         success: false,
         message: 'Full name is required',
@@ -45,7 +45,7 @@ const register = async (req, res) => {
     const trimmedFirstName = firstName.trim();
     
     if (trimmedFirstName.length < 2) {
-      console.error('❌ BACKEND REJECTED: firstName too short:', trimmedFirstName);
+      console.error('BACKEND REJECTED: firstName too short:', trimmedFirstName);
       return res.status(400).json({
         success: false,
         message: 'Full name must be at least 2 characters long',
@@ -55,7 +55,7 @@ const register = async (req, res) => {
 
     // CHECK FOR NUMBERS - REJECT IMMEDIATELY
     if (/\d/.test(trimmedFirstName)) {
-      console.error('❌ BACKEND REJECTED: Numbers found in firstName:', trimmedFirstName);
+      console.error('BACKEND REJECTED: Numbers found in firstName:', trimmedFirstName);
       return res.status(400).json({
         success: false,
         message: 'Full name cannot contain numbers',
@@ -65,7 +65,7 @@ const register = async (req, res) => {
 
     // CHECK FOR SPECIAL CHARACTERS - REJECT IMMEDIATELY
     if (!/^[A-Za-z\s]+$/.test(trimmedFirstName)) {
-      console.error('❌ BACKEND REJECTED: Invalid characters in firstName:', trimmedFirstName);
+      console.error('BACKEND REJECTED: Invalid characters in firstName:', trimmedFirstName);
       return res.status(400).json({
         success: false,
         message: 'Full name contains invalid characters',
@@ -73,15 +73,15 @@ const register = async (req, res) => {
       });
     }
 
-    console.log('✅ BACKEND VALIDATION PASSED: firstName is valid');
+    console.log('BACKEND VALIDATION PASSED: firstName is valid');
 
-    // ============================================
-    // STRICT BACKEND VALIDATION FOR LASTNAME
-    // ============================================
-    console.log('🔒 BACKEND VALIDATION: Checking lastName...');
+    
+    // BACKEND VALIDATION FOR LASTNAME
+    
+    console.log('BACKEND VALIDATION: Checking lastName...');
     
     if (!lastName || !lastName.trim()) {
-      console.error('❌ BACKEND REJECTED: lastName is empty');
+      console.error('BACKEND REJECTED: lastName is empty');
       return res.status(400).json({
         success: false,
         message: 'Last name is required',
@@ -92,7 +92,7 @@ const register = async (req, res) => {
     const trimmedLastName = lastName.trim();
     
     if (trimmedLastName.length < 2) {
-      console.error('❌ BACKEND REJECTED: lastName too short:', trimmedLastName);
+      console.error('BACKEND REJECTED: lastName too short:', trimmedLastName);
       return res.status(400).json({
         success: false,
         message: 'Last name must be at least 2 characters long',
@@ -102,7 +102,7 @@ const register = async (req, res) => {
 
     // CHECK FOR NUMBERS - REJECT IMMEDIATELY
     if (/\d/.test(trimmedLastName)) {
-      console.error('❌ BACKEND REJECTED: Numbers found in lastName:', trimmedLastName);
+      console.error('BACKEND REJECTED: Numbers found in lastName:', trimmedLastName);
       return res.status(400).json({
         success: false,
         message: 'Last name cannot contain numbers',
@@ -112,7 +112,7 @@ const register = async (req, res) => {
 
     // CHECK FOR SPECIAL CHARACTERS - REJECT IMMEDIATELY (allow spaces for multi-part names)
     if (!/^[A-Za-z\s]+$/.test(trimmedLastName)) {
-      console.error('❌ BACKEND REJECTED: Invalid characters in lastName:', trimmedLastName);
+      console.error('BACKEND REJECTED: Invalid characters in lastName:', trimmedLastName);
       return res.status(400).json({
         success: false,
         message: 'Last name contains invalid characters',
@@ -120,18 +120,18 @@ const register = async (req, res) => {
       });
     }
 
-    console.log('✅ BACKEND VALIDATION PASSED: lastName is valid');
+    console.log('BACKEND VALIDATION PASSED: lastName is valid');
 
-    // ============================================
+  
     // STRICT BACKEND VALIDATION FOR PHONENUMBER
-    // ============================================
+   
     if (phoneNumber) {
-      console.log('🔒 BACKEND VALIDATION: Checking phoneNumber...');
+      console.log('BACKEND VALIDATION: Checking phoneNumber...');
       
       const cleanedPhoneNumber = phoneNumber.replace(/\s/g, '');
       
       if (!/^\d+$/.test(cleanedPhoneNumber)) {
-        console.error('❌ BACKEND REJECTED: Non-digits found in phoneNumber:', phoneNumber);
+        console.error('BACKEND REJECTED: Non-digits found in phoneNumber:', phoneNumber);
         return res.status(400).json({
           success: false,
           message: 'Phone number must contain only digits',
@@ -140,7 +140,7 @@ const register = async (req, res) => {
       }
       
       if (cleanedPhoneNumber.length !== 10) {
-        console.error('❌ BACKEND REJECTED: Phone number not 10 digits:', phoneNumber);
+        console.error('BACKEND REJECTED: Phone number not 10 digits:', phoneNumber);
         return res.status(400).json({
           success: false,
           message: 'Phone number must be exactly 10 digits',
@@ -148,7 +148,7 @@ const register = async (req, res) => {
         });
       }
       
-      console.log('✅ BACKEND VALIDATION PASSED: phoneNumber is valid');
+      console.log('BACKEND VALIDATION PASSED: phoneNumber is valid');
     }
 
     // Check if user already exists
@@ -160,7 +160,7 @@ const register = async (req, res) => {
     if (existingUser) {
       // If user exists but account is soft-deleted, still require OTP verification for reactivation
       if (existingUser.deletedAt) {
-        console.log('🔄 Deleted account found - will require OTP verification for reactivation:', existingUser.email);
+        console.log('Deleted account found - will require OTP verification for reactivation:', existingUser.email);
         
         // Check if there's already a pending reactivation
         const existingPending = await PendingRegistration.findOne({
@@ -168,35 +168,35 @@ const register = async (req, res) => {
         });
 
         if (existingPending) {
-          console.log('⏳ Pending reactivation already exists - resending OTP:', normalizedEmail);
+          console.log('Pending reactivation already exists - resending OTP:', normalizedEmail);
           // Delete old pending reactivation
           await existingPending.destroy();
-          console.log('🗑️ Old pending reactivation deleted');
+          console.log('Old pending reactivation deleted');
           // Continue to generate new OTP
         }
 
         // Send OTP for reactivation (same flow as new registration)
-        console.log('🔄 Generating OTP for account reactivation...');
+        console.log('Generating OTP for account reactivation...');
         
         try {
           const otp = generateOTP();
-          console.log(`✅ OTP generated: ${otp}`);
+          console.log(`OTP generated: ${otp}`);
           
           const otpHash = await hashOTP(otp);
-          console.log('✅ OTP hashed successfully');
+          console.log('OTP hashed successfully');
           
           const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-          console.log(`✅ OTP expires at: ${expiresAt}`);
+          console.log(`OTP expires at: ${expiresAt}`);
 
           // Create a temporary user object for email sending
           const tempUser = { email: normalizedEmail, firstName: trimmedFirstName };
 
           // Send OTP email
-          console.log(`📧 Sending OTP email to: ${normalizedEmail}`);
+          console.log(`Sending OTP email to: ${normalizedEmail}`);
           const emailSent = await sendEmailVerificationOTP(tempUser, otp);
           
           if (!emailSent) {
-            console.error('❌ Failed to send OTP email');
+            console.error('Failed to send OTP email');
             return res.status(500).json({
               success: false,
               message: 'Failed to send verification email. Please try again.',
@@ -204,7 +204,7 @@ const register = async (req, res) => {
             });
           }
 
-          console.log(`✅ OTP email sent successfully to: ${normalizedEmail}`);
+          console.log(`OTP email sent successfully to: ${normalizedEmail}`);
 
           // Create pending reactivation record
           const pendingRegistration = await PendingRegistration.create({
@@ -221,7 +221,7 @@ const register = async (req, res) => {
             isVerified: false
           });
 
-          console.log(`✅ Pending reactivation created:`, {
+          console.log(`Pending reactivation created:`, {
             id: pendingRegistration.id,
             email: pendingRegistration.email,
             expiresAt: pendingRegistration.expiresAt
@@ -235,7 +235,7 @@ const register = async (req, res) => {
           });
 
         } catch (otpError) {
-          console.error('❌ Error in OTP generation/sending:', otpError.message);
+          console.error('Error in OTP generation/sending:', otpError.message);
           return res.status(500).json({
             success: false,
             message: 'Error sending verification email. Please try again.',
@@ -244,7 +244,7 @@ const register = async (req, res) => {
         }
       } else {
         // User exists and is active - cannot register again
-        console.log('❌ Active user already exists:', normalizedEmail);
+        console.log('Active user already exists:', normalizedEmail);
         return res.status(400).json({
           success: false,
           message: 'User with this email already exists',
@@ -261,10 +261,10 @@ const register = async (req, res) => {
     });
 
     if (existingPending) {
-      console.log('⏳ Pending registration already exists - resending OTP:', normalizedEmail);
+      console.log('Pending registration already exists - resending OTP:', normalizedEmail);
       // Delete old pending registration
       await existingPending.destroy();
-      console.log('🗑️ Old pending registration deleted');
+      console.log('Old pending registration deleted');
       // Continue to generate new OTP
     }
 
