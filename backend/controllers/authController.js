@@ -28,11 +28,11 @@ const register = async (req, res) => {
     const { email, password, firstName, lastName, phoneNumber, userType } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-  
+
     // STRICT BACKEND VALIDATION FOR FIRSTNAME
-  
+
     console.log('BACKEND VALIDATION: Checking firstName...');
-    
+
     if (!firstName || !firstName.trim()) {
       console.error('BACKEND REJECTED: firstName is empty');
       return res.status(400).json({
@@ -43,7 +43,7 @@ const register = async (req, res) => {
     }
 
     const trimmedFirstName = firstName.trim();
-    
+
     if (trimmedFirstName.length < 2) {
       console.error('BACKEND REJECTED: firstName too short:', trimmedFirstName);
       return res.status(400).json({
@@ -75,11 +75,11 @@ const register = async (req, res) => {
 
     console.log('BACKEND VALIDATION PASSED: firstName is valid');
 
-    
+
     // BACKEND VALIDATION FOR LASTNAME
-    
+
     console.log('BACKEND VALIDATION: Checking lastName...');
-    
+
     if (!lastName || !lastName.trim()) {
       console.error('BACKEND REJECTED: lastName is empty');
       return res.status(400).json({
@@ -90,7 +90,7 @@ const register = async (req, res) => {
     }
 
     const trimmedLastName = lastName.trim();
-    
+
     if (trimmedLastName.length < 2) {
       console.error('BACKEND REJECTED: lastName too short:', trimmedLastName);
       return res.status(400).json({
@@ -122,14 +122,14 @@ const register = async (req, res) => {
 
     console.log('BACKEND VALIDATION PASSED: lastName is valid');
 
-  
+
     // STRICT BACKEND VALIDATION FOR PHONENUMBER
-   
+
     if (phoneNumber) {
       console.log('BACKEND VALIDATION: Checking phoneNumber...');
-      
+
       const cleanedPhoneNumber = phoneNumber.replace(/\s/g, '');
-      
+
       if (!/^\d+$/.test(cleanedPhoneNumber)) {
         console.error('BACKEND REJECTED: Non-digits found in phoneNumber:', phoneNumber);
         return res.status(400).json({
@@ -138,7 +138,7 @@ const register = async (req, res) => {
           errors: { phoneNumber: ['Phone number must contain only digits.'] }
         });
       }
-      
+
       if (cleanedPhoneNumber.length !== 10) {
         console.error('BACKEND REJECTED: Phone number not 10 digits:', phoneNumber);
         return res.status(400).json({
@@ -147,7 +147,7 @@ const register = async (req, res) => {
           errors: { phoneNumber: ['Phone number must be exactly 10 digits.'] }
         });
       }
-      
+
       console.log('BACKEND VALIDATION PASSED: phoneNumber is valid');
     }
 
@@ -161,7 +161,7 @@ const register = async (req, res) => {
       // If user exists but account is soft-deleted, still require OTP verification for reactivation
       if (existingUser.deletedAt) {
         console.log('Deleted account found - will require OTP verification for reactivation:', existingUser.email);
-        
+
         // Check if there's already a pending reactivation
         const existingPending = await PendingRegistration.findOne({
           where: { email: normalizedEmail }
@@ -177,14 +177,14 @@ const register = async (req, res) => {
 
         // Send OTP for reactivation (same flow as new registration)
         console.log('Generating OTP for account reactivation...');
-        
+
         try {
           const otp = generateOTP();
           console.log(`OTP generated: ${otp}`);
-          
+
           const otpHash = await hashOTP(otp);
           console.log('OTP hashed successfully');
-          
+
           const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
           console.log(`OTP expires at: ${expiresAt}`);
 
@@ -194,7 +194,7 @@ const register = async (req, res) => {
           // Send OTP email
           console.log(`Sending OTP email to: ${normalizedEmail}`);
           const emailSent = await sendEmailVerificationOTP(tempUser, otp);
-          
+
           if (!emailSent) {
             console.error('Failed to send OTP email');
             return res.status(500).json({
@@ -268,18 +268,18 @@ const register = async (req, res) => {
       // Continue to generate new OTP
     }
 
-    
+
     // GENERATE AND SEND OTP (NO USER CREATED YET)
-    
+
     try {
       console.log('🔄 Generating OTP for email verification...');
-      
+
       const otp = generateOTP();
       console.log(`✅ OTP generated: ${otp}`);
-      
+
       const otpHash = await hashOTP(otp);
       console.log('✅ OTP hashed successfully');
-      
+
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       console.log(`✅ OTP expires at: ${expiresAt}`);
 
@@ -289,7 +289,7 @@ const register = async (req, res) => {
       // Send OTP email
       console.log(`📧 Sending OTP email to: ${normalizedEmail}`);
       const emailSent = await sendEmailVerificationOTP(tempUser, otp);
-      
+
       if (!emailSent) {
         console.error('❌ Failed to send OTP email');
         return res.status(500).json({
@@ -341,7 +341,7 @@ const register = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Registration error:', error);
-    
+
     if (error.name === 'SequelizeValidationError') {
       const errors = {};
       error.errors.forEach(err => {
@@ -353,7 +353,7 @@ const register = async (req, res) => {
         errors
       });
     }
-    
+
     if (error.name === 'SequelizeUniqueConstraintError') {
       const errors = {};
       error.errors.forEach(err => {
@@ -365,7 +365,7 @@ const register = async (req, res) => {
         errors
       });
     }
-    
+
     return res.status(500).json({
       success: false,
       message: 'An error occurred during registration.',
@@ -447,15 +447,15 @@ const login = async (req, res) => {
     // Set httpOnly cookies
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
-      secure: config.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'strict',
+      secure: config.NODE_ENV === 'production',
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: accessExpiry
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: refreshExpiry
     });
 
@@ -497,7 +497,7 @@ const forgotPassword = async (req, res) => {
     if (user) {
       // Generate 6-digit OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      
+
       // Hash the OTP before storing
       const otpHash = await bcrypt.hash(otp, 10);
 
@@ -562,7 +562,7 @@ const verifyOTP = async (req, res) => {
 
     // Find password reset record
     const reset = await PasswordReset.findOne({
-      where: { 
+      where: {
         userId: user.id,
         isUsed: false
       },
@@ -753,17 +753,17 @@ const updateProfile = async (req, res) => {
     console.log('Request body:', req.body);
     console.log('Request file:', req.file);
     console.log('Request user:', req.user);
-    
-    const { 
-      firstName, 
-      lastName, 
-      phoneNumber, 
-      address, 
-      city, 
-      emergencyContactName, 
-      emergencyContactNumber 
+
+    const {
+      firstName,
+      lastName,
+      phoneNumber,
+      address,
+      city,
+      emergencyContactName,
+      emergencyContactNumber
     } = req.body;
-    
+
     // Check if user is authenticated
     if (!req.user || !req.user.id) {
       console.error('❌ No authenticated user found in request');
@@ -772,7 +772,7 @@ const updateProfile = async (req, res) => {
         message: 'You must be logged in to update your profile.'
       });
     }
-    
+
     const userId = req.user.id;
     console.log('👤 Updating profile for user ID:', userId);
 
@@ -788,7 +788,7 @@ const updateProfile = async (req, res) => {
 
 
     // BACKEND VALIDATION FOR PROFILE FIELDS
-    
+
     const errors = {};
 
     // Phone Number validation - must be exactly 10 digits
@@ -885,15 +885,15 @@ const updateProfile = async (req, res) => {
     // Required: firstName, lastName, phoneNumber, address, city, emergencyContactName, emergencyContactNumber
     // Note: profilePicture is optional
     const isComplete = !!(
-      user.firstName && 
-      user.lastName && 
-      user.phoneNumber && 
-      user.address && 
-      user.city && 
-      user.emergencyContactName && 
+      user.firstName &&
+      user.lastName &&
+      user.phoneNumber &&
+      user.address &&
+      user.city &&
+      user.emergencyContactName &&
       user.emergencyContactNumber
     );
-    
+
     user.isProfileComplete = isComplete;
     console.log('📊 Profile completion status:', isComplete);
 
@@ -908,7 +908,7 @@ const updateProfile = async (req, res) => {
   } catch (error) {
     console.error('❌ Update profile error:', error);
     console.error('Error stack:', error.stack);
-    
+
     // Handle Sequelize validation errors
     if (error.name === 'SequelizeValidationError') {
       const errors = {};
@@ -922,16 +922,16 @@ const updateProfile = async (req, res) => {
         errors
       });
     }
-    
+
     // Provide more specific error messages
     let errorMessage = 'Unable to update your profile. Please try again.';
-    
+
     if (error.name === 'SequelizeDatabaseError') {
       errorMessage = 'A database error occurred. Please contact support if this continues.';
     } else if (error.message) {
       errorMessage = error.message;
     }
-    
+
     return res.status(500).json({
       success: false,
       message: errorMessage,
@@ -969,12 +969,12 @@ const deleteAccount = async (req, res) => {
     res.clearCookie('accessToken', {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax'
     });
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax'
     });
 
     return res.status(200).json({
@@ -1036,7 +1036,7 @@ const refreshToken = async (req, res) => {
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: accessExpiry
     });
 
@@ -1065,13 +1065,13 @@ const logout = async (req, res) => {
     res.clearCookie('accessToken', {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax'
     });
 
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: config.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: config.NODE_ENV === 'production' ? 'none' : 'lax'
     });
 
     return res.status(200).json({
@@ -1098,7 +1098,7 @@ const verifyEmailOTP = async (req, res) => {
     const { email, otp } = req.body;
     const normalizedEmail = email.toLowerCase().trim();
 
-    console.log(`🔄 Verifying OTP for email: ${normalizedEmail}`);
+    console.log(`Verifying OTP for email: ${normalizedEmail}`);
 
     // Find pending registration by email
     const pendingRegistration = await PendingRegistration.findOne({
@@ -1175,7 +1175,7 @@ const verifyEmailOTP = async (req, res) => {
       if (deletedUser && deletedUser.deletedAt) {
         // REACTIVATE deleted account
         console.log('🔄 Reactivating deleted account:', normalizedEmail);
-        
+
         deletedUser.password = pendingRegistration.password;
         deletedUser.firstName = pendingRegistration.firstName;
         deletedUser.lastName = pendingRegistration.lastName;
@@ -1184,17 +1184,17 @@ const verifyEmailOTP = async (req, res) => {
         deletedUser.emailVerified = true;
         deletedUser.isActive = true;
         deletedUser.isProfileComplete = false;
-        
+
         await deletedUser.save();
         await deletedUser.restore();
-        
+
         newUser = deletedUser;
         console.log('✅ Account reactivated successfully:', newUser.email);
         console.log('✅ All related data (pets, bookings, reviews) automatically restored');
       } else {
         // CREATE new user account
         console.log('🔄 Creating new user account from pending registration...');
-        
+
         newUser = await User.create({
           email: pendingRegistration.email,
           password: pendingRegistration.password,
@@ -1212,7 +1212,7 @@ const verifyEmailOTP = async (req, res) => {
     } catch (userError) {
       console.error('❌ Error creating/reactivating user:', userError.message);
       console.error('❌ Full error details:', userError);
-      
+
       // Extract validation errors if available
       let errorMessage = 'Failed to create user account. Please try again.';
       if (userError.errors && Array.isArray(userError.errors)) {
@@ -1220,7 +1220,7 @@ const verifyEmailOTP = async (req, res) => {
       } else if (userError.message) {
         errorMessage = userError.message;
       }
-      
+
       return res.status(500).json({
         success: false,
         message: 'Failed to create user account. Please try again.',
