@@ -1106,7 +1106,7 @@ const verifyEmailOTP = async (req, res) => {
     });
 
     if (!pendingRegistration) {
-      console.error('❌ No pending registration found:', normalizedEmail);
+      console.error('No pending registration found:', normalizedEmail);
       return res.status(404).json({
         success: false,
         message: 'No registration found. Please register first.',
@@ -1114,11 +1114,11 @@ const verifyEmailOTP = async (req, res) => {
       });
     }
 
-    console.log('✅ Pending registration found');
+    console.log('Pending registration found');
 
     // Check if expired
     if (pendingRegistration.isExpired()) {
-      console.error('❌ OTP expired for:', normalizedEmail);
+      console.error('OTP expired for:', normalizedEmail);
       // Delete expired pending registration
       await pendingRegistration.destroy();
       return res.status(400).json({
@@ -1128,11 +1128,11 @@ const verifyEmailOTP = async (req, res) => {
       });
     }
 
-    console.log('✅ OTP not expired');
+    console.log('OTP not expired');
 
     // Check if max attempts reached
     if (pendingRegistration.otpAttempts >= pendingRegistration.maxOtpAttempts) {
-      console.error('❌ Max attempts exceeded for:', normalizedEmail);
+      console.error('Max attempts exceeded for:', normalizedEmail);
       // Delete pending registration if max attempts exceeded
       await pendingRegistration.destroy();
       return res.status(400).json({
@@ -1142,13 +1142,13 @@ const verifyEmailOTP = async (req, res) => {
       });
     }
 
-    console.log('✅ Attempts remaining:', pendingRegistration.maxOtpAttempts - pendingRegistration.otpAttempts);
+    console.log('Attempts remaining:', pendingRegistration.maxOtpAttempts - pendingRegistration.otpAttempts);
 
     // Verify OTP
     const isOTPValid = await pendingRegistration.verifyOTP(otp);
 
     if (!isOTPValid) {
-      console.warn('❌ Invalid OTP entered');
+      console.warn('Invalid OTP entered');
       // Increment attempts
       await pendingRegistration.incrementAttempts();
       const remainingAttempts = pendingRegistration.maxOtpAttempts - pendingRegistration.otpAttempts;
@@ -1161,10 +1161,10 @@ const verifyEmailOTP = async (req, res) => {
       });
     }
 
-    console.log('✅ OTP is valid!');
-    console.log('🔄 Processing account creation/reactivation...');
+    console.log('OTP is valid!');
+    console.log('Processing account creation/reactivation...');
 
-    // ✅ Check if this is a reactivation of a deleted account
+    // Check if this is a reactivation of a deleted account
     const deletedUser = await User.findOne({
       where: { email: normalizedEmail },
       paranoid: false
@@ -1174,7 +1174,7 @@ const verifyEmailOTP = async (req, res) => {
     try {
       if (deletedUser && deletedUser.deletedAt) {
         // REACTIVATE deleted account
-        console.log('🔄 Reactivating deleted account:', normalizedEmail);
+        console.log('Reactivating deleted account:', normalizedEmail);
 
         deletedUser.password = pendingRegistration.password;
         deletedUser.firstName = pendingRegistration.firstName;
@@ -1189,11 +1189,11 @@ const verifyEmailOTP = async (req, res) => {
         await deletedUser.restore();
 
         newUser = deletedUser;
-        console.log('✅ Account reactivated successfully:', newUser.email);
-        console.log('✅ All related data (pets, bookings, reviews) automatically restored');
+        console.log('Account reactivated successfully:', newUser.email);
+        console.log('All related data (pets, bookings, reviews) automatically restored');
       } else {
         // CREATE new user account
-        console.log('🔄 Creating new user account from pending registration...');
+        console.log('Creating new user account from pending registration...');
 
         newUser = await User.create({
           email: pendingRegistration.email,
@@ -1202,16 +1202,16 @@ const verifyEmailOTP = async (req, res) => {
           lastName: pendingRegistration.lastName,
           phoneNumber: pendingRegistration.phoneNumber,
           userType: pendingRegistration.userType,
-          emailVerified: true,  // ✅ Email is now verified!
+          emailVerified: true,  // Email is now verified!
           isActive: true,
           isProfileComplete: false
         });
 
-        console.log('✅ New user account created successfully:', newUser.email);
+        console.log('New user account created successfully:', newUser.email);
       }
     } catch (userError) {
-      console.error('❌ Error creating/reactivating user:', userError.message);
-      console.error('❌ Full error details:', userError);
+      console.error('Error creating/reactivating user:', userError.message);
+      console.error('Full error details:', userError);
 
       // Extract validation errors if available
       let errorMessage = 'Failed to create user account. Please try again.';
@@ -1230,7 +1230,7 @@ const verifyEmailOTP = async (req, res) => {
 
     // Delete pending registration (no longer needed)
     await pendingRegistration.destroy();
-    console.log('✅ Pending registration deleted');
+    console.log('Pending registration deleted');
 
     // Send admin notification about new verified registration
     try {
@@ -1244,31 +1244,31 @@ const verifyEmailOTP = async (req, res) => {
           await Notification.create({
             user_id: admin.id,
             type: 'user_registered',
-            title: '👤 New User Verified',
+            title: 'New User Verified',
             message: `${newUser.firstName} ${newUser.lastName} (${newUser.email}) has completed email verification and can now login.`,
             reference_type: 'user',
             reference_id: newUser.id,
             is_read: false
           });
         }
-        console.log('✅ Admin notifications sent');
+        console.log('Admin notifications sent');
       }
     } catch (notificationError) {
-      console.warn('⚠️ Failed to send admin notifications:', notificationError.message);
+      console.warn('Failed to send admin notifications:', notificationError.message);
     }
 
-    console.log(`✅ Email verified successfully for: ${newUser.email}`);
+    console.log(`Email verified successfully for: ${newUser.email}`);
 
-    // ✅ Return success - tell frontend to redirect to LOGIN (NOT auto-login)
+    // Return success - tell frontend to redirect to LOGIN (NOT auto-login)
     return res.status(200).json({
       success: true,
       message: 'Email verified successfully! Your account has been created. Please login to continue.',
       email: newUser.email,
-      nextStep: 'login'  // ✅ Redirect to login page
+      nextStep: 'login'  // Redirect to login page
     });
 
   } catch (error) {
-    console.error('❌ Verify email OTP error:', error);
+    console.error('email OTP error:', error);
     return res.status(500).json({
       success: false,
       message: 'An error occurred while verifying email OTP.',

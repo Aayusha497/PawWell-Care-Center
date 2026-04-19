@@ -110,10 +110,7 @@ const Dashboard = () => {
   }, []);
 
   const handleBookService = () => {
-   
-   
-    console.log('Booking feature coming soon');
-    // navigate('/booking');
+    navigate('/booking');
   };
 
   const handleAddPet = () => {

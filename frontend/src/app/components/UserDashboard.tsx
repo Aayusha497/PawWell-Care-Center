@@ -608,6 +608,7 @@ const handleAddPet = () => {
             <p className="text-gray-600 dark:text-gray-300 mb-6">Book Your Pet Services With Ease.</p>
             <div className="flex flex-col gap-3">
               <button 
+                onClick={handleBookService}
                 className="bg-[#FA9884] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#E8876F] transition"
               >
                 Book a New Service
