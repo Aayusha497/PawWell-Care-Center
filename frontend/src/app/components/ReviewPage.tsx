@@ -101,7 +101,7 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
         comment: comment.trim(),
       };
 
-      const response = await fetch('http://localhost:8000/api/reviews', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -208,7 +208,7 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
           // No bookings
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center shadow-md">
             <div className="mb-6">
-              <div className="text-6xl mb-4">✅</div>
+              {/* <div className="text-6xl mb-4">✅</div> */}
               <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-3">
                 All Caught Up!
               </h2>
@@ -216,7 +216,7 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
                 You've already submitted reviews for all your completed services.
               </p>
               <p className="text-gray-500 dark:text-gray-500 text-sm">
-                Thank you for sharing your feedback with us! 🙏
+                Thank you for sharing your feedback with us! 
               </p>
             </div>
             <button

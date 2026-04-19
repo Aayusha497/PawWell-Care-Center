@@ -61,7 +61,7 @@ const ReviewManagement: React.FC = () => {
       setError(null);
 
       const response = await fetch(
-        `http://localhost:8000/api/reviews/admin/all?status=${filter}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews/admin/all?status=${filter}`,
         {
           method: 'GET',
           credentials: 'include',
@@ -94,7 +94,7 @@ const ReviewManagement: React.FC = () => {
       setProcessing(reviewId);
 
       const response = await fetch(
-        `http://localhost:8000/api/reviews/${reviewId}/approve`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews/${reviewId}/approve`,
         {
           method: 'PATCH',
           credentials: 'include',
@@ -128,7 +128,7 @@ const ReviewManagement: React.FC = () => {
       setProcessing(reviewId);
 
       const response = await fetch(
-        `http://localhost:8000/api/reviews/${reviewId}/approve`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews/${reviewId}/approve`,
         {
           method: 'PATCH',
           credentials: 'include',
@@ -162,7 +162,7 @@ const ReviewManagement: React.FC = () => {
       setProcessing(reviewId);
 
       const response = await fetch(
-        `http://localhost:8000/api/reviews/${reviewId}/feature`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews/${reviewId}/feature`,
         {
           method: 'PATCH',
           credentials: 'include',
@@ -195,7 +195,7 @@ const ReviewManagement: React.FC = () => {
     try {
       setProcessing(reviewId);
 
-      const response = await fetch(`http://localhost:8000/api/reviews/${reviewId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews/${reviewId}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {

@@ -104,7 +104,19 @@ const getUserById = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { firstName, lastName, email, phoneNumber, userType, isActive, emailVerified } = req.body;
+    const { 
+      firstName, 
+      lastName, 
+      email, 
+      phoneNumber, 
+      userType, 
+      isActive, 
+      emailVerified,
+      address,
+      city,
+      emergencyContactName,
+      emergencyContactNumber
+    } = req.body;
 
     const user = await User.findByPk(userId);
 
@@ -123,6 +135,10 @@ const updateUser = async (req, res) => {
     if (userType) user.userType = userType;
     if (isActive !== undefined) user.isActive = isActive;
     if (emailVerified !== undefined) user.emailVerified = emailVerified;
+    if (address !== undefined) user.address = address;
+    if (city !== undefined) user.city = city;
+    if (emergencyContactName !== undefined) user.emergencyContactName = emergencyContactName;
+    if (emergencyContactNumber !== undefined) user.emergencyContactNumber = emergencyContactNumber;
 
     await user.save();
 
@@ -210,11 +226,42 @@ const deleteUser = async (req, res) => {
  */
 const getAllBookings = async (req, res) => {
   try {
-    // TODO: Implement when Booking model is created
+    const { page = 1, limit = 20, status, service_type, payment_status } = req.query;
+    const offset = (page - 1) * limit;
+
+    // Build where clause for filtering
+    const whereClause = {};
+    if (status) whereClause.booking_status = status;
+    if (service_type) whereClause.service_type = service_type;
+    if (payment_status) whereClause.payment_status = payment_status;
+
+    // Fetch all bookings with pagination
+    const { count, rows: bookings } = await Booking.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: Pet,
+          as: 'pet',
+          attributes: ['pet_id', 'name', 'breed', 'photo']
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber']
+        }
+      ],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
     return res.status(200).json({
       success: true,
-      message: 'Bookings endpoint - to be implemented',
-      data: []
+      count: bookings.length,
+      total: count,
+      page: parseInt(page),
+      pages: Math.ceil(count / limit),
+      data: bookings
     });
   } catch (error) {
     console.error('Get all bookings error:', error);
@@ -238,6 +285,12 @@ const getSystemStats = async (req, res) => {
     const petOwners = await User.count({ where: { userType: 'pet_owner', isActive: true } });
     const admins = await User.count({ where: { userType: 'admin', isActive: true } });
 
+    // Get booking statistics
+    const totalBookings = await Booking.count();
+    const pendingBookings = await Booking.count({ where: { booking_status: 'pending' } });
+    const completedBookings = await Booking.count({ where: { booking_status: 'completed' } });
+    const confirmedBookings = await Booking.count({ where: { booking_status: 'confirmed' } });
+
     return res.status(200).json({
       success: true,
       data: {
@@ -248,9 +301,10 @@ const getSystemStats = async (req, res) => {
           admins
         },
         bookings: {
-          total: 0, // TODO: Implement when booking model exists
-          pending: 0,
-          completed: 0
+          total: totalBookings,
+          pending: pendingBookings,
+          confirmed: confirmedBookings,
+          completed: completedBookings
         }
       }
     });
@@ -348,7 +402,7 @@ const getEmergencyRequests = async (req, res) => {
         { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] },
         { model: Pet, as: 'pet', attributes: ['pet_id', 'name'] }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
 
     return res.status(200).json({

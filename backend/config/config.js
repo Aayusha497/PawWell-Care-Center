@@ -19,7 +19,8 @@ module.exports = {
       min: 0,
       acquire: 30000,
       idle: 10000
-    }
+    },
+    ssl: process.env.NODE_ENV === 'production',
   },
 
   // JWT Configuration
