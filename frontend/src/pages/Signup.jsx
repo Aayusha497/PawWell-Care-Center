@@ -362,10 +362,10 @@ const Signup = () => {
                       <label htmlFor="first_name">
                         First Name
                         {values.first_name && !errors.first_name && (
-                          <span style={{ color: 'green', marginLeft: '8px' }}>✅</span>
+                          <span style={{ color: 'green', marginLeft: '8px' }}></span>
                         )}
                         {errors.first_name && (
-                          <span style={{ color: 'red', marginLeft: '8px' }}>❌</span>
+                          <span style={{ color: 'red', marginLeft: '8px' }}></span>
                         )}
                       </label>
 
@@ -409,10 +409,10 @@ const Signup = () => {
                       <label htmlFor="last_name">
                         Last Name
                         {values.last_name && !errors.last_name && (
-                          <span style={{ color: 'green', marginLeft: '8px' }}>✅</span>
+                          <span style={{ color: 'green', marginLeft: '8px' }}></span>
                         )}
                         {errors.last_name && (
-                          <span style={{ color: 'red', marginLeft: '8px' }}>❌</span>
+                          <span style={{ color: 'red', marginLeft: '8px' }}></span>
                         )}
                       </label>
 
@@ -601,12 +601,12 @@ const Signup = () => {
                       disabled={isSubmitting || !isValid || !dirty}
                       title={!isValid ? 'Please fix all validation errors' : 'Create your account'}
                       onClick={(e) => {
-                        console.log('🖱️ Button clicked');
+                        console.log('Button clicked');
                         console.log('FormState:', { isValid, dirty, errors, isSubmitting });
 
                         if (!isValid) {
-                          console.log('❌ Form is INVALID - blocking submission');
-                          toast.error('❌ Please fix all validation errors before submitting.');
+                          console.log('Form is INVALID - blocking submission');
+                          toast.error('Please fix all validation errors before submitting.');
                           e.preventDefault();
                           return false;
                         }
