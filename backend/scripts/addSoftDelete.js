@@ -15,15 +15,15 @@ async function addSoftDeleteColumn() {
       ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL;
     `);
     
-    console.log('✅ Successfully added deleted_at column to pets table');
-    console.log('📌 Soft delete is now enabled for pet profiles');
+    console.log('Successfully added deleted_at column to pets table');
+    console.log('Soft delete is now enabled for pet profiles');
     console.log('   - When pets are deleted, they are marked with deleted_at timestamp');
     console.log('   - Data is never actually removed from the database');
     console.log('   - Photos remain in Cloudinary for audit/recovery purposes');
     
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error adding soft delete column:', error.message);
+    console.error('Error adding soft delete column:', error.message);
     process.exit(1);
   }
 }

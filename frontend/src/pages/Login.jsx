@@ -7,7 +7,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
-// Removed direct loginUser import as we use AuthContext
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { LoginValidationSchema } from '../utils/formValidation';
@@ -50,7 +49,7 @@ const Login = () => {
       });
 
       if (response.success) {
-        // Check if profile is complete - prioritize this over other redirects
+        // Check if profile is complete 
         if (response.user && response.user.isProfileComplete !== true) {
           toast.info('Please complete your profile setup to continue.');
           setTimeout(() => {
@@ -106,7 +105,7 @@ const Login = () => {
 
             {location.state?.registered && (
               <div className="info-message">
-                <p>✓ Registration successful! You can now log in.</p>
+                <p>Registration successful! You can now log in.</p>
               </div>
             )}
 
@@ -131,7 +130,7 @@ const Login = () => {
                       marginBottom: '16px',
                       color: '#c33'
                     }}>
-                      <strong style={{ display: 'block', marginBottom: '8px' }}>❌ Please fix these errors:</strong>
+                      <strong style={{ display: 'block', marginBottom: '8px' }}>Please fix these errors:</strong>
                       <ul style={{ margin: '0', paddingLeft: '20px' }}>
                         {Object.entries(errors).map(([field, error]) => 
                           touched[field] && (
@@ -147,7 +146,7 @@ const Login = () => {
                   <div className="form-group">
                     <label htmlFor="email">Email / Username</label>
                     <div className="input-with-icon">
-                      <span className="input-icon">✉️</span>
+                      {/* <span className="input-icon"></span> */}
                       <Field name="email">
                         {({ field, meta }) => (
                           <input
@@ -167,7 +166,7 @@ const Login = () => {
                   <div className="form-group">
                     <label htmlFor="password">Password</label>
                     <div className="input-with-icon">
-                      <span className="input-icon">🔒</span>
+                      {/* <span className="input-icon"></span> */}
                       <Field name="password">
                         {({ field, meta }) => (
                           <input

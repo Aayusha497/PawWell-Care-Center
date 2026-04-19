@@ -202,8 +202,8 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
       <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
         <div className="w-full max-w-6xl bg-white dark:bg-gray-800 rounded-[28px] shadow-2xl overflow-hidden border border-black/5 dark:border-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-[1.05fr_1.55fr]">
-            {/* Left side - Branding */}
-            {/* Left side - Branding */}
+            {/* Left side */}
+            
             <div className="relative bg-[#F8E1A6] dark:bg-gray-700 p-8 md:p-10 flex flex-col items-center min-h-[760px] border-r border-black/5 dark:border-gray-600 overflow-hidden">
 
               {/* soft decorative circles */}
@@ -212,7 +212,7 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
               <div className="absolute top-1/2 right-10 w-3 h-3 rounded-full bg-white/80"></div>
               <div className="absolute bottom-28 left-14 w-4 h-4 rounded-full bg-white/80"></div>
 
-              {/* LOGO (stays at top) */}
+              {/* Logo */}
               <div className="relative z-10 w-full flex items-center gap-3 mb-10">
                 <div className="w-10 h-10 rounded-xl bg-[#EAB308] flex items-center justify-center shadow-sm">
                   <span className="text-white text-lg">🐾</span>
@@ -220,7 +220,7 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                 <span className="text-[28px] font-bold text-[#D4A017] dark:text-gray-100">PawWell</span>
               </div>
 
-              {/* CENTER CONTENT */}
+              {/* Center content */}
               <div className="relative z-10 mt-[420px] flex flex-col items-center text-center max-w-sm">
                 <h2 className="text-[42px] leading-[1.05] font-bold text-black dark:text-gray-100 mb-5">
                   Join the PawWell Family!

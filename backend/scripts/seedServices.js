@@ -14,17 +14,17 @@ const seedServices = async () => {
       {
         name: 'Pet Boarding',
         description: 'Full-time boarding service for your pets with proper care and supervision',
-        base_price: 2000
+        base_price: 2600
       },
       {
-        name: 'Daycation/Pet Sitting',
-        description: 'Day care service for your pets with play and socialization',
-        base_price: 2000
+        name: 'Pet Sitting',
+        description: 'Day care and sitting service for your pets with play and socialization',
+        base_price: 3250
       },
       {
         name: 'Grooming',
-        description: 'Professional grooming services including bathing, trimming, and styling',
-        base_price: 3500
+        description: 'Professional grooming services for your pets including bathing, trimming, and styling',
+        base_price: 3900
       }
     ];
 
@@ -44,23 +44,23 @@ const seedServices = async () => {
         }
       } else {
         await Service.create(serviceData);
-        console.log(`✅ Created service: ${serviceData.name}`);
-        console.log(`   Base Price: NPR ${serviceData.base_price}`);
-        console.log(`   Description: ${serviceData.description}\n`);
+        console.log(`Created service: ${serviceData.name}`);
+        console.log(` Base Price: NPR ${serviceData.base_price}`);
+        console.log(` Description: ${serviceData.description}\n`);
       }
     }
 
-    console.log('\n📋 Services Summary:');
-    console.log('═══════════════════════════════════════════════════════════');
-    console.log('1️⃣  Pet Boarding      - NPR 2000/night');
-    console.log('2️⃣  Daycation/Pet Sitting - NPR 2000/day');
-    console.log('3️⃣  Grooming         - NPR 3500/session');
-    console.log('═══════════════════════════════════════════════════════════');
-    console.log('✨ Services seed completed!');
+    console.log('\nServices Summary:');
+    
+    console.log('Pet Boarding      - NPR 2,600/night');
+    console.log('Pet Sitting       - NPR 3,250/day');
+    console.log('Grooming          - NPR 3,900/session');
+
+    console.log('Services seed completed!');
     
     process.exit(0);
   } catch (error) {
-    console.error('❌ Services seed failed:', error);
+    console.error('Services seed failed:', error);
     process.exit(1);
   }
 };

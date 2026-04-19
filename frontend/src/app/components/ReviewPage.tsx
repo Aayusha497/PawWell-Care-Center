@@ -47,10 +47,10 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
   const fetchReviewableBookings = async () => {
     try {
       setLoading(true);
-      console.log('📋 Fetching reviewable bookings...');
+      // console.log('Fetching reviewable bookings...');
 
       const response = await getReviewableBookings();
-      console.log('📋 Response:', response);
+      // console.log('Response:', response);
 
       const bookingData = Array.isArray(response.data)
         ? response.data
@@ -58,10 +58,10 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
         ? response.bookings
         : [];
 
-      console.log('✅ Found', bookingData.length, 'reviewable bookings');
+      console.log('Found', bookingData.length, 'reviewable bookings');
       setBookings(bookingData);
     } catch (error: any) {
-      console.error('❌ Error fetching reviewable bookings:', error);
+      console.error('Error fetching reviewable bookings:', error);
       toast.error(error.message || 'Failed to load bookings');
       setBookings([]);
     } finally {

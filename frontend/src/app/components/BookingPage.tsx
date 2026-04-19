@@ -24,7 +24,7 @@ interface BookingData {
 }
 
 const SERVICE_TYPES = [
-  'Daycation/Pet Sitting',
+  'Pet Sitting',
   'Pet Boarding',
   'Grooming'
 ];
@@ -36,9 +36,9 @@ const TIME_SLOTS = [
 ];
 
 const SERVICE_PRICING = {
-  'Daycation/Pet Sitting': { price: 2000, unit: 'per day' },
-  'Pet Boarding': { price: 2000, unit: 'per night' },
-  'Grooming': { price: 3500, unit: 'flat rate' }
+  'Pet Sitting': { price: 3250, unit: 'per day' },
+  'Pet Boarding': { price: 2600, unit: 'per night' },
+  'Grooming': { price: 3900, unit: 'flat rate' }
 };
 
 interface BookingPageProps {

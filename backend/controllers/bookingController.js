@@ -11,18 +11,18 @@ const config = require('../config/config');
 
 // Service pricing and capacity configuration
 const SERVICE_CONFIG = {
-  'Daycation/Pet Sitting': {
-    pricePerDay: 2000,
+  'Pet Sitting': {
+    pricePerDay: 3250,
     maxCapacityPerDay: 10,
     requiresDateRange: false
   },
   'Pet Boarding': {
-    pricePerNight: 2000,
+    pricePerNight: 2600,
     maxCapacityPerDay: 10,
     requiresDateRange: true
   },
   'Grooming': {
-    flatRate: 3500,
+    flatRate: 3900,
     maxCapacityPerDay: 10,
     requiresDateRange: false
   }

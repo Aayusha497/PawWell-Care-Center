@@ -71,7 +71,7 @@ const Dashboard = () => {
     const fetchBookings = async () => {
       try {
         setLoading(prev => ({ ...prev, bookings: true }));
-        // TODO: Implement when booking API endpoint is available
+        
         // For now, showing empty state
         setBookings([]);
       } catch (error) {
@@ -110,8 +110,8 @@ const Dashboard = () => {
   }, []);
 
   const handleBookService = () => {
-    // TODO: Navigate to booking page when implemented
-    // For now, show a placeholder message
+   
+   
     console.log('Booking feature coming soon');
     // navigate('/booking');
   };

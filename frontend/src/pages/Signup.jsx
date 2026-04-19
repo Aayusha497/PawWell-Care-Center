@@ -44,8 +44,8 @@ const Signup = () => {
 
   const handleSubmit = async (values, { setSubmitting, setErrors, setTouched }) => {
 
-    console.log('🚀 Form submitted!', values);
-    console.log('⚠️ CRITICAL: Performing STRICT validation on BOTH first_name and last_name');
+    // console.log('Form submitted!', values);
+    // console.log('Performing validation on BOTH first_name and last_name');
 
     // Mark all fields as touched to show validation errors
     const allFields = Object.keys(values);
@@ -55,97 +55,97 @@ const Signup = () => {
     });
     setTouched(touchedFields);
 
-    // ============================================
-    // STRICT FIRST NAME VALIDATION - NO EXCEPTIONS
-    // ============================================
+    
+    //  FIRST NAME VALIDATION 
+   
     const firstName = values.first_name.trim();
-    console.log('🔍 Validating first_name:', firstName);
+    // console.log('Validating first_name:', firstName);
 
     if (!firstName) {
-      console.error('❌ REJECTED: Empty first name');
+      console.error('REJECTED: Empty first name');
       setErrors({ first_name: 'First name is required.' });
-      toast.error('❌ First name is required.');
+      toast.error('First name is required.');
       setSubmitting(false);
       return;
     }
 
     if (firstName.length < 2) {
-      console.error('❌ REJECTED: First name too short:', firstName);
+      console.error('REJECTED: First name too short:', firstName);
       setErrors({ first_name: 'First name must be at least 2 characters long.' });
-      toast.error('❌ First name must be at least 2 characters long.');
+      toast.error('First name must be at least 2 characters long.');
       setSubmitting(false);
       return;
     }
 
-    // CHECK FOR NUMBERS IN FIRST NAME - ZERO TOLERANCE
+    // CHECK FOR NUMBERS IN FIRST NAME 
     if (/\d/.test(firstName)) {
-      console.error('❌❌❌ REJECTED: Numbers found in first name:', firstName);
+      console.error('REJECTED: Numbers found in first name:', firstName);
       setErrors({ first_name: 'First name should contain only letters (A–Z). Numbers are NOT allowed.' });
-      toast.error('❌ First name CANNOT contain numbers. Please use only letters.');
+      toast.error('First name CANNOT contain numbers. Please use only letters.');
       setSubmitting(false);
       return;
     }
 
-    // CHECK FOR SPECIAL CHARACTERS IN FIRST NAME - ZERO TOLERANCE
+    // CHECK FOR SPECIAL CHARACTERS IN FIRST NAME 
     if (!/^[A-Za-z]+$/.test(firstName)) {
-      console.error('❌❌❌ REJECTED: Special characters found in first name:', firstName);
+      console.error('REJECTED: Special characters found in first name:', firstName);
       setErrors({ first_name: 'First name should contain only letters (A–Z). Special characters are NOT allowed.' });
-      toast.error('❌ First name CANNOT contain special characters. Please use only letters.');
+      toast.error('First name CANNOT contain special characters. Please use only letters.');
       setSubmitting(false);
       return;
     }
 
-    console.log('✅ First name passed STRICT validation');
+    console.log('First name passed STRICT validation');
 
-    // ============================================
-    // STRICT LAST NAME VALIDATION - NO EXCEPTIONS
-    // ============================================
+   
+    //  LAST NAME VALIDATION 
+   
     const lastName = values.last_name.trim();
-    console.log('🔍 Validating last_name:', lastName);
+    console.log('Validating last_name:', lastName);
 
     if (!lastName) {
-      console.error('❌ REJECTED: Empty last name');
+      console.error('REJECTED: Empty last name');
       setErrors({ last_name: 'Last name is required.' });
-      toast.error('❌ Last name is required.');
+      toast.error('Last name is required.');
       setSubmitting(false);
       return;
     }
 
     if (lastName.length < 2) {
-      console.error('❌ REJECTED: Last name too short:', lastName);
+      console.error('REJECTED: Last name too short:', lastName);
       setErrors({ last_name: 'Last name must be at least 2 characters long.' });
-      toast.error('❌ Last name must be at least 2 characters long.');
+      toast.error('Last name must be at least 2 characters long.');
       setSubmitting(false);
       return;
     }
 
-    // CHECK FOR NUMBERS IN LAST NAME - ZERO TOLERANCE
+    // CHECK FOR NUMBERS IN LAST NAME 
     if (/\d/.test(lastName)) {
-      console.error('❌❌❌ REJECTED: Numbers found in last name:', lastName);
+      console.error('REJECTED: Numbers found in last name:', lastName);
       setErrors({ last_name: 'Last name should contain only letters (A–Z). Numbers are NOT allowed.' });
-      toast.error('❌ Last name CANNOT contain numbers. Please use only letters.');
+      toast.error('Last name CANNOT contain numbers. Please use only letters.');
       setSubmitting(false);
       return;
     }
 
-    // CHECK FOR SPECIAL CHARACTERS IN LAST NAME - ZERO TOLERANCE
+    // CHECK FOR SPECIAL CHARACTERS IN LAST NAME 
     if (!/^[A-Za-z]+$/.test(lastName)) {
-      console.error('❌❌❌ REJECTED: Special characters found in last name:', lastName);
+      console.error('REJECTED: Special characters found in last name:', lastName);
       setErrors({ last_name: 'Last name should contain only letters (A–Z). Special characters are NOT allowed.' });
-      toast.error('❌ Last name CANNOT contain special characters. Please use only letters.');
+      toast.error('Last name CANNOT contain special characters. Please use only letters.');
       setSubmitting(false);
       return;
     }
 
-    console.log('✅ Last name passed STRICT validation');
+    console.log('Last name passed STRICT validation');
 
     // CRITICAL: Validate the form data against the schema
     try {
-      console.log('🔐 Running schema validation...');
+      console.log('Running schema validation...');
       await SignupValidationSchema.validate(values, { abortEarly: false });
-      console.log('✅ Schema validation PASSED');
+      console.log('Schema validation PASSED');
     } catch (validationError) {
-      console.error('❌ Schema validation FAILED:', validationError.inner);
+      console.error('Schema validation FAILED:', validationError.inner);
       
       const formErrors = {};
       validationError.inner.forEach(error => {
@@ -155,7 +155,7 @@ const Signup = () => {
       
       setErrors(formErrors);
       const errorMessage = Object.values(formErrors).join('\n');
-      toast.error(`❌ Validation Errors:\n${errorMessage}`);
+      toast.error(`Validation Errors:\n${errorMessage}`);
       setSubmitting(false);
       return; // STOP - Do not proceed
     }
@@ -172,15 +172,15 @@ const Signup = () => {
         userType: user_type
       };
 
-      console.log('📤 Sending registration data:', userData);
+      console.log('Sending registration data:', userData);
 
       const response = await registerUser(userData);
 
-      console.log('✅ Registration response:', response);
+      console.log('Registration response:', response);
 
       if (response.success) {
 
-        console.log('🎉 Registration successful!');
+        console.log('Registration successful!');
 
         // SweetAlert Success Popup
         Swal.fire({
@@ -209,7 +209,7 @@ const Signup = () => {
 
     } catch (error) {
 
-      console.error('❌ Registration error:', error);
+      console.error('Registration error:', error);
       setSubmitting(false); // Stop loading FIRST
 
       // Handle backend validation errors
@@ -217,7 +217,7 @@ const Signup = () => {
         const formErrors = {};
         const backendErrors = error.response.data.errors;
 
-        console.log('🔴 Backend errors received:', backendErrors);
+        console.log('Backend errors received:', backendErrors);
 
         // Map backend field names to form field names
         const fieldMap = {
@@ -226,7 +226,7 @@ const Signup = () => {
           'phoneNumber': 'phone_number'
         };
 
-        // Handle errors object (with field arrays)
+        // Handle errors object
         if (typeof backendErrors === 'object') {
           Object.keys(backendErrors).forEach(key => {
             // Use field map for direct conversion
@@ -235,11 +235,11 @@ const Signup = () => {
               ? backendErrors[key][0] 
               : backendErrors[key];
             formErrors[formFieldName] = errorMsg;
-            console.log(`✏️ Mapped ${key} → ${formFieldName}: "${errorMsg}"`);
+            console.log(`Mapped ${key} → ${formFieldName}: "${errorMsg}"`);
           });
         }
 
-        console.log('💾 Final form errors:', formErrors);
+        console.log('Final form errors:', formErrors);
         setErrors(formErrors);
         
         // Mark all error fields as touched so errors display
@@ -248,7 +248,7 @@ const Signup = () => {
           touchedErrorFields[field] = true;
         });
         setTouched(touchedErrorFields);
-        console.log('✅ Marked fields as touched:', Object.keys(touchedErrorFields));
+        console.log('Marked fields as touched:', Object.keys(touchedErrorFields));
         
       } else if (error.response?.data?.message) {
         // Show general error message

@@ -7,26 +7,26 @@ const { User, EmailVerification, PasswordReset } = require('../models');
  */
 const initDatabase = async () => {
   try {
-    console.log('🔄 Starting database initialization...');
+    console.log('tarting database initialization...');
 
     // Test connection
     await sequelize.authenticate();
-    console.log('✅ Database connection established');
+    console.log('Database connection established');
 
     // Sync all models (create tables)
     await sequelize.sync({ force: false, alter: false });
-    console.log('✅ All models synchronized successfully');
+    console.log('All models synchronized successfully');
 
-    console.log('\n📊 Database tables created:');
+    console.log('\nDatabase tables created:');
     console.log('  - users');
     console.log('  - email_verifications');
     console.log('  - password_resets');
 
-    console.log('\n✨ Database initialization completed successfully!');
+    console.log('\n Database initialization completed successfully!');
     
     process.exit(0);
   } catch (error) {
-    console.error('❌ Database initialization failed:', error);
+    console.error('Database initialization failed:', error);
     process.exit(1);
   }
 };

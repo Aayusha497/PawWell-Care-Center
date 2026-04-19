@@ -5,7 +5,7 @@
  * executes them, and generates natural language responses.
  */
 
-const { createOllamaClient } = require("./ollamaClient");
+const { createGroqClient } = require("./groqClient");
 const { allTools } = require("./tools");
 const { ChatConversation, ChatMessage } = require("../../models");
 const { v4: uuidv4 } = require('uuid');
@@ -213,6 +213,20 @@ Your role is to help pet owners by:
 - Accessing wellness records and health information
 - Retrieving notifications and profile information
 
+BOOKING PROCESS (IMPORTANT - Use this when user asks about booking):
+When a user asks about booking a service, provide this flow:
+1. **Choose a Service**: We offer 3 services for your pets:
+   - **Pet Boarding** - NPR 2,600/night (overnight stays)
+   - **Grooming** - NPR 3,900/session (bathing, haircuts, styling)
+   - **Pet Sitting** - NPR 3,250/day (daytime care)
+2. **Choose a Date**: Select your preferred date and check availability
+3. **Add Drop-off & Pick-up Details**: Choose drop-off and pick-up times/services if needed
+4. **Enter Details**: Fill in your pet's information and special requirements
+5. **Confirm Booking**: Review and confirm - booking will be moved to PENDING status
+6. **Wait for Approval**: Admin will review and approve your booking
+7. **Make Payment**: Once approved, proceed to payment
+8. **Booking Confirmed**: After payment completes, your booking is CONFIRMED
+
 IMPORTANT CONTEXT:
 - TODAY'S DATE: {todayDate}
 - When showing availability, the tool automatically excludes today and past dates - only future dates from tomorrow onwards are returned
@@ -289,7 +303,7 @@ function formatAvailabilityTable(data) {
  * Create chat agent with tool calling capability
  */
 async function createChatAgent() {
-  const { client, model, temperature } = createOllamaClient();
+  const { client, model, temperature } = createGroqClient();
   
   /**
    * Process user message with tool calling
@@ -335,85 +349,85 @@ async function createChatAgent() {
       let conversationContext = '';
       let extractedInfo = { dates: null, service: null };
       
+      // ALWAYS extract information from the current message
+      // This ensures even first messages get proper extraction
+      const monthNames = {
+        january: 1, jan: 1,
+        february: 2, feb: 2,
+        march: 3, mar: 3,
+        april: 4, apr: 4,
+        may: 5,
+        june: 6, jun: 6,
+        july: 7, jul: 7,
+        august: 8, aug: 8,
+        september: 9, sep: 9, sept: 9,
+        october: 10, oct: 10,
+        november: 11, nov: 11,
+        december: 12, dec: 12
+      };
+      
+      // Extract month
+      for (const [name, num] of Object.entries(monthNames)) {
+        if (new RegExp(`\\b${name}\\b`, 'i').test(message)) {
+          extractedInfo.month = num;
+          extractedInfo.monthName = name;
+          break;
+        }
+      }
+      
+      // Extract year (look for 4-digit year like 2026)
+      const yearMatch = message.match(/\b(20\d{2})\b/);
+      if (yearMatch) {
+        extractedInfo.year = parseInt(yearMatch[1]);
+      }
+      
+      // Check for "today", "current", "this month", "this week" - should trigger current month
+      const hasCurrentDateRef = /\btoday\b|\bcurrent\b|\bthis\s+(week|month)\b|\bright\s+now\b|\bnow\b/i.test(message);
+      
+      // Default to current month/year if asking about "available dates" OR mentions today/current
+      if (/available dates|availability|when.*available|which.*available|slots|booking/i.test(message) || hasCurrentDateRef) {
+        if (!extractedInfo.month) {
+          const now = new Date();
+          extractedInfo.month = now.getMonth() + 1;
+          extractedInfo.monthName = 'current month';
+        }
+        if (!extractedInfo.year) {
+          extractedInfo.year = new Date().getFullYear();
+        }
+      }
+      
+      // Extract service type
+      if (/boarding|overnight/i.test(message)) {
+        extractedInfo.service = 'Pet Boarding';
+      } else if (/grooming/i.test(message)) {
+        extractedInfo.service = 'Grooming';
+      } else if (/daycation|daycare|pet\s+sit|sitting/i.test(message)) {
+        extractedInfo.service = 'Pet Sitting';
+      }
+      
+      // Add extracted information to context (for all messages)
+      conversationContext += '\n\nEXTRACTED INFORMATION FROM REQUEST:';
+      if (extractedInfo.month) {
+        conversationContext += `\n- Month: ${extractedInfo.month} (${extractedInfo.monthName})`;
+      }
+      if (extractedInfo.year) {
+        conversationContext += `\n- Year: ${extractedInfo.year}`;
+      }
+      if (extractedInfo.service) {
+        conversationContext += `\n- Service mentioned: serviceType="${extractedInfo.service}"`;
+      }
+      if (extractedInfo.month || extractedInfo.year || extractedInfo.service) {
+        conversationContext += '\n\nUSE THESE EXACT VALUES when calling tools!\n';
+      }
+      
+      // Add previous conversation history if it exists
       if (history.length > 1) {
-        conversationContext = '\n\nPREVIOUS CONVERSATION:\n';
+        conversationContext += '\n\nPREVIOUS CONVERSATION:\n';
         // Get last few messages (excluding the current one we just added)
         const previousMessages = history.slice(0, -1).slice(-4); // Reduced from 6 for faster processing
         conversationContext += previousMessages.map(msg => 
           `${msg.role === 'user' ? 'User' : 'PawBot'}: ${msg.content}`
         ).join('\n');
-        
-        // Extract dates from conversation history
-        const allUserMessages = previousMessages
-          .filter(m => m.role === 'user')
-          .map(m => m.content)
-          .join(' ') + ' ' + message;
-        
-        // Try to extract month and year information
-        const monthNames = {
-          january: 1, jan: 1,
-          february: 2, feb: 2,
-          march: 3, mar: 3,
-          april: 4, apr: 4,
-          may: 5,
-          june: 6, jun: 6,
-          july: 7, jul: 7,
-          august: 8, aug: 8,
-          september: 9, sep: 9, sept: 9,
-          october: 10, oct: 10,
-          november: 11, nov: 11,
-          december: 12, dec: 12
-        };
-        
-        // Extract month
-        for (const [name, num] of Object.entries(monthNames)) {
-          if (new RegExp(`\\b${name}\\b`, 'i').test(allUserMessages)) {
-            extractedInfo.month = num;
-            extractedInfo.monthName = name;
-            break;
-          }
-        }
-        
-        // Extract year (look for 4-digit year like 2026)
-        const yearMatch = allUserMessages.match(/\b(20\d{2})\b/);
-        if (yearMatch) {
-          extractedInfo.year = parseInt(yearMatch[1]);
-        }
-        
-        // Default to current month/year if asking about "available dates"
-        if (/available dates|availability|when.*available|which.*available/i.test(allUserMessages)) {
-          if (!extractedInfo.month) {
-            const now = new Date();
-            extractedInfo.month = now.getMonth() + 1;
-            extractedInfo.monthName = 'current month';
-          }
-          if (!extractedInfo.year) {
-            extractedInfo.year = new Date().getFullYear();
-          }
-        }
-        
-        // Extract service type
-        if (/boarding|overnight/i.test(allUserMessages)) {
-          extractedInfo.service = 'Pet Boarding';
-        } else if (/grooming/i.test(allUserMessages)) {
-          extractedInfo.service = 'Grooming';
-        } else if (/daycation|daycare|sitting/i.test(allUserMessages)) {
-          extractedInfo.service = 'Daycation/Pet Sitting';
-        }
-        
-        conversationContext += '\n\nEXTRACTED INFORMATION FROM CONVERSATION:';
-        if (extractedInfo.month) {
-          conversationContext += `\n- Month: ${extractedInfo.month} (${extractedInfo.monthName})`;
-        }
-        if (extractedInfo.year) {
-          conversationContext += `\n- Year: ${extractedInfo.year}`;
-        }
-        if (extractedInfo.service) {
-          conversationContext += `\n- Service mentioned: serviceType="${extractedInfo.service}"`;
-        }
-        if (extractedInfo.month || extractedInfo.year || extractedInfo.service) {
-          conversationContext += '\n\nUSE THESE EXACT VALUES when calling tools!\n';
-        }
       }
       
       // Use a ReAct-style approach with text-based tool calls
@@ -422,11 +436,17 @@ async function createChatAgent() {
 Current User Message: ${message}
 
 Decision Process:
-1. Review the EXTRACTED INFORMATION section - it shows month, year, and service names ready to use!
-2. If you see month, year, and serviceType in the extracted info, YOU HAVE EVERYTHING for check_availability
-3. Use the exact values as shown (e.g., month=3 for March, serviceType="Pet Boarding")
-4. If month/year not specified, the tool will default to current month
-5. If any required information is missing from extracted info, ask the user
+1. If user is asking about HOW TO BOOK or BOOKING PROCESS - provide the BOOKING PROCESS flow from the system prompt above. Do NOT call any tool.
+2. If user is asking about AVAILABILITY or CHECKING SLOTS - extract service info and call check_availability tool.
+3. Review the EXTRACTED INFORMATION section - it shows month, year, and service names ready to use!
+4. If you see month, year, and serviceType in the extracted info, YOU HAVE EVERYTHING for check_availability
+5. Use the exact values as shown (e.g., month=3 for March, serviceType="Pet Boarding")
+6. IMPORTANT: If the user mentioned "today" or "current" - this means the CURRENT MONTH (April 2026)
+7. When you have all required info for a tool, IMMEDIATELY call the tool - do NOT ask for clarification
+8. Only ask for missing info if month, year, OR service type is completely missing from extracted info
+
+BOOKING GUIDANCE: If user asks about booking, explain the 8-step process clearly
+AVAILABILITY CHECK: If user asks about availability/slots, use the tool
 
 TOOL CALL EXAMPLE:
 If extracted info shows:
@@ -450,16 +470,17 @@ Otherwise, ask for ONLY the missing specific information.
 
 Your response:`;
 
-      const response = await client.generate({
+      const response = await client.chat.completions.create({
         model: model,
-        prompt: prompt,
-        options: {
-          temperature: temperature,
-          num_predict: 256, // Reduced from 512 for faster response
-        }
+        messages: [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: prompt }
+        ],
+        temperature: temperature,
+        max_tokens: 256
       });
       
-      const responseText = response.response;
+      const responseText = response.choices[0].message.content;
       
       // Check if the response contains a tool call
       if (responseText.includes('TOOL:')) {
@@ -522,7 +543,7 @@ Your response:`;
         
         if (formattedTable) {
           // We successfully formatted availability data, return it directly
-          console.log('✅ Formatted availability table directly');
+          console.log('Formatted availability table directly');
           return formattedTable;
         }
         
@@ -549,26 +570,27 @@ Format the information clearly and conversationally. Keep it friendly and concis
 
 Your response to ${userName}:`;
 
-        const finalResponse = await client.generate({
+        const finalResponse = await client.chat.completions.create({
           model: model,
-          prompt: finalPrompt,
-          options: {
-            temperature: temperature,
-            num_predict: 1200, // Increased to handle full month tables (27+ rows)
-          }
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant for PawWell Care Center. Format responses clearly and conversationally.' },
+            { role: 'user', content: finalPrompt }
+          ],
+          temperature: temperature,
+          max_tokens: 1200
         });
         
-        return finalResponse.response;
+        return finalResponse.choices[0].message.content;
       } catch (toolError) {
-        console.error('❌ Tool execution error:', toolError.message);
+        console.error('Tool execution error:', toolError.message);
         
         // Parse the error to understand what's missing
         const errorMsg = toolError.message || '';
         
         if (errorMsg.includes('month') || errorMsg.includes('serviceType')) {
-          return "I need to know which service you're interested in to check availability. We offer:\n\n1. **Pet Boarding** - Overnight stays for your pet\n2. **Grooming** - Bathing, haircuts, and styling  \n3. **Daycation/Pet Sitting** - Daytime care\n\nWhich service would you like to check availability for? I can show you the available dates for this month or any specific month you're interested in.";
+          return "I need to know which service you're interested in to check availability. We offer:\n\n1. **Pet Boarding** - NPR 2,600/night (Overnight stays for your pets)\n2. **Grooming** - NPR 3,900/session (Bathing, haircuts, styling)\n3. **Pet Sitting** - NPR 3,250/day (Daytime care for your pets)\n\nWhich service would you like to check availability for? I can show you the available dates for this month or any specific month you're interested in.";
         } else if (errorMsg.includes('expected') || errorMsg.includes('Invalid')) {
-          return "I'm having trouble understanding the details. To check availability, I just need to know which service you're interested in (Pet Boarding, Grooming, or Daycation/Pet Sitting). I can show you all available dates for the current month or any month you specify!";
+          return "I'm having trouble understanding the details. To check availability, I just need to know which service you're interested in:\n\n1. Pet Boarding - NPR 2,600/night\n2. Grooming - NPR 3,900/session\n3. Pet Sitting - NPR 3,250/day\n\nI can show you all available dates for the current month or any month you specify!";
         }
         
         // For other errors, return a helpful message
@@ -576,7 +598,7 @@ Your response to ${userName}:`;
       }
       
     } catch (error) {
-      console.error('❌ Error handling tool call:', error);
+      console.error('Error handling tool call:', error);
       return "I encountered an issue while fetching that information. Could you please try rephrasing your question?";
     }
   }
@@ -608,7 +630,7 @@ function clearConversation(conversationId) {
   if (conversationStore.has(conversationId)) {
     conversationStore.delete(conversationId);
     conversationIdMap.delete(conversationId);
-    console.log(`🗑️ Cleared conversation: ${conversationId}`);
+    console.log(`Cleared conversation: ${conversationId}`);
     return true;
   }
   return false;

@@ -134,7 +134,7 @@ export default function UserDashboard({
     // Check if we just completed a payment - if so, refetch more aggressively
     const justPaidBookingId = sessionStorage.getItem('just_paid_booking_id');
     if (justPaidBookingId) {
-      console.log('💳 Payment just completed! Aggressively refetching bookings...');
+      console.log('Payment just completed! Aggressively refetching bookings...');
       sessionStorage.removeItem('just_paid_booking_id');
       // Refetch immediately and multiple times to ensure we get latest data
       setTimeout(() => fetchBookings(), 300);
@@ -144,7 +144,7 @@ export default function UserDashboard({
     
     // Only refresh when page comes into focus (to avoid flickering)
     const handleFocus = () => {
-      console.log('👁️ Page focused - refetching bookings');
+      console.log('Page focused - refetching bookings');
       fetchBookings();
     };
     window.addEventListener('focus', handleFocus);
@@ -241,11 +241,11 @@ export default function UserDashboard({
   const fetchBookings = async () => {
     try {
       setBookingsLoading(true);
-      console.log('🔄 Fetching bookings...');
+      // console.log('Fetching bookings...');
       const response = await getUserBookings({ upcoming: true });
       const bookingData = response.data || response.bookings || response || [];
       
-      console.log('📚 Bookings fetched:', {
+      console.log('Bookings fetched:', {
         count: Array.isArray(bookingData) ? bookingData.length : 0,
         statuses: Array.isArray(bookingData) ? bookingData.map((b: any) => ({
           id: b.booking_id,
@@ -256,7 +256,7 @@ export default function UserDashboard({
       
       setBookings(Array.isArray(bookingData) ? bookingData : []);
     } catch (error: any) {
-      console.error('❌ Error fetching bookings:', error);
+      console.error('Error fetching bookings:', error);
     } finally {
       setBookingsLoading(false);
     }
@@ -605,10 +605,9 @@ const handleAddPet = () => {
           {/* Welcome Card */}
           <div className="bg-gradient-to-br from-[#FFE4A3] via-[#FFF9F5] to-[#FFE4A3] dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-2xl p-8 shadow-md">
             <h2 className="text-3xl font-bold text-[#FA9884] dark:text-yellow-400 mb-3">Welcome, {firstName}!</h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">Manage your pets and book services with ease.</p>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">Book Your Pet Services With Ease.</p>
             <div className="flex flex-col gap-3">
               <button 
-                onClick={handleBookService}
                 className="bg-[#FA9884] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#E8876F] transition"
               >
                 Book a New Service

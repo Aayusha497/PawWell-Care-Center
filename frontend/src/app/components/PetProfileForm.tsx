@@ -119,21 +119,21 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    // Pet Name validation - letters and spaces only
+    // Pet Name validation, letters and spaces only
     if (!formData.name.trim()) {
       newErrors.name = 'Pet name is required';
     } else if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
       newErrors.name = 'Pet Name can only contain letters (A–Z), no numbers or symbols allowed';
     }
 
-    // Breed validation - letters and spaces only
+    // Breed validation, letters and spaces only
     if (!formData.breed.trim()) {
       newErrors.breed ='Breed is required';
     } else if (!/^[a-zA-Z\s]+$/.test(formData.breed)) {
       newErrors.breed = 'Breed can only contain letters (A–Z), no numbers or symbols allowed';
     }
 
-    // Age validation - positive numbers only, range 0-50
+    // Age validation, positive numbers only, range 0-50
     if (!formData.age) {
       newErrors.age = 'Age is required';
     } else if (Number(formData.age) < 0 || Number(formData.age) > 50) {
@@ -142,7 +142,7 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
       newErrors.age = 'Age must be a valid number';
     }
 
-    // Weight validation - positive numbers only, range 0.1-999
+    // Weight validation, positive numbers only, range 0.1-999
     if (!formData.weight) {
       newErrors.weight = 'Weight is required';
     } else if (Number(formData.weight) < 0.1 || Number(formData.weight) > 999) {
@@ -167,16 +167,16 @@ export default function PetProfileForm({ onBack, onSuccess, petId, onNavigate }:
 
     // Allergies validation - required field and must contain at least one letter
     if (!formData.allergies.trim()) {
-      newErrors.allergies = '⚠️ Allergies field is required';
+      newErrors.allergies = 'Allergies field is required';
     } else if (!/[a-zA-Z]/.test(formData.allergies)) {
-      newErrors.allergies = '⚠️ Allergies must contain text with letters, not just numbers';
+      newErrors.allergies = 'Allergies must contain text with letters, not just numbers';
     }
 
     // Triggering Points validation - required field and must contain at least one letter
     if (!formData.triggering_point.trim()) {
-      newErrors.triggering_point = '⚠️ Triggering Points field is required';
+      newErrors.triggering_point = 'Triggering Points field is required';
     } else if (!/[a-zA-Z]/.test(formData.triggering_point)) {
-      newErrors.triggering_point = '⚠️ Triggering Points must contain text with letters, not just numbers';
+      newErrors.triggering_point = 'Triggering Points must contain text with letters, not just numbers';
     }
 
     // Last Vet Visit Date validation - required field and not in future

@@ -5,7 +5,7 @@
  */
 
 const { chat } = require('../services/chatbot/agent');
-const { testOllamaConnection } = require('../services/chatbot/ollamaClient');
+const { testGroqConnection } = require('../services/chatbot/groqClient');
 
 /**
  * Handle chat message from user
@@ -85,16 +85,15 @@ exports.handleChatMessage = async (req, res) => {
  */
 exports.healthCheck = async (req, res) => {
   try {
-    const ollamaStatus = await testOllamaConnection();
+    const groqStatus = await testGroqConnection();
     
     return res.json({
       success: true,
       status: 'ok',
       service: 'chatbot',
-      ollama: {
-        connected: ollamaStatus,
-        baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
-        model: process.env.OLLAMA_MODEL || 'gemma2:2b'
+      groq: {
+        connected: groqStatus,
+        model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant'
       },
       timestamp: new Date().toISOString()
     });
@@ -153,7 +152,7 @@ exports.resetConversation = async (req, res) => {
     const convId = conversationId || `user_${userId}`;
     clearConversation(convId);
     
-    console.log(`🔄 Conversation reset for user ${userId}`);
+    console.log(`Conversation reset for user ${userId}`);
     
     return res.json({
       success: true,
@@ -162,7 +161,7 @@ exports.resetConversation = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Reset error:', error);
+    console.error('Reset error:', error);
     return res.status(500).json({
       success: false,
       message: 'Failed to reset conversation',
