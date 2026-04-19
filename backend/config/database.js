@@ -16,6 +16,7 @@ const sequelize = process.env.DATABASE_URL
         },
       },
       define: {
+        schema: 'public',
         timestamps: true,
         underscored: false,
         freezeTableName: true,
@@ -40,6 +41,7 @@ const sequelize = process.env.DATABASE_URL
           },
         }),
         define: {
+          schema: 'public',
           timestamps: true,
           underscored: false,
           freezeTableName: true,
