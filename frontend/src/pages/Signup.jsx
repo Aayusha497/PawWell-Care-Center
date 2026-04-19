@@ -55,9 +55,9 @@ const Signup = () => {
     });
     setTouched(touchedFields);
 
-    
+
     //  FIRST NAME VALIDATION 
-   
+
     const firstName = values.first_name.trim();
     // console.log('Validating first_name:', firstName);
 
@@ -97,9 +97,9 @@ const Signup = () => {
 
     console.log('First name passed STRICT validation');
 
-   
+
     //  LAST NAME VALIDATION 
-   
+
     const lastName = values.last_name.trim();
     console.log('Validating last_name:', lastName);
 
@@ -146,13 +146,13 @@ const Signup = () => {
       console.log('Schema validation PASSED');
     } catch (validationError) {
       console.error('Schema validation FAILED:', validationError.inner);
-      
+
       const formErrors = {};
       validationError.inner.forEach(error => {
         console.error(`Field: ${error.path}, Message: ${error.message}`);
         formErrors[error.path] = error.message;
       });
-      
+
       setErrors(formErrors);
       const errorMessage = Object.values(formErrors).join('\n');
       toast.error(`Validation Errors:\n${errorMessage}`);
@@ -231,8 +231,8 @@ const Signup = () => {
           Object.keys(backendErrors).forEach(key => {
             // Use field map for direct conversion
             const formFieldName = fieldMap[key] || key;
-            const errorMsg = Array.isArray(backendErrors[key]) 
-              ? backendErrors[key][0] 
+            const errorMsg = Array.isArray(backendErrors[key])
+              ? backendErrors[key][0]
               : backendErrors[key];
             formErrors[formFieldName] = errorMsg;
             console.log(`Mapped ${key} → ${formFieldName}: "${errorMsg}"`);
@@ -241,7 +241,7 @@ const Signup = () => {
 
         console.log('Final form errors:', formErrors);
         setErrors(formErrors);
-        
+
         // Mark all error fields as touched so errors display
         const touchedErrorFields = {};
         Object.keys(formErrors).forEach(field => {
@@ -249,7 +249,7 @@ const Signup = () => {
         });
         setTouched(touchedErrorFields);
         console.log('Marked fields as touched:', Object.keys(touchedErrorFields));
-        
+
       } else if (error.response?.data?.message) {
         // Show general error message
         toast.error(error.response.data.message || 'Registration failed. Please try again.');
@@ -320,211 +320,79 @@ const Signup = () => {
 
                 return (
 
-                <Form className="auth-form">
+                  <Form className="auth-form">
 
-                  {/* Validation Error Summary - Show All Errors with Field Labels */}
-                  {(Object.keys(errors).length > 0 || (touched && Object.keys(touched).length > 0 && !isValid)) && (
-                    <div className="validation-error-summary" style={{
-                      backgroundColor: '#fee',
-                      border: '2px solid #fcc',
-                      borderRadius: '6px',
-                      padding: '14px 16px',
-                      marginBottom: '16px',
-                      color: '#c33'
-                    }}>
-                      <strong style={{ display: 'block', marginBottom: '12px', fontSize: '14px' }}>❌ Please fix the following errors:</strong>
-                      {Object.keys(errors).length > 0 ? (
-                        <ul style={{ margin: '0', paddingLeft: '20px', listStyle: 'none' }}>
-                          {Object.entries(errors).map(([field, error]) => {
-                            // Format field name for display
-                            const fieldLabel = field
-                              .replace(/_/g, ' ')
-                              .split(' ')
-                              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                              .join(' ');
-                            
-                            return (
-                              <li key={field} style={{ marginBottom: '8px', fontSize: '13px', lineHeight: '1.4' }}>
-                                <strong>{fieldLabel}:</strong> {error}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : (
-                        <p style={{ margin: '0', fontSize: '13px' }}>Please check all fields and try again.</p>
-                      )}
-                    </div>
-                  )}
+                    {/* Validation Error Summary - Show All Errors with Field Labels */}
+                    {(Object.keys(errors).length > 0 || (touched && Object.keys(touched).length > 0 && !isValid)) && (
+                      <div className="validation-error-summary" style={{
+                        backgroundColor: '#fee',
+                        border: '2px solid #fcc',
+                        borderRadius: '6px',
+                        padding: '14px 16px',
+                        marginBottom: '16px',
+                        color: '#c33'
+                      }}>
+                        <strong style={{ display: 'block', marginBottom: '12px', fontSize: '14px' }}>❌ Please fix the following errors:</strong>
+                        {Object.keys(errors).length > 0 ? (
+                          <ul style={{ margin: '0', paddingLeft: '20px', listStyle: 'none' }}>
+                            {Object.entries(errors).map(([field, error]) => {
+                              // Format field name for display
+                              const fieldLabel = field
+                                .replace(/_/g, ' ')
+                                .split(' ')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ');
 
-                  <div className="form-group">
+                              return (
+                                <li key={field} style={{ marginBottom: '8px', fontSize: '13px', lineHeight: '1.4' }}>
+                                  <strong>{fieldLabel}:</strong> {error}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <p style={{ margin: '0', fontSize: '13px' }}>Please check all fields and try again.</p>
+                        )}
+                      </div>
+                    )}
 
-                    <label htmlFor="first_name">
-                      First Name 
-                      {values.first_name && !errors.first_name && (
-                        <span style={{ color: 'green', marginLeft: '8px' }}>✅</span>
-                      )}
-                      {errors.first_name && (
-                        <span style={{ color: 'red', marginLeft: '8px' }}>❌</span>
-                      )}
-                    </label>
+                    <div className="form-group">
 
-                    <Field name="first_name">
+                      <label htmlFor="first_name">
+                        First Name
+                        {values.first_name && !errors.first_name && (
+                          <span style={{ color: 'green', marginLeft: '8px' }}>✅</span>
+                        )}
+                        {errors.first_name && (
+                          <span style={{ color: 'red', marginLeft: '8px' }}>❌</span>
+                        )}
+                      </label>
 
-                      {({ field, form }) => (
-
-                        <div>
-                          <input
-                            {...field}
-                            type="text"
-                            id="first_name"
-                            placeholder="John"
-                            className={`auth-input ${form.errors.first_name && form.touched.first_name ? 'input-error' : ''}`}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              form.setFieldTouched('first_name', true, false);
-                            }}
-                            onBlur={field.onBlur}
-                          />
-                          {form.errors.first_name && form.touched.first_name && (
-                            <div style={{
-                              color: '#dc3545',
-                              fontSize: '12px',
-                              marginTop: '4px',
-                              fontWeight: '500'
-                            }}>
-                              {form.errors.first_name}
-                            </div>
-                          )}
-                        </div>
-
-                      )}
-
-                    </Field>
-
-                  </div>
-
-                  <div className="form-group">
-
-                    <label htmlFor="last_name">
-                      Last Name 
-                      {values.last_name && !errors.last_name && (
-                        <span style={{ color: 'green', marginLeft: '8px' }}>✅</span>
-                      )}
-                      {errors.last_name && (
-                        <span style={{ color: 'red', marginLeft: '8px' }}>❌</span>
-                      )}
-                    </label>
-
-                    <Field name="last_name">
-
-                      {({ field, form }) => (
-
-                        <div>
-                          <input
-                            {...field}
-                            type="text"
-                            id="last_name"
-                            placeholder="Doe"
-                            className={`auth-input ${form.errors.last_name && form.touched.last_name ? 'input-error' : ''}`}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              form.setFieldTouched('last_name', true, false);
-                            }}
-                            onBlur={field.onBlur}
-                          />
-                          {form.errors.last_name && form.touched.last_name && (
-                            <div style={{
-                              color: '#dc3545',
-                              fontSize: '12px',
-                              marginTop: '4px',
-                              fontWeight: '500'
-                            }}>
-                              {form.errors.last_name}
-                            </div>
-                          )}
-                        </div>
-
-                      )}
-
-                    </Field>
-
-                  </div>
-
-                  <div className="form-group">
-
-                    <label htmlFor="email">Email Address</label>
-
-                    <Field name="email">
-
-                      {({ field, form }) => (
-
-                        <div>
-                          <input
-                            {...field}
-                            type="email"
-                            id="email"
-                            placeholder="john.doe@example.com"
-                            className={`auth-input ${form.errors.email && form.touched.email ? 'input-error' : ''}`}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              form.setFieldTouched('email', true, false);
-                            }}
-                            onBlur={field.onBlur}
-                          />
-                          {form.errors.email && form.touched.email && (
-                            <div style={{
-                              color: '#dc3545',
-                              fontSize: '12px',
-                              marginTop: '4px',
-                              fontWeight: '500'
-                            }}>
-                              {form.errors.email}
-                            </div>
-                          )}
-                        </div>
-
-                      )}
-
-                    </Field>
-
-                  </div>
-
-
-
-
-
-                  <div className="form-group">
-
-                    <label htmlFor="password">Password</label>
-
-                    <div className="input-with-icon">
-
-                      <Field name="password">
+                      <Field name="first_name">
 
                         {({ field, form }) => (
 
                           <div>
                             <input
                               {...field}
-                              type={showPassword ? 'text' : 'password'}
-                              id="password"
-                              placeholder="••••••••"
-                              className={`auth-input ${form.errors.password && form.touched.password ? 'input-error' : ''}`}
+                              type="text"
+                              id="first_name"
+                              placeholder="John"
+                              className={`auth-input ${form.errors.first_name && form.touched.first_name ? 'input-error' : ''}`}
                               onChange={(e) => {
                                 field.onChange(e);
-                                form.setFieldTouched('password', true, false);
-                                handlePasswordChange(e.target.value);
+                                form.setFieldTouched('first_name', true, false);
                               }}
                               onBlur={field.onBlur}
                             />
-                            {form.errors.password && form.touched.password && (
+                            {form.errors.first_name && form.touched.first_name && (
                               <div style={{
                                 color: '#dc3545',
                                 fontSize: '12px',
                                 marginTop: '4px',
                                 fontWeight: '500'
                               }}>
-                                {form.errors.password}
+                                {form.errors.first_name}
                               </div>
                             )}
                           </div>
@@ -535,110 +403,245 @@ const Signup = () => {
 
                     </div>
 
-                  </div>
+                    <div className="form-group">
+
+                      <label htmlFor="last_name">
+                        Last Name
+                        {values.last_name && !errors.last_name && (
+                          <span style={{ color: 'green', marginLeft: '8px' }}>✅</span>
+                        )}
+                        {errors.last_name && (
+                          <span style={{ color: 'red', marginLeft: '8px' }}>❌</span>
+                        )}
+                      </label>
+
+                      <Field name="last_name">
+
+                        {({ field, form }) => (
+
+                          <div>
+                            <input
+                              {...field}
+                              type="text"
+                              id="last_name"
+                              placeholder="Doe"
+                              className={`auth-input ${form.errors.last_name && form.touched.last_name ? 'input-error' : ''}`}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                form.setFieldTouched('last_name', true, false);
+                              }}
+                              onBlur={field.onBlur}
+                            />
+                            {form.errors.last_name && form.touched.last_name && (
+                              <div style={{
+                                color: '#dc3545',
+                                fontSize: '12px',
+                                marginTop: '4px',
+                                fontWeight: '500'
+                              }}>
+                                {form.errors.last_name}
+                              </div>
+                            )}
+                          </div>
+
+                        )}
+
+                      </Field>
+
+                    </div>
+
+                    <div className="form-group">
+
+                      <label htmlFor="email">Email Address</label>
+
+                      <Field name="email">
+
+                        {({ field, form }) => (
+
+                          <div>
+                            <input
+                              {...field}
+                              type="email"
+                              id="email"
+                              autoComplete="off"
+                              placeholder="@example.com"
+                              className={`auth-input ${form.errors.email && form.touched.email ? 'input-error' : ''}`}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                form.setFieldTouched('email', true, false);
+                              }}
+                              onBlur={field.onBlur}
+                            />
+                            {form.errors.email && form.touched.email && (
+                              <div style={{
+                                color: '#dc3545',
+                                fontSize: '12px',
+                                marginTop: '4px',
+                                fontWeight: '500'
+                              }}>
+                                {form.errors.email}
+                              </div>
+                            )}
+                          </div>
+
+                        )}
+
+                      </Field>
+
+                    </div>
 
 
-                  <div className="form-group">
 
-                    <label htmlFor="confirm_password">Confirm Password</label>
 
-                    <Field name="confirm_password">
 
-                      {({ field, form }) => (
+                    <div className="form-group">
 
-                        <div>
-                          <input
-                            {...field}
-                            type={showConfirmPassword ? 'text' : 'password'}
-                            id="confirm_password"
-                            placeholder="••••••••"
-                            className={`auth-input ${form.errors.confirm_password && form.touched.confirm_password ? 'input-error' : ''}`}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              form.setFieldTouched('confirm_password', true, false);
-                            }}
-                            onBlur={field.onBlur}
-                          />
-                          {form.errors.confirm_password && form.touched.confirm_password && (
-                            <div style={{
-                              color: '#dc3545',
-                              fontSize: '12px',
-                              marginTop: '4px',
-                              fontWeight: '500'
-                            }}>
-                              {form.errors.confirm_password}
+                      <label htmlFor="password">Password</label>
+
+                      <div className="input-with-icon">
+
+                        <Field name="password">
+
+                          {({ field, form }) => (
+
+                            <div>
+                              <input
+                                {...field}
+                                type={showPassword ? 'text' : 'password'}
+                                id="password"
+                                autoComplete="new-password"
+                                placeholder="••••••••"
+                                className={`auth-input ${form.errors.password && form.touched.password ? 'input-error' : ''}`}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  form.setFieldTouched('password', true, false);
+                                  handlePasswordChange(e.target.value);
+                                }}
+                                onBlur={field.onBlur}
+                              />
+                              {form.errors.password && form.touched.password && (
+                                <div style={{
+                                  color: '#dc3545',
+                                  fontSize: '12px',
+                                  marginTop: '4px',
+                                  fontWeight: '500'
+                                }}>
+                                  {form.errors.password}
+                                </div>
+                              )}
                             </div>
+
                           )}
-                        </div>
 
-                      )}
+                        </Field>
 
-                    </Field>
+                      </div>
 
-                  </div>
-
-
-                  <div className="form-group checkbox-group">
-
-                    <label className="checkbox-label">
-
-                      <Field type="checkbox" name="terms" />
-
-                      <span>
-                        I agree to the{' '}
-                        <Link to="/terms" target="_blank" className="link-highlight">
-                          Terms & Conditions
-                        </Link>
-                      </span>
-
-                    </label>
-
-                    <ErrorMessage name="terms" component="div" className="error-message" />
-
-                  </div>
+                    </div>
 
 
-                  <button
-                    type="submit"
-                    className="btn-auth-primary"
-                    disabled={isSubmitting || !isValid || !dirty}
-                    title={!isValid ? 'Please fix all validation errors' : 'Create your account'}
-                    onClick={(e) => {
-                      console.log('🖱️ Button clicked');
-                      console.log('FormState:', { isValid, dirty, errors, isSubmitting });
-                      
-                      if (!isValid) {
-                        console.log('❌ Form is INVALID - blocking submission');
-                        toast.error('❌ Please fix all validation errors before submitting.');
-                        e.preventDefault();
-                        return false;
-                      }
-                      
-                      if (!dirty) {
-                        console.log('❌ Form has not been modified - blocking submission');
-                        toast.error('❌ Please fill in all required fields.');
-                        e.preventDefault();
-                        return false;
-                      }
+                    <div className="form-group">
 
-                      if (errors.first_name) {
-                        console.log('❌ Full Name has errors:', errors.first_name);
-                        toast.error('❌ ' + errors.first_name);
-                        e.preventDefault();
-                        return false;
-                      }
+                      <label htmlFor="confirm_password">Confirm Password</label>
 
-                      console.log('✅ Form validation passed - allowing submission');
-                    }}
-                  >
+                      <Field name="confirm_password">
 
-                    {isSubmitting ? 'Creating Account...' : 'Register Account'}
+                        {({ field, form }) => (
 
-                  </button>
+                          <div>
+                            <input
+                              {...field}
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              id="confirm_password"
+                              autoComplete="new-password"
+                              placeholder="••••••••"
+                              className={`auth-input ${form.errors.confirm_password && form.touched.confirm_password ? 'input-error' : ''}`}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                form.setFieldTouched('confirm_password', true, false);
+                              }}
+                              onBlur={field.onBlur}
+                            />
+                            {form.errors.confirm_password && form.touched.confirm_password && (
+                              <div style={{
+                                color: '#dc3545',
+                                fontSize: '12px',
+                                marginTop: '4px',
+                                fontWeight: '500'
+                              }}>
+                                {form.errors.confirm_password}
+                              </div>
+                            )}
+                          </div>
 
-                </Form>
+                        )}
 
-              );
+                      </Field>
+
+                    </div>
+
+
+                    <div className="form-group checkbox-group">
+
+                      <label className="checkbox-label">
+
+                        <Field type="checkbox" name="terms" />
+
+                        <span>
+                          I agree to the{' '}
+                          <Link to="/terms" target="_blank" className="link-highlight">
+                            Terms & Conditions
+                          </Link>
+                        </span>
+
+                      </label>
+
+                      <ErrorMessage name="terms" component="div" className="error-message" />
+
+                    </div>
+
+
+                    <button
+                      type="submit"
+                      className="btn-auth-primary"
+                      disabled={isSubmitting || !isValid || !dirty}
+                      title={!isValid ? 'Please fix all validation errors' : 'Create your account'}
+                      onClick={(e) => {
+                        console.log('🖱️ Button clicked');
+                        console.log('FormState:', { isValid, dirty, errors, isSubmitting });
+
+                        if (!isValid) {
+                          console.log('❌ Form is INVALID - blocking submission');
+                          toast.error('❌ Please fix all validation errors before submitting.');
+                          e.preventDefault();
+                          return false;
+                        }
+
+                        if (!dirty) {
+                          console.log('❌ Form has not been modified - blocking submission');
+                          toast.error('❌ Please fill in all required fields.');
+                          e.preventDefault();
+                          return false;
+                        }
+
+                        if (errors.first_name) {
+                          console.log('❌ Full Name has errors:', errors.first_name);
+                          toast.error('❌ ' + errors.first_name);
+                          e.preventDefault();
+                          return false;
+                        }
+
+                        console.log('✅ Form validation passed - allowing submission');
+                      }}
+                    >
+
+                      {isSubmitting ? 'Creating Account...' : 'Register Account'}
+
+                    </button>
+
+                  </Form>
+
+                );
 
               }}
 
