@@ -207,9 +207,8 @@ exports.changePassword = async (req, res) => {
       });
     }
 
-    // Hash and update new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
+    // Update password (model hooks will handle hashing)
+    user.password = newPassword;
     await user.save();
 
     console.log(`🔒 Password changed successfully for user ${user.email}`);

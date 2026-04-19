@@ -750,7 +750,7 @@ export default function SettingsPage({ onBack, onLogout, userFullName, onNavigat
 
       {/* Change Password Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-blur-sm bg-transparent flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-xl transition-colors">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Change Password</h3>
