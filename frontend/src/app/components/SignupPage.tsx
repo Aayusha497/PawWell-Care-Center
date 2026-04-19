@@ -293,14 +293,15 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                 </div>
 
                 <div>
-                  <Label htmlFor="email" className="text-[15px] font-medium text-black dark:text-gray-100">
+                  <Label htmlFor="signup_email" className="text-[15px] font-medium text-black dark:text-gray-100">
                     Email Address
                   </Label>
                   <Input
-                    id="email"
+                    id="signup_email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="off"
                     placeholder="@example.com"
                     className="mt-2 h-12 rounded-xl border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   />
@@ -315,15 +316,16 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                 </div>
 
                 <div>
-                  <Label htmlFor="password" className="text-[15px] font-medium text-black dark:text-gray-100">
+                  <Label htmlFor="signup_password" className="text-[15px] font-medium text-black dark:text-gray-100">
                     Password
                   </Label>
                   <div className="relative mt-2">
                     <Input
-                      id="password"
+                      id="signup_password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="new-password"
                       placeholder="Create a password"
                       className="h-12 rounded-xl pr-12 border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                     />
@@ -361,15 +363,16 @@ export default function SignupPage({ onSignup, onNavigateToLogin, onNavigateToHo
                 </div>
 
                 <div>
-                  <Label htmlFor="confirmPassword" className="text-[15px] font-medium text-black dark:text-gray-100">
+                  <Label htmlFor="signup_confirm_password" className="text-[15px] font-medium text-black dark:text-gray-100">
                     Confirm Password
                   </Label>
                   <div className="relative mt-2">
                     <Input
-                      id="confirmPassword"
+                      id="signup_confirm_password"
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
                       placeholder="Confirm your password"
                       className="h-12 rounded-xl pr-12 border-gray-200 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                     />
