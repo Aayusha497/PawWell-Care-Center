@@ -10,8 +10,7 @@
     "db:init": "node scripts/initDb.js",
     "db:seed": "node scripts/seedUsers.js",
     "db:seed-admin": "node scripts/seedAdmin.js",
-    "db:setup": "npm run db:init && npm run db:seed",
-    "render-build": "cd ../frontend && npm install && npm run build && cd ../backend && npm install"
+    "db:setup": "npm run db:init && npm run db:seed"
   },
   "keywords": [
     "express",

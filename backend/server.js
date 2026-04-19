@@ -34,31 +34,18 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // API Routes
 app.use('/api', routes);
 
-// Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve static files from the React app build
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
-
-  // Handle React routing - serve index.html for all non-API routes
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
-    }
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Welcome to PawWell Care Center API',
+    version: '1.0.0',
+    documentation: '/api/health'
   });
-} else {
-  // Root endpoint (development only)
-  app.get('/', (req, res) => {
-    res.json({
-      success: true,
-      message: 'Welcome to PawWell Care Center API',
-      version: '1.0.0',
-      documentation: '/api/health'
-    });
-  });
-}
+});
 
-// 404 handler for API routes
-app.use('/api/*', (req, res) => {
+// 404 handler
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: 'Endpoint not found',
