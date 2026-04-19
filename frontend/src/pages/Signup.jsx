@@ -316,7 +316,7 @@ const Signup = () => {
 
               {({ values, isSubmitting, errors, touched, isValid, dirty }) => {
 
-                console.log('📋 Form State:', { errors, isValid, dirty, touched });
+                console.log('Form State:', { errors, isValid, dirty, touched });
 
                 return (
 
@@ -332,7 +332,7 @@ const Signup = () => {
                         marginBottom: '16px',
                         color: '#c33'
                       }}>
-                        <strong style={{ display: 'block', marginBottom: '12px', fontSize: '14px' }}>❌ Please fix the following errors:</strong>
+                        <strong style={{ display: 'block', marginBottom: '12px', fontSize: '14px' }}>Please fix the following errors:</strong>
                         {Object.keys(errors).length > 0 ? (
                           <ul style={{ margin: '0', paddingLeft: '20px', listStyle: 'none' }}>
                             {Object.entries(errors).map(([field, error]) => {
@@ -451,9 +451,7 @@ const Signup = () => {
                     </div>
 
                     <div className="form-group">
-
-                      <label htmlFor="email">Email Address</label>
-
+                      <label htmlFor="signup_email">Email Address</label>
                       <Field name="email">
 
                         {({ field, form }) => (
@@ -462,7 +460,7 @@ const Signup = () => {
                             <input
                               {...field}
                               type="email"
-                              id="email"
+                              id="signup_email"
                               autoComplete="off"
                               placeholder="@example.com"
                               className={`auth-input ${form.errors.email && form.touched.email ? 'input-error' : ''}`}
@@ -495,11 +493,8 @@ const Signup = () => {
 
 
                     <div className="form-group">
-
-                      <label htmlFor="password">Password</label>
-
+                      <label htmlFor="signup_password">Password</label>
                       <div className="input-with-icon">
-
                         <Field name="password">
 
                           {({ field, form }) => (
@@ -508,7 +503,7 @@ const Signup = () => {
                               <input
                                 {...field}
                                 type={showPassword ? 'text' : 'password'}
-                                id="password"
+                                id="signup_password"
                                 autoComplete="new-password"
                                 placeholder="••••••••"
                                 className={`auth-input ${form.errors.password && form.touched.password ? 'input-error' : ''}`}
@@ -541,9 +536,7 @@ const Signup = () => {
 
 
                     <div className="form-group">
-
-                      <label htmlFor="confirm_password">Confirm Password</label>
-
+                      <label htmlFor="signup_confirm_password">Confirm Password</label>
                       <Field name="confirm_password">
 
                         {({ field, form }) => (
@@ -552,7 +545,7 @@ const Signup = () => {
                             <input
                               {...field}
                               type={showConfirmPassword ? 'text' : 'password'}
-                              id="confirm_password"
+                              id="signup_confirm_password"
                               autoComplete="new-password"
                               placeholder="••••••••"
                               className={`auth-input ${form.errors.confirm_password && form.touched.confirm_password ? 'input-error' : ''}`}
