@@ -29,9 +29,9 @@ const Signup = () => {
   const initialValues = {
     first_name: '',
     last_name: '',
-    email: '',
-    password: '',
-    confirm_password: '',
+    registration_email: '',
+    registration_password: '',
+    registration_confirm_password: '',
     user_type: 'pet_owner',
     terms: false,
   };
@@ -162,13 +162,14 @@ const Signup = () => {
 
     try {
 
-      const { terms, first_name, last_name, confirm_password, user_type, ...rest } = values;
+      const { terms, first_name, last_name, registration_confirm_password, user_type, ...rest } = values;
 
       const userData = {
-        ...rest,
+        email: values.registration_email,
+        password: values.registration_password,
         firstName: first_name,
         lastName: last_name,
-        confirmPassword: confirm_password,
+        confirmPassword: registration_confirm_password,
         userType: user_type
       };
 
@@ -452,7 +453,7 @@ const Signup = () => {
 
                     <div className="form-group">
                       <label htmlFor="signup_email">Email Address</label>
-                      <Field name="email">
+                      <Field name="registration_email">
 
                         {({ field, form }) => (
 
@@ -463,21 +464,21 @@ const Signup = () => {
                               id="signup_email"
                               autoComplete="off"
                               placeholder="@example.com"
-                              className={`auth-input ${form.errors.email && form.touched.email ? 'input-error' : ''}`}
+                              className={`auth-input ${form.errors.registration_email && form.touched.registration_email ? 'input-error' : ''}`}
                               onChange={(e) => {
                                 field.onChange(e);
-                                form.setFieldTouched('email', true, false);
+                                form.setFieldTouched('registration_email', true, false);
                               }}
                               onBlur={field.onBlur}
                             />
-                            {form.errors.email && form.touched.email && (
+                            {form.errors.registration_email && form.touched.registration_email && (
                               <div style={{
                                 color: '#dc3545',
                                 fontSize: '12px',
                                 marginTop: '4px',
                                 fontWeight: '500'
                               }}>
-                                {form.errors.email}
+                                {form.errors.registration_email}
                               </div>
                             )}
                           </div>
@@ -495,7 +496,7 @@ const Signup = () => {
                     <div className="form-group">
                       <label htmlFor="signup_password">Password</label>
                       <div className="input-with-icon">
-                        <Field name="password">
+                        <Field name="registration_password">
 
                           {({ field, form }) => (
 
@@ -506,22 +507,22 @@ const Signup = () => {
                                 id="signup_password"
                                 autoComplete="new-password"
                                 placeholder="••••••••"
-                                className={`auth-input ${form.errors.password && form.touched.password ? 'input-error' : ''}`}
+                                className={`auth-input ${form.errors.registration_password && form.touched.registration_password ? 'input-error' : ''}`}
                                 onChange={(e) => {
                                   field.onChange(e);
-                                  form.setFieldTouched('password', true, false);
+                                  form.setFieldTouched('registration_password', true, false);
                                   handlePasswordChange(e.target.value);
                                 }}
                                 onBlur={field.onBlur}
                               />
-                              {form.errors.password && form.touched.password && (
+                              {form.errors.registration_password && form.touched.registration_password && (
                                 <div style={{
                                   color: '#dc3545',
                                   fontSize: '12px',
                                   marginTop: '4px',
                                   fontWeight: '500'
                                 }}>
-                                  {form.errors.password}
+                                  {form.errors.registration_password}
                                 </div>
                               )}
                             </div>
@@ -537,7 +538,7 @@ const Signup = () => {
 
                     <div className="form-group">
                       <label htmlFor="signup_confirm_password">Confirm Password</label>
-                      <Field name="confirm_password">
+                      <Field name="registration_confirm_password">
 
                         {({ field, form }) => (
 
@@ -548,21 +549,21 @@ const Signup = () => {
                               id="signup_confirm_password"
                               autoComplete="new-password"
                               placeholder="••••••••"
-                              className={`auth-input ${form.errors.confirm_password && form.touched.confirm_password ? 'input-error' : ''}`}
+                              className={`auth-input ${form.errors.registration_confirm_password && form.touched.registration_confirm_password ? 'input-error' : ''}`}
                               onChange={(e) => {
                                 field.onChange(e);
-                                form.setFieldTouched('confirm_password', true, false);
+                                form.setFieldTouched('registration_confirm_password', true, false);
                               }}
                               onBlur={field.onBlur}
                             />
-                            {form.errors.confirm_password && form.touched.confirm_password && (
+                            {form.errors.registration_confirm_password && form.touched.registration_confirm_password && (
                               <div style={{
                                 color: '#dc3545',
                                 fontSize: '12px',
                                 marginTop: '4px',
                                 fontWeight: '500'
                               }}>
-                                {form.errors.confirm_password}
+                                {form.errors.registration_confirm_password}
                               </div>
                             )}
                           </div>
@@ -611,20 +612,20 @@ const Signup = () => {
                         }
 
                         if (!dirty) {
-                          console.log('❌ Form has not been modified - blocking submission');
-                          toast.error('❌ Please fill in all required fields.');
+                          console.log('Form has not been modified - blocking submission');
+                          toast.error('Please fill in all required fields.');
                           e.preventDefault();
                           return false;
                         }
 
                         if (errors.first_name) {
-                          console.log('❌ Full Name has errors:', errors.first_name);
+                          console.log('Full Name has errors:', errors.first_name);
                           toast.error('❌ ' + errors.first_name);
                           e.preventDefault();
                           return false;
                         }
 
-                        console.log('✅ Form validation passed - allowing submission');
+                        console.log('Form validation passed - allowing submission');
                       }}
                     >
 

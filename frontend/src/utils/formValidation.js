@@ -20,7 +20,7 @@ export const validateFullName = (value) => {
   }
 
   const trimmedValue = value.trim();
-  
+
   // Must be at least 2 characters
   if (trimmedValue.length < 2) {
     return 'Full name must be at least 2 characters long.';
