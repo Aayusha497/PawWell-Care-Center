@@ -10,7 +10,8 @@
     "db:init": "node scripts/initDb.js",
     "db:seed": "node scripts/seedUsers.js",
     "db:seed-admin": "node scripts/seedAdmin.js",
-    "db:setup": "npm run db:init && npm run db:seed"
+    "db:setup": "npm run db:init && npm run db:seed",
+    "postinstall": "prisma generate"
   },
   "keywords": [
     "express",
@@ -49,11 +50,11 @@
     "speakeasy": "^2.0.0",
     "uuid": "^9.0.1",
     "zod": "^4.3.6",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "@prisma/config": "^7.2.0",
+    "prisma": "^7.4.0"
   },
   "devDependencies": {
-    "@prisma/config": "^7.2.0",
-    "nodemon": "^3.0.2",
-    "prisma": "^7.4.0"
+    "nodemon": "^3.0.2"
   }
 }
