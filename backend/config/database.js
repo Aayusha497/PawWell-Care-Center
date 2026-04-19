@@ -9,12 +9,14 @@ const sequelize = process.env.DATABASE_URL
       dialect: 'postgres',
       logging: config.database.logging,
       pool: config.database.pool,
-      dialectOptions: {
-        ssl: {
-          require: true,
-          rejectUnauthorized: false,
+      ...(isProduction && {
+        dialectOptions: {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false,
+          },
         },
-      },
+      }),
       define: {
         schema: 'public',
         timestamps: true,

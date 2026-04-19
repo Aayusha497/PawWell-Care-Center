@@ -53,12 +53,12 @@ exports.getSettings = async (req, res) => {
 exports.updateSettings = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { 
-      theme, 
-      emailNotifications, 
-      smsNotifications, 
-      activityUpdates, 
-      bookingReminders 
+    const {
+      theme,
+      emailNotifications,
+      smsNotifications,
+      activityUpdates,
+      bookingReminders
     } = req.body;
 
     // Validate theme value
@@ -86,7 +86,7 @@ exports.updateSettings = async (req, res) => {
     } else {
       // Update existing settings
       const updateData = {};
-      
+
       if (theme !== undefined) updateData.theme = theme;
       if (emailNotifications !== undefined) updateData.emailNotifications = emailNotifications;
       if (smsNotifications !== undefined) updateData.smsNotifications = smsNotifications;
@@ -211,7 +211,7 @@ exports.changePassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    console.log(`🔒 Password changed successfully for user ${user.email}`);
+    console.log(`Password changed successfully for user ${user.email}`);
 
     return res.status(200).json({
       success: true,
