@@ -314,7 +314,7 @@ export default function AboutPage({
         </div>
       </section>
 
-      <section className="about-team">
+      {/* <section className="about-team">
         <div className="section-title">
           <h2>Project</h2>
           <p>Final year project details.</p>
@@ -325,13 +325,13 @@ export default function AboutPage({
             <p>Aayusha Kandel</p>
             <span>Full-Stack Developer</span>
           </article>
-          {/* <article>
+          <article>
             <h3>Supervised by</h3>
             <p>Supervisor Name</p>
             <span>Project Supervisor</span>
-          </article> */}
+          </article>
         </div>
-      </section>
+      </section> */}
 
       {/* Footer */}
       {/* <footer className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 mt-12 py-6">

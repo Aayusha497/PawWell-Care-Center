@@ -937,10 +937,18 @@ export const markAdminContactMessageRead = async (contactId: number): Promise<an
 /**
  * Admin: Get emergency requests
  */
-export const getAdminEmergencyRequests = async (status?: string): Promise<any> => {
+export const getAdminEmergencyRequests = async (filters?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<any> => {
   try {
-    const params = status ? `?status=${encodeURIComponent(status)}` : '';
-    const response = await api.get(`/emergency${params}`);
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.page) params.append('page', String(filters.page));
+    if (filters?.limit) params.append('limit', String(filters.limit));
+
+    const response = await api.get(`/emergency${params.toString() ? '?' + params.toString() : ''}`);
     return response.data;
   } catch (error: any) {
     throw error.response?.data || { message: 'Failed to fetch emergency requests' };

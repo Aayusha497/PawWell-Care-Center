@@ -635,13 +635,17 @@ const getAllReviews = async (req, res) => {
 
     const { page = 1, limit = 10, status } = req.query;
 
-    console.log(`📊 Admin fetching reviews with status: ${status || 'all'}`);
+    console.log(`Admin fetching reviews with status: ${status || 'all'}`);
 
     const whereClause = {};
     if (status === 'pending') {
       whereClause.is_approved = false;
+      whereClause.rejection_reason = null;
     } else if (status === 'approved') {
       whereClause.is_approved = true;
+    } else if (status === 'rejected') {
+      whereClause.is_approved = false;
+      whereClause.rejection_reason = { [Op.not]: null };
     }
 
     const offset = (parseInt(page) - 1) * parseInt(limit);

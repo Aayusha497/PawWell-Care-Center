@@ -56,14 +56,20 @@ const getUserEmergencyRequests = async (userId) => {
   });
 };
 
-const getAllEmergencyRequests = async () => {
+const getAllEmergencyRequests = async (limit = 10, offset = 0) => {
   return prisma.emergency_requests.findMany({
     include: {
       pets: true,
       users: true
     },
-    orderBy: { created_at: 'desc' }
+    orderBy: { created_at: 'desc' },
+    take: limit,
+    skip: offset
   });
+};
+
+const getTotalEmergencyRequestsCount = async () => {
+  return prisma.emergency_requests.count();
 };
 
 const updateEmergencyStatus = async (emergencyId, status) => {
@@ -130,6 +136,7 @@ module.exports = {
   createEmergencyRequest,
   getUserEmergencyRequests,
   getAllEmergencyRequests,
+  getTotalEmergencyRequestsCount,
   updateEmergencyStatus,
   getUserPet,
   getAdmins,

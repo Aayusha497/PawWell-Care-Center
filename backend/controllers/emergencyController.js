@@ -130,10 +130,21 @@ const getMyEmergencyRequests = async (req, res) => {
 
 const getAllEmergencyRequests = async (req, res) => {
   try {
-    const requests = await emergencyService.getAllEmergencyRequests();
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const requests = await emergencyService.getAllEmergencyRequests(parseInt(limit, 10), parseInt(offset, 10));
+    const totalCount = await emergencyService.getTotalEmergencyRequestsCount();
+
     return res.status(200).json({
       success: true,
-      data: requests
+      data: requests,
+      pagination: {
+        total: totalCount,
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        pages: Math.ceil(totalCount / limit)
+      }
     });
   } catch (error) {
     console.error('Get emergency requests error:', error);

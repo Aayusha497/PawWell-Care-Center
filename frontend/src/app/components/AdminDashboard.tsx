@@ -157,6 +157,10 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
     newPets: 0
   });
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [contactCurrentPage, setContactCurrentPage] = useState(1);
+  const [contactLimit] = useState(10);
+  const [contactTotalPages, setContactTotalPages] = useState(1);
+  const [contactTotalMessages, setContactTotalMessages] = useState(0);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showSettings, setShowSettings] = useState(() => {
     return sessionStorage.getItem('adminShowSettings') === 'true';
@@ -164,6 +168,10 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const [contactLoading, setContactLoading] = useState(false);
   const [emergencyRequests, setEmergencyRequests] = useState<EmergencyRequest[]>([]);
+  const [emergencyCurrentPage, setEmergencyCurrentPage] = useState(1);
+  const [emergencyLimit] = useState(10);
+  const [emergencyTotalPages, setEmergencyTotalPages] = useState(1);
+  const [emergencyTotalRequests, setEmergencyTotalRequests] = useState(0);
   const [emergencyLoading, setEmergencyLoading] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [markingMessageId, setMarkingMessageId] = useState<number | null>(null);
@@ -231,7 +239,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
     if (activeTab === 'emergency-requests') {
       fetchEmergencyRequests();
     }
-  }, [activeTab]);
+  }, [activeTab, contactCurrentPage, emergencyCurrentPage]);
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -334,11 +342,20 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   const fetchContactMessages = async () => {
     try {
       setContactLoading(true);
-      const response = await getAdminContactMessages();
-      setContactMessages(response.data || []);
+      const response = await getAdminContactMessages({
+        page: contactCurrentPage,
+        limit: contactLimit
+      });
+      const messageData = response.data || [];
+      const paginationData = response.pagination || {};
+      
+      setContactMessages(Array.isArray(messageData) ? messageData : []);
+      setContactTotalMessages(paginationData.total || 0);
+      setContactTotalPages(paginationData.pages || 1);
     } catch (error: any) {
       console.error('Error fetching contact messages:', error);
       toast.error('Failed to load contact messages');
+      setContactMessages([]);
     } finally {
       setContactLoading(false);
     }
@@ -347,11 +364,20 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
   const fetchEmergencyRequests = async () => {
     try {
       setEmergencyLoading(true);
-      const response = await getAdminEmergencyRequests();
-      setEmergencyRequests(response.data || []);
+      const response = await getAdminEmergencyRequests({
+        page: emergencyCurrentPage,
+        limit: emergencyLimit
+      });
+      const requestData = response.data || [];
+      const paginationData = response.pagination || {};
+      
+      setEmergencyRequests(Array.isArray(requestData) ? requestData : []);
+      setEmergencyTotalRequests(paginationData.total || 0);
+      setEmergencyTotalPages(paginationData.pages || 1);
     } catch (error: any) {
       console.error('Error fetching emergency requests:', error);
       toast.error('Failed to load emergency requests');
+      setEmergencyRequests([]);
     } finally {
       setEmergencyLoading(false);
     }
@@ -2074,6 +2100,33 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                 </div>
               )}
 
+              {/* Pagination Controls */}
+              {contactTotalPages > 1 && (
+                <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Page {contactCurrentPage} of {contactTotalPages} ({contactTotalMessages} total messages)
+                  </p>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setContactCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={contactCurrentPage === 1}
+                      className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                    >
+                      Previous
+                    </button>
+
+                    <button
+                      onClick={() => setContactCurrentPage((prev) => Math.min(contactTotalPages, prev + 1))}
+                      disabled={contactCurrentPage === contactTotalPages}
+                      className="px-4 py-2 rounded-lg bg-yellow-300 dark:bg-yellow-500 text-gray-900 dark:text-gray-100 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow-400 dark:hover:bg-yellow-600 transition"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {selectedMessage && (
                 <div className="absolute inset-0 z-50 bg-white dark:bg-gray-900 overflow-visible">
                   <div className="min-h-screen p-8 bg-white dark:bg-gray-900">
@@ -2237,6 +2290,33 @@ export default function AdminDashboard({ user, onLogout, onNavigate }: AdminDash
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {emergencyTotalPages > 1 && (
+                <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Page {emergencyCurrentPage} of {emergencyTotalPages} ({emergencyTotalRequests} total requests)
+                  </p>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEmergencyCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={emergencyCurrentPage === 1}
+                      className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                    >
+                      Previous
+                    </button>
+
+                    <button
+                      onClick={() => setEmergencyCurrentPage((prev) => Math.min(emergencyTotalPages, prev + 1))}
+                      disabled={emergencyCurrentPage === emergencyTotalPages}
+                      className="px-4 py-2 rounded-lg bg-yellow-300 dark:bg-yellow-500 text-gray-900 dark:text-gray-100 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-yellow-400 dark:hover:bg-yellow-600 transition"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               )}
 

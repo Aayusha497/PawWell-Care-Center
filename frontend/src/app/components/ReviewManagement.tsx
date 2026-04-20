@@ -43,11 +43,13 @@ interface Review {
 const ReviewManagement: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('pending');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [processing, setProcessing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rejectionReasons, setRejectionReasons] = useState<{ [key: number]: string }>({});
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<number | null>(null);
+  const [rejectConfirmModal, setRejectConfirmModal] = useState<number | null>(null);
   const reviewsPerPage = 2;
 
   useEffect(() => {
@@ -126,6 +128,7 @@ const ReviewManagement: React.FC = () => {
 
     try {
       setProcessing(reviewId);
+      setRejectConfirmModal(null);
 
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews/${reviewId}/approve`,
@@ -157,43 +160,10 @@ const ReviewManagement: React.FC = () => {
     }
   };
 
-  const handleFeature = async (reviewId: number, isFeatured: boolean) => {
-    try {
-      setProcessing(reviewId);
-
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews/${reviewId}/feature`,
-        {
-          method: 'PATCH',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            is_featured: !isFeatured,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to update review');
-      }
-
-      toast.success(`Review ${!isFeatured ? 'featured' : 'unfeatured'}!`);
-      await fetchReviews();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update review');
-    } finally {
-      setProcessing(null);
-    }
-  };
-
   const handleDelete = async (reviewId: number) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) return;
-
     try {
       setProcessing(reviewId);
+      setDeleteConfirmModal(null);
 
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/reviews/${reviewId}`, {
         method: 'DELETE',
@@ -267,7 +237,7 @@ const ReviewManagement: React.FC = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <p className="text-sm text-gray-500 mb-2">All Reviews</p>
             <p className="text-4xl font-bold text-[#0f172a]">{reviews.length}</p>
@@ -275,7 +245,7 @@ const ReviewManagement: React.FC = () => {
           <div className="bg-white rounded-2xl border border-[#E8D28E] p-6">
             <p className="text-sm text-gray-500 mb-2">Pending Approval</p>
             <p className="text-4xl font-bold text-[#0f172a]">
-              {reviews.filter((r) => !r.is_approved).length}
+              {reviews.filter((r) => !r.is_approved && !r.rejection_reason).length}
             </p>
           </div>
           <div className="bg-white rounded-2xl border border-[#BCE8C8] p-6">
@@ -284,11 +254,17 @@ const ReviewManagement: React.FC = () => {
               {reviews.filter((r) => r.is_approved).length}
             </p>
           </div>
+          <div className="bg-white rounded-2xl border border-[#FCA5A5] p-6">
+            <p className="text-sm text-gray-500 mb-2">Rejected</p>
+            <p className="text-4xl font-bold text-[#0f172a]">
+              {reviews.filter((r) => !r.is_approved && r.rejection_reason).length}
+            </p>
+          </div>
         </div>
 
         {/* Filter */}
-        <div className="mb-6 flex gap-3">
-          {(['all', 'pending', 'approved'] as const).map((status) => (
+        <div className="mb-6 flex gap-3 flex-wrap">
+          {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -301,6 +277,7 @@ const ReviewManagement: React.FC = () => {
               {status === 'all' && 'All Reviews'}
               {status === 'pending' && 'Pending Approval'}
               {status === 'approved' && 'Approved'}
+              {status === 'rejected' && 'Rejected'}
             </button>
           ))}
         </div>
@@ -326,7 +303,7 @@ const ReviewManagement: React.FC = () => {
                 <div
                   key={review.review_id}
                   className={`bg-white rounded-2xl border p-6 shadow-sm ${
-                    review.is_approved ? 'border-[#BCE8C8]' : 'border-[#E8D28E]'
+                    review.is_approved ? 'border-[#BCE8C8]' : review.rejection_reason ? 'border-[#FCA5A5]' : 'border-[#E8D28E]'
                   }`}
                 >
                   {/* Header */}
@@ -383,6 +360,11 @@ const ReviewManagement: React.FC = () => {
                             Approved
                           </span>
                         )}
+                        {!review.is_approved && review.rejection_reason && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEE2E2] text-[#DC2626]">
+                            Rejected
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -412,22 +394,40 @@ const ReviewManagement: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Rejection Reason */}
+                  {!review.is_approved && review.rejection_reason && (
+                    <div className="mb-5 bg-[#FEF2F2] border border-[#FCA5A5] rounded-xl p-4">
+                      <p className="text-sm font-semibold text-[#DC2626] mb-2">Rejection Reason:</p>
+                      <p className="text-sm text-[#7F1D1D]">{review.rejection_reason}</p>
+                    </div>
+                  )}
+
                   <div className="border-t border-gray-200 pt-4">
                     {review.is_approved ? (
                       <div className="flex flex-wrap gap-3">
                         <button
-                          onClick={() => handleFeature(review.review_id, review.is_featured)}
-                          disabled={processing === review.review_id}
-                          className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-[#475569] hover:bg-[#334155] text-white"
-                        >
-                          {review.is_featured ? 'Remove from Featured' : 'Feature'}
-                        </button>
-                        <button
-                          onClick={() => handleReject(review.review_id)}
+                          onClick={() => setRejectConfirmModal(review.review_id)}
                           disabled={processing === review.review_id}
                           className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-red-600 hover:bg-red-700 text-white"
                         >
                           Unapprove
+                        </button>
+                      </div>
+                    ) : review.rejection_reason ? (
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          onClick={() => handleApprove(review.review_id)}
+                          disabled={processing === review.review_id}
+                          className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-[#16A34A] hover:bg-[#15803d] text-white"
+                        >
+                          Re-approve
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmModal(review.review_id)}
+                          disabled={processing === review.review_id}
+                          className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-gray-200 hover:bg-gray-300 text-gray-800"
+                        >
+                          Delete
                         </button>
                       </div>
                     ) : (
@@ -450,17 +450,17 @@ const ReviewManagement: React.FC = () => {
                             disabled={processing === review.review_id}
                             className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-[#16A34A] hover:bg-[#15803d] text-white"
                           >
-                            ✓ Approve
+                            Approve
                           </button>
                           <button
-                            onClick={() => handleReject(review.review_id)}
+                            onClick={() => setRejectConfirmModal(review.review_id)}
                             disabled={processing === review.review_id}
                             className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-red-600 hover:bg-red-700 text-white"
                           >
-                            ✕ Reject
+                            Reject
                           </button>
                           <button
-                            onClick={() => handleDelete(review.review_id)}
+                            onClick={() => setDeleteConfirmModal(review.review_id)}
                             disabled={processing === review.review_id}
                             className="px-5 py-2.5 rounded-xl font-semibold transition disabled:opacity-50 bg-gray-200 hover:bg-gray-300 text-gray-800"
                           >
@@ -498,6 +498,56 @@ const ReviewManagement: React.FC = () => {
           </>
         )}
       </div>
+
+      {deleteConfirmModal && (
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-xl">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Delete Review</h2>
+            <p className="text-gray-600 mb-8">Are you sure you want to delete this review? This action cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirmModal(null)}
+                disabled={processing !== null}
+                className="px-6 py-2.5 rounded-xl font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirmModal)}
+                disabled={processing !== null}
+                className="px-6 py-2.5 rounded-xl font-semibold bg-red-600 hover:bg-red-700 text-white transition disabled:opacity-50"
+              >
+                {processing === deleteConfirmModal ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejectConfirmModal && (
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-xl">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Reject Review</h2>
+            <p className="text-gray-600 mb-8">Are you sure you want to reject this review? The user will be notified of the rejection.</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setRejectConfirmModal(null)}
+                disabled={processing !== null}
+                className="px-6 py-2.5 rounded-xl font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleReject(rejectConfirmModal)}
+                disabled={processing !== null}
+                className="px-6 py-2.5 rounded-xl font-semibold bg-red-600 hover:bg-red-700 text-white transition disabled:opacity-50"
+              >
+                {processing === rejectConfirmModal ? 'Rejecting...' : 'Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
