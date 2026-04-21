@@ -14,15 +14,15 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
   const [popupShown, setPopupShown] = useState(false); // Prevent duplicate popups
 
   // DEBUG: Log immediately on component mount
-  console.log('🚀🚀🚀 [PaymentSuccessPage] COMPONENT MOUNTED! 🚀🚀🚀');
-  console.log('📍 Current URL:', window.location.href);
-  console.log('📍 Current pathname:', window.location.pathname);
-  console.log('📍 Current search:', window.location.search);
-  console.log('📦 localStorage:', {
+  console.log('[PaymentSuccessPage] COMPONENT MOUNTED! ');
+  console.log('Current URL:', window.location.href);
+  console.log('Current pathname:', window.location.pathname);
+  console.log('Current search:', window.location.search);
+  console.log('localStorage:', {
     khalti_pidx: localStorage.getItem('khalti_pidx'),
     khalti_booking_id: localStorage.getItem('khalti_booking_id')
   });
-  console.log('📦 sessionStorage:', {
+  console.log('sessionStorage:', {
     khalti_pidx: sessionStorage.getItem('khalti_pidx'),
     khalti_booking_id: sessionStorage.getItem('khalti_booking_id')
   });
@@ -33,7 +33,7 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
     const verifyPayment = async () => {
       // Prevent double-verification
       if (verificationAttempted) {
-        console.log('⏭️  [PaymentSuccessPage] Verification already in progress, skipping duplicate');
+        console.log('[PaymentSuccessPage] Verification already in progress, skipping duplicate');
         return;
       }
       verificationAttempted = true;
@@ -43,10 +43,10 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
         let pidx = params.get('pidx') || params.get('idx');
         const khaltiStatus = params.get('status');
 
-        console.log('😊 [PaymentSuccessPage] Verification starting');
-        console.log('🔍 URL params:', window.location.search);
-        console.log('💳 pidx from URL:', pidx);
-        console.log('✅ Khalti status:', khaltiStatus);
+        console.log('[PaymentSuccessPage] Verification starting');
+        console.log('URL params:', window.location.search);
+        console.log('pidx from URL:', pidx);
+        console.log('Khalti status:', khaltiStatus);
 
         // Get booking_id from storage
         let bookingIdStr = sessionStorage.getItem('khalti_booking_id') || localStorage.getItem('khalti_booking_id');
@@ -56,33 +56,33 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
         if (!pidx) {
           pidx = sessionStorage.getItem('khalti_pidx') || localStorage.getItem('khalti_pidx') || null;
           if (pidx) {
-            console.log('💾 Retrieved pidx from storage:', pidx);
+            console.log('Retrieved pidx from storage:', pidx);
           }
         }
 
         // STRATEGY 1: If we have pidx, verify the payment directly with backend
         if (pidx && bookingId) {
-          console.log('🚀 STRATEGY 1: Verifying with pidx and booking_id');
+          console.log('STRATEGY 1: Verifying with pidx and booking_id');
           try {
             const response = await verifyKhaltiPayment({ pidx, booking_id: bookingId });
             
             if (response?.success === true) {
-              console.log('✅ PAYMENT VERIFIED via pidx!');
+              console.log('PAYMENT VERIFIED via pidx!');
               handlePaymentSuccess(response);
               return;
             }
           } catch (pidxError) {
-            console.log('⚠️ Pidx verification failed, trying alternative strategy');
+            console.log('Pidx verification failed, trying alternative strategy');
           }
         }
 
-        // STRATEGY 2: If pidx is missing or verification failed, check recent bookings for paid status
-        console.log('🔍 STRATEGY 2: Checking recent bookings for paid status');
+        // If pidx is missing or verification failed, check recent bookings for paid status
+        console.log('STRATEGY 2: Checking recent bookings for paid status');
         try {
           const bookingsResponse = await getUserBookings({ upcoming: true });
           const allBookings = bookingsResponse.data || bookingsResponse.bookings || [];
           
-          console.log(`📋 Found ${allBookings.length} recent bookings, checking for recently paid...`);
+          console.log(`Found ${allBookings.length} recent bookings, checking for recently paid...`);
           
           // Look for a booking that was recently paid (within last 5 minutes)
           const now = new Date();
@@ -99,7 +99,7 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
           });
           
           if (paidBooking) {
-            console.log('✅ FOUND RECENTLY PAID BOOKING! #' + paidBooking.booking_id);
+            console.log('FOUND RECENTLY PAID BOOKING! #' + paidBooking.booking_id);
             const syntheticResponse = {
               success: true,
               data: {
@@ -111,22 +111,22 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
             return;
           }
         } catch (strategicError) {
-          console.log('⚠️ Strategic booking check failed:', strategicError);
+          console.log('Strategic booking check failed:', strategicError);
         }
 
         // FALLBACK: If all else fails
-        console.log('❌ Could not verify payment using any strategy');
+        console.log('Could not verify payment using any strategy');
         
         // Prevent duplicate fallback popups
         if (popupShown) {
-          console.log('⏭️ Fallback popup already shown, skipping duplicate');
+          console.log('Fallback popup already shown, skipping duplicate');
           return;
         }
         
         setPopupShown(true);
         
         if (bookingId) {
-          console.log('📌 Have booking_id but payment not confirmed - showing recovery option');
+          console.log('Have booking_id but payment not confirmed - showing recovery option');
           setTitle('Payment processing');
           setMessage('We found your booking but payment verification is still processing. Please return to Manage Bookings to check the status.');
           setLoading(false);
@@ -140,13 +140,13 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
             allowOutsideClick: false,
             allowEscapeKey: false,
             didOpen: (modal) => {
-              console.log('⏳ Payment Verifying popup opened');
+              console.log('Payment Verifying popup opened');
               const btn = modal.querySelector('.swal2-confirm') as HTMLElement;
               if (btn) {
                 btn.addEventListener('click', (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('🔘 Go to Manage Bookings button clicked');
+                  console.log('Go to Manage Bookings button clicked');
                   // Clear storage and redirect
                   sessionStorage.removeItem('khalti_pidx');
                   sessionStorage.removeItem('khalti_booking_id');
@@ -190,11 +190,11 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
         }
 
       } catch (error: any) {
-        console.error('❌ Unexpected error during verification:', error);
+        console.error('Unexpected error during verification:', error);
         
         // Prevent duplicate error popups
         if (popupShown) {
-          console.log('⏭️ Error popup already shown, skipping duplicate');
+          console.log('Error popup already shown, skipping duplicate');
           return;
         }
         
@@ -212,13 +212,13 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
           allowOutsideClick: false,
           allowEscapeKey: false,
           didOpen: (modal) => {
-            console.log('❌ Error popup opened');
+            console.log('Error popup opened');
             const btn = modal.querySelector('.swal2-confirm') as HTMLElement;
             if (btn) {
               btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('🔘 Error popup - Go Back clicked');
+                console.log('Error popup - Go Back clicked');
                 Swal.close();
                 performRedirect();
               }, { once: true });
@@ -238,11 +238,11 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
     
     // Helper function to handle successful payment
     const handlePaymentSuccess = (response: any) => {
-      console.log('🎉 PAYMENT SUCCESS HANDLER CALLED');
+      console.log('PAYMENT SUCCESS HANDLER CALLED');
       
       // Prevent duplicate success popups
       if (popupShown) {
-        console.log('⏭️ Success popup already shown, skipping duplicate');
+        console.log('Success popup already shown, skipping duplicate');
         return;
       }
       
@@ -281,10 +281,10 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
         allowOutsideClick: false,
         allowEscapeKey: false,
         didOpen: () => {
-          console.log('✅ Success popup shown - will redirect in 2 seconds or on button click');
+          console.log('Success popup shown - will redirect in 2 seconds or on button click');
           // Auto redirect after 2 seconds
           const autoRedirectTimer = setTimeout(() => {
-            console.log('⏱️ Auto-redirect triggered after 2 seconds');
+            console.log('Auto-redirect triggered after 2 seconds');
             performRedirect();
           }, 2000);
           
@@ -295,20 +295,20 @@ export default function PaymentSuccessPage({ onContinue }: PaymentSuccessPagePro
               e.preventDefault();
               e.stopPropagation();
               clearTimeout(autoRedirectTimer);
-              console.log('👆 User clicked button - redirecting immediately');
+              console.log('User clicked button - redirecting immediately');
               performRedirect();
             }, { once: true });
           }
         },
         willClose: () => {
-          console.log('🚪 Popup closing');
+          console.log('Popup closing');
         }
       });
     };
     
     // Helper function to perform the actual redirect
     const performRedirect = () => {
-      console.log('🔄 PERFORMING REDIRECT - Calling onContinue callback');
+      console.log('PERFORMING REDIRECT - Calling onContinue callback');
       // Clear ALL payment-related storage before redirecting
       sessionStorage.removeItem('khalti_pidx');
       sessionStorage.removeItem('khalti_booking_id');
