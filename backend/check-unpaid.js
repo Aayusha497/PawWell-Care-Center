@@ -7,7 +7,7 @@ const { Op } = require('sequelize');
     const now = new Date();
     const pastDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
     
-    console.log('📅 Date range: ' + pastDate.toISOString() + ' to ' + now.toISOString());
+    console.log('Date range: ' + pastDate.toISOString() + ' to ' + now.toISOString());
     console.log('Now:', now.toISOString());
     
     // Query all unpaid bookings in last 90 days
@@ -25,7 +25,7 @@ const { Op } = require('sequelize');
       ]
     });
     
-    console.log('\n📊 UNPAID BOOKINGS (Last 90 Days):');
+    console.log('\nUNPAID BOOKINGS (Last 90 Days):');
     console.log('Total unpaid bookings:', unpaidBookings.length);
     
     unpaidBookings.forEach((b, i) => {
@@ -39,7 +39,7 @@ const { Op } = require('sequelize');
     
     // Count active (approved/confirmed) unpaid bookings
     const activeUnpaid = unpaidBookings.filter(b => ['approved', 'confirmed'].includes(b.booking_status));
-    console.log('\n✅ Active (approved/confirmed) unpaid bookings:', activeUnpaid.length);
+    console.log('\nActive (approved/confirmed) unpaid bookings:', activeUnpaid.length);
     
     // Count unique pets
     const uniquePets = new Set(unpaidBookings.map(b => b.pet_id));
@@ -55,7 +55,7 @@ const { Op } = require('sequelize');
       }
     );
     
-    console.log('💰 Total Paid Revenue (last 90 days):', totalRevenueResult[0]?.total || 0);
+    console.log('Total Paid Revenue (last 90 days):', totalRevenueResult[0]?.total || 0);
     
     // This month revenue
     const thisMonthResult = await sequelize.query(
@@ -66,7 +66,7 @@ const { Op } = require('sequelize');
       }
     );
     
-    console.log('📅 This Month Revenue (PAID):', thisMonthResult[0]?.total || 0);
+    console.log('This Month Revenue (PAID):', thisMonthResult[0]?.total || 0);
     
     process.exit(0);
   } catch (error) {

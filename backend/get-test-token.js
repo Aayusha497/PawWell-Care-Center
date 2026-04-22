@@ -18,7 +18,7 @@ async function test() {
 
   const client = await pool.connect();
   try {
-    console.log('📋 Fetching test booking...\n');
+    console.log('Fetching test booking...\n');
     
     const result = await client.query(`
       SELECT booking_id, pidx, user_id, payment_status, booking_status
@@ -28,12 +28,12 @@ async function test() {
     `);
     
     if (result.rows.length === 0) {
-      console.log('❌ No bookings with pidx found');
+      console.log('No bookings with pidx found');
       process.exit(1);
     }
 
     const booking = result.rows[0];
-    console.log('✅ Found booking from database:');
+    console.log('Found booking from database:');
     console.log('   - booking_id:', booking.booking_id);
     console.log('   - user_id:', booking.user_id);
     console.log('   - pidx:', booking.pidx);
@@ -48,10 +48,10 @@ async function test() {
       { expiresIn: '1h' }
     );
 
-    console.log('📝 Generated JWT token (valid for 1 hour)');
+    console.log('Generated JWT token (valid for 1 hour)');
     console.log('');
     
-    console.log('🧪 Run this curl command to test verification:\n');
+    console.log('Run this curl command to test verification:\n');
     console.log(`curl -X POST http://localhost:8000/api/bookings/payment/verify \\`);
     console.log(`  -H "Authorization: Bearer ${testToken.substring(0, 50)}..." \\`);
     console.log(`  -H "Content-Type: application/json" \\`);

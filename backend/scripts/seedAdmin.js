@@ -9,7 +9,7 @@ const { ROLES } = require('../utils/rbac');
  */
 const seedAdmin = async () => {
   try {
-    console.log('🌱 Starting admin user seed...');
+    console.log('Starting admin user seed...');
 
     // Default admin credentials
     const adminData = {
@@ -29,7 +29,7 @@ const seedAdmin = async () => {
     });
 
     if (existingAdmin) {
-      console.log('⚠️  Admin user already exists');
+      console.log('   Admin user already exists');
       console.log('   Email:', existingAdmin.email);
       console.log('   User Type:', existingAdmin.userType);
       
@@ -37,22 +37,22 @@ const seedAdmin = async () => {
       if (existingAdmin.userType !== ROLES.ADMIN) {
         existingAdmin.userType = ROLES.ADMIN;
         await existingAdmin.save();
-        console.log('✅ Updated existing user to admin role');
+        console.log('Updated existing user to admin role');
       }
     } else {
       // Create new admin user
       const admin = await User.create(adminData);
-      console.log('✅ Admin user created successfully!');
-      console.log('\n📧 Admin Login Credentials:');
+      console.log('Admin user created successfully!');
+      console.log('\nAdmin Login Credentials:');
       console.log('   Email:', adminData.email);
       console.log('   Password:', adminData.password);
-      console.log('\n⚠️  IMPORTANT: Change the admin password after first login!');
+      console.log('\nIMPORTANT: Change the admin password after first login!');
     }
 
-    console.log('\n✨ Admin seed completed!');
+    console.log('\nAdmin seed completed!');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Admin seed failed:', error);
+    console.error('Admin seed failed:', error);
     process.exit(1);
   }
 };

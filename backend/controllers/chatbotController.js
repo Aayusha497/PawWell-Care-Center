@@ -18,7 +18,7 @@ exports.handleChatMessage = async (req, res) => {
     const userName = `${req.user.first_name} ${req.user.last_name}`;
     const userEmail = req.user.email;
     
-    console.log(`💬 Chat request from user ${userId} (${userName}):`, message?.substring(0, 50));
+    console.log(`Chat request from user ${userId} (${userName}):`, message?.substring(0, 50));
     
     // Validate input
     if (!message || !message.trim()) {
@@ -49,7 +49,7 @@ exports.handleChatMessage = async (req, res) => {
     });
     
     const processingTime = Date.now() - startTime;
-    console.log(`✅ Chat response generated in ${processingTime}ms`);
+    console.log(`Chat response generated in ${processingTime}ms`);
     
     return res.json({
       success: true,
@@ -60,7 +60,7 @@ exports.handleChatMessage = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Chat error:', error);
+    console.error('Chat error:', error);
     
     // Check if it's an Ollama connection error
     if (error.message?.includes('ECONNREFUSED') || error.message?.includes('fetch failed')) {
@@ -183,7 +183,7 @@ exports.getConversationHistory = async (req, res) => {
     
     const conversations = await getUserConversationHistory(userId);
     
-    console.log(`📚 Retrieved ${conversations.length} conversations for user ${userId}`);
+    console.log(`Retrieved ${conversations.length} conversations for user ${userId}`);
     
     return res.json({
       success: true,
@@ -193,7 +193,7 @@ exports.getConversationHistory = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ History retrieval error:', error);
+    console.error('History retrieval error:', error);
     return res.status(500).json({
       success: false,
       message: 'Failed to retrieve conversation history',
